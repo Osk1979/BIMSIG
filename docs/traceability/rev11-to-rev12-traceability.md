@@ -13,3 +13,7 @@
 | Documento C | Register architecture decisions before code | `docs/adr/ADR-0005-persistence-strategy.md` |
 | Documento C | Register architecture decisions before code | `docs/adr/ADR-0006..0012` |
 | Documento C | Register architecture decisions before code | `docs/adr/ADR-0013-database-schema-and-migrations.md` |
+| PROMPT MASTER 002 | Multiple companies, multiple projects, one WEB SIG per project | ADR-0014, `docs/architecture/prompt-002-enterprise-control-tower-architecture.md` |
+| PROMPT MASTER 002 | Tower never directly operates projects | ADR-0015 |
+| PROMPT MASTER 002 | Tower administers licenses | ADR-0016 |
+| PROMPT MASTER 002 | Users, companies, licenses, portfolio, KPIs, alerts, provisioning, integrations, dashboard, AI, reports, security, audit | `docs/backlog/prompt-002-enterprise-build-backlog.md` |

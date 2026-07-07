@@ -85,3 +85,15 @@ All implementation work must reference the relevant ADR and keep modules decoupl
 - ADR-0011: Deployment strategy.
 - ADR-0012: CI/CD strategy.
 - ADR-0013: Database schema and migrations.
+- ADR-0014: Enterprise multitenancy.
+- ADR-0015: Tower vs WEB SIG operational boundary.
+- ADR-0016: Enterprise licensing.
+
+## PROMPT MASTER 002
+
+Enterprise architecture documents:
+
+- `docs/architecture/prompt-002-enterprise-control-tower-architecture.md`
+- `docs/architecture/prompt-002-domain-model.md`
+- `docs/architecture/prompt-002-api-map.md`
+- `docs/backlog/prompt-002-enterprise-build-backlog.md`
