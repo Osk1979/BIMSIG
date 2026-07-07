@@ -17,7 +17,7 @@ The first schema contains:
 - `portfolio_projects`: portfolio-level project registry.
 - `provisioning_requests`: Project Provisioning Engine request registry.
 
-Schema creation is performed by infrastructure bootstrapping in the initial implementation. Formal migration tooling is required before production deployment.
+Schema changes are managed with Alembic migrations. Infrastructure bootstrapping may still use `metadata.create_all()` only as an explicit dev/test fallback.
 
 ## Initial Tables
 
@@ -45,7 +45,9 @@ Schema creation is performed by infrastructure bootstrapping in the initial impl
 
 ## Migration Rule
 
-`metadata.create_all()` is acceptable only for scaffold, local development, and CI. Production requires an explicit migration tool and reviewed migration scripts before deployment.
+Alembic is the formal migration tool. Production and staging schema changes must be applied through committed Alembic revision files.
+
+`metadata.create_all()` is acceptable only as a scaffold, local development, or CI fallback. It is not a production migration path.
 
 ## Consequences
 
@@ -53,7 +55,6 @@ Application services depend on repository ports, not SQLAlchemy. Infrastructure 
 
 Follow-up work must add:
 
-- Alembic or equivalent migration workflow.
 - PostGIS geometry columns for portfolio spatial metadata.
 - Audit event table.
 - Database backup and restore procedure.

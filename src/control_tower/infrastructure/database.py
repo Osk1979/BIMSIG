@@ -116,7 +116,11 @@ def create_database_engine(database_url: str) -> Engine:
 
 
 def initialize_database(engine: Engine) -> None:
-    """Create scaffold tables for local development and CI."""
+    """Create scaffold tables for local development and CI fallback.
+
+    Production and staging schema changes are owned by Alembic migrations.
+    See ADR-0013.
+    """
 
     Base.metadata.create_all(engine)
 

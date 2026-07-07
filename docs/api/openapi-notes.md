@@ -32,3 +32,9 @@ Production target:
 ```text
 postgresql+psycopg://<user>:<password>@<host>:5432/<database>
 ```
+
+Schema changes are managed through Alembic:
+
+```bash
+python -m alembic upgrade head
+```

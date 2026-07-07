@@ -51,6 +51,12 @@ Set `CONTROL_TOWER_DATABASE_URL` to use PostgreSQL/PostGIS in an integrated envi
 CONTROL_TOWER_DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/bimsig
 ```
 
+Apply database migrations:
+
+```bash
+python -m alembic upgrade head
+```
+
 All implementation work must reference the relevant ADR and keep modules decoupled.
 
 ## Technical ADR Set

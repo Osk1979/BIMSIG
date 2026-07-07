@@ -31,7 +31,7 @@ class ProvisionWebSigPayload(BaseModel):
     project_id: str = Field(min_length=3)
 
 
-def create_app(database_url: str | None = None) -> FastAPI:
+def create_app(database_url: str | None = None, initialize_schema: bool = True) -> FastAPI:
     """Create the Corporate Control Tower API application."""
 
     app = FastAPI(
@@ -44,7 +44,8 @@ def create_app(database_url: str | None = None) -> FastAPI:
         "sqlite:///./control_tower.db",
     )
     engine = create_database_engine(resolved_database_url)
-    initialize_database(engine)
+    if initialize_schema:
+        initialize_database(engine)
     sessions = SqlAlchemySessionProvider(engine)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
     provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)

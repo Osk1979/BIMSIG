@@ -27,7 +27,7 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| F2-101 | Define database schema ADR and migrations | Done | ADR-0005, ADR-0013 | Schema ADR accepted; migration workflow documented. |
+| F2-101 | Define database schema ADR and Alembic migrations | Done | ADR-0005, ADR-0013 | Schema ADR accepted; migration workflow documented and initial revision exists. |
 | F2-102 | Add repository ports for projects and provisioning | Done | ADR-0002, ADR-0005, ADR-0013 | Application services depend on interfaces, not concrete storage. |
 | F2-103 | Implement SQLAlchemy project repository | Done | ADR-0005, ADR-0013 | Projects persist and reload across service restarts. |
 | F2-104 | Implement provisioning request repository | Done | ADR-0003, ADR-0005, ADR-0013 | WEB SIG requests persist with status history. |
