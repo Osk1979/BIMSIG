@@ -74,6 +74,78 @@ def test_governance_status_and_audit_contract(tmp_path) -> None:
     }
 
 
+def test_enterprise_company_user_membership_and_license_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    company = client.post(
+        "/api/v1/companies",
+        json={
+            "company_id": "CRTG",
+            "legal_name": "CRTG S.A.C.",
+            "display_name": "CRTG",
+            "tax_id": "RUC 00000000000",
+        },
+    )
+    user = client.post(
+        "/api/v1/users",
+        json={
+            "user_id": "USR-001",
+            "email": "admin@example.com",
+            "display_name": "Admin User",
+        },
+    )
+    membership = client.post(
+        "/api/v1/companies/CRTG/memberships",
+        json={
+            "membership_id": "MEM-001",
+            "company_id": "CRTG",
+            "user_id": "USR-001",
+            "role": "portfolio_manager",
+        },
+    )
+    plan = client.post(
+        "/api/v1/license-plans",
+        json={
+            "plan_id": "PLAN-ENTERPRISE",
+            "name": "Enterprise",
+            "max_users": 50,
+            "max_projects": 20,
+            "max_websig_instances": 20,
+            "enabled_modules": "portfolio,provisioning,audit,ai,reports",
+            "ai_enabled": True,
+            "reporting_enabled": True,
+        },
+    )
+    license_assignment = client.post(
+        "/api/v1/companies/CRTG/licenses",
+        json={
+            "company_license_id": "LIC-001",
+            "company_id": "CRTG",
+            "plan_id": "PLAN-ENTERPRISE",
+            "valid_from": "2026-07-07",
+        },
+    )
+
+    assert company.status_code == 201
+    assert user.status_code == 201
+    assert membership.status_code == 201
+    assert plan.status_code == 201
+    assert license_assignment.status_code == 201
+    assert client.get("/api/v1/companies").json()[0]["company_id"] == "CRTG"
+    assert client.get("/api/v1/users").json()[0]["user_id"] == "USR-001"
+    assert client.get("/api/v1/companies/CRTG/memberships").json()[0]["role"] == "portfolio_manager"
+    assert client.get("/api/v1/companies/CRTG/licenses").json()[0]["plan_id"] == "PLAN-ENTERPRISE"
+    assert {
+        event["action"] for event in client.get("/api/v1/audit/events").json()
+    } >= {
+        "company.registered",
+        "user.registered",
+        "membership.assigned",
+        "license_plan.saved",
+        "company_license.assigned",
+    }
+
+
 def test_project_registration_persists_across_app_instances(tmp_path) -> None:
     database_url = sqlite_url(tmp_path)
     first_client = TestClient(create_app(database_url=database_url))

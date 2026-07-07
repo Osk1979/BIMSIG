@@ -8,6 +8,17 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 
 - `GET /health`: service health and REV marker.
 - `GET /api/v1/operational/health`: operational service and database health.
+- `GET /api/v1/companies`: list enterprise companies.
+- `POST /api/v1/companies`: register an enterprise company.
+- `GET /api/v1/companies/{company_id}`: get one enterprise company.
+- `GET /api/v1/users`: list platform users.
+- `POST /api/v1/users`: register a platform user.
+- `GET /api/v1/companies/{company_id}/memberships`: list company memberships.
+- `POST /api/v1/companies/{company_id}/memberships`: assign user role in company.
+- `GET /api/v1/license-plans`: list license plans.
+- `POST /api/v1/license-plans`: create a license plan.
+- `GET /api/v1/companies/{company_id}/licenses`: list company licenses.
+- `POST /api/v1/companies/{company_id}/licenses`: assign a license plan to company.
 - `GET /api/v1/portfolio/summary`: portfolio counts by governance status.
 - `GET /api/v1/projects`: list portfolio projects.
 - `POST /api/v1/projects`: register a project in the portfolio.
@@ -24,6 +35,8 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0003 defines provisioning as a port.
 - ADR-0005 defines PostgreSQL/PostGIS as the production persistence direction.
 - ADR-0006 defines actor and authorization requirements for protected operations.
+- ADR-0014 defines enterprise multitenancy.
+- ADR-0016 defines enterprise licensing.
 - ADR-0013 defines the first durable portfolio/provisioning schema.
 
 ## Configuration

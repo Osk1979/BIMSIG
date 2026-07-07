@@ -13,16 +13,23 @@ from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
 
 from control_tower import __version__
+from control_tower.application.enterprise_service import CompanyService, LicensingService, UserService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import ProvisioningService
 from control_tower.domain.audit import AuditEvent
+from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningRequest
 from control_tower.infrastructure.database import (
     SqlAlchemyAuditEventRepository,
+    SqlAlchemyCompanyLicenseRepository,
+    SqlAlchemyCompanyMembershipRepository,
+    SqlAlchemyCompanyRepository,
+    SqlAlchemyLicensePlanRepository,
     SqlAlchemyPortfolioProjectRepository,
     SqlAlchemyProvisioningRequestRepository,
     SqlAlchemySessionProvider,
+    SqlAlchemyUserRepository,
     check_database,
     create_database_engine,
     initialize_database,
@@ -58,8 +65,21 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         initialize_database(engine)
     sessions = SqlAlchemySessionProvider(engine)
     audit_repository = SqlAlchemyAuditEventRepository(sessions)
+    company_repository = SqlAlchemyCompanyRepository(sessions)
+    user_repository = SqlAlchemyUserRepository(sessions)
+    membership_repository = SqlAlchemyCompanyMembershipRepository(sessions)
+    license_plan_repository = SqlAlchemyLicensePlanRepository(sessions)
+    company_license_repository = SqlAlchemyCompanyLicenseRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
     provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)
+    companies = CompanyService(company_repository, audit_repository)
+    users = UserService(user_repository, membership_repository, companies, audit_repository)
+    licensing = LicensingService(
+        license_plan_repository,
+        company_license_repository,
+        companies,
+        audit_repository,
+    )
     portfolio = PortfolioService(portfolio_repository, audit_repository)
     provisioning = ProvisioningService(portfolio, provisioning_repository, audit_repository)
 
@@ -86,6 +106,111 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         """Return portfolio status counts."""
 
         return portfolio.summary()
+
+    @app.get("/api/v1/companies", response_model=list[Company])
+    def list_companies() -> list[Company]:
+        """List enterprise companies."""
+
+        return companies.list_companies()
+
+    @app.post("/api/v1/companies", response_model=Company, status_code=status.HTTP_201_CREATED)
+    def register_company(company: Company) -> Company:
+        """Register an enterprise company."""
+
+        return companies.register(company)
+
+    @app.get("/api/v1/companies/{company_id}", response_model=Company)
+    def get_company(company_id: str) -> Company:
+        """Return one enterprise company."""
+
+        company = companies.get_company(company_id)
+        if company is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return company
+
+    @app.get("/api/v1/users", response_model=list[User])
+    def list_users() -> list[User]:
+        """List platform users."""
+
+        return users.list_users()
+
+    @app.post("/api/v1/users", response_model=User, status_code=status.HTTP_201_CREATED)
+    def register_user(user: User) -> User:
+        """Register a platform user."""
+
+        return users.register_user(user)
+
+    @app.get("/api/v1/companies/{company_id}/memberships", response_model=list[CompanyMembership])
+    def list_company_memberships(company_id: str) -> list[CompanyMembership]:
+        """List memberships for a company."""
+
+        try:
+            return users.list_memberships(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/memberships",
+        response_model=CompanyMembership,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def add_company_membership(
+        company_id: str,
+        membership: CompanyMembership,
+    ) -> CompanyMembership:
+        """Assign a user role inside a company."""
+
+        if membership.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Membership company_id must match path company_id",
+            )
+        try:
+            return users.add_membership(membership)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/license-plans", response_model=list[LicensePlan])
+    def list_license_plans() -> list[LicensePlan]:
+        """List enterprise license plans."""
+
+        return licensing.list_plans()
+
+    @app.post("/api/v1/license-plans", response_model=LicensePlan, status_code=status.HTTP_201_CREATED)
+    def create_license_plan(plan: LicensePlan) -> LicensePlan:
+        """Create an enterprise license plan."""
+
+        return licensing.create_plan(plan)
+
+    @app.get("/api/v1/companies/{company_id}/licenses", response_model=list[CompanyLicense])
+    def list_company_licenses(company_id: str) -> list[CompanyLicense]:
+        """List licenses assigned to a company."""
+
+        try:
+            return licensing.list_company_licenses(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/licenses",
+        response_model=CompanyLicense,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def assign_company_license(
+        company_id: str,
+        license_assignment: CompanyLicense,
+    ) -> CompanyLicense:
+        """Assign a license plan to a company."""
+
+        if license_assignment.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="License company_id must match path company_id",
+            )
+        try:
+            return licensing.assign_license(license_assignment)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.get("/api/v1/projects", response_model=list[PortfolioProject])
     def list_projects() -> list[PortfolioProject]:

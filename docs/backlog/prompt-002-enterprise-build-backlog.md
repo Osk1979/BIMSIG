@@ -8,17 +8,17 @@ Build Corporate Control Tower REV12 as a complete enterprise platform for multip
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| P2-101 | Add company domain model | Planned | ADR-0014 | Companies can be created, listed, and audited. |
+| P2-101 | Add company domain model | Done | ADR-0014 | Companies can be created, listed, and audited. |
 | P2-102 | Add tenant-scoped project model | Planned | ADR-0014, ADR-0015 | Projects belong to exactly one company. |
 | P2-103 | Add tenant context middleware/dependency | Planned | ADR-0006, ADR-0014 | API resolves company context before data access. |
-| P2-104 | Add company-scoped migrations | Planned | ADR-0013, ADR-0014 | Tables include tenant scope and indexes. |
+| P2-104 | Add company-scoped migrations | In Progress | ADR-0013, ADR-0014 | Company, membership, and license tables include tenant scope and indexes; project scoping remains pending. |
 
 ## Milestone P2.2: Users and Security
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| P2-201 | Add user model | Planned | ADR-0006 | Users can be registered and audited. |
-| P2-202 | Add company memberships | Planned | ADR-0006, ADR-0014 | Users can belong to companies with roles. |
+| P2-201 | Add user model | Done | ADR-0006 | Users can be registered and audited. |
+| P2-202 | Add company memberships | Done | ADR-0006, ADR-0014 | Users can belong to companies with roles. |
 | P2-203 | Add authorization policy service | Planned | ADR-0006 | Protected operations enforce role checks. |
 | P2-204 | Add service account model | Planned | ADR-0006 | Integrations use scoped service identities. |
 
@@ -26,8 +26,8 @@ Build Corporate Control Tower REV12 as a complete enterprise platform for multip
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| P2-301 | Add license plans | Planned | ADR-0016 | Plans define module entitlements and limits. |
-| P2-302 | Add company license assignment | Planned | ADR-0016 | Companies receive active license plans. |
+| P2-301 | Add license plans | Done | ADR-0016 | Plans define module entitlements and limits. |
+| P2-302 | Add company license assignment | Done | ADR-0016 | Companies receive active license plans. |
 | P2-303 | Add license usage counters | Planned | ADR-0016 | User, project, WEB SIG, AI, and report usage is tracked. |
 | P2-304 | Enforce license policies | Planned | ADR-0016 | Restricted actions fail when license limits are exceeded. |
 

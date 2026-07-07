@@ -22,6 +22,12 @@
 - `GET /api/v1/companies/{company_id}`
 - `PATCH /api/v1/companies/{company_id}`
 
+Implemented first cut:
+
+- `GET /api/v1/companies`
+- `POST /api/v1/companies`
+- `GET /api/v1/companies/{company_id}`
+
 ### Users and Memberships
 
 - `GET /api/v1/users`
@@ -30,6 +36,13 @@
 - `POST /api/v1/companies/{company_id}/memberships`
 - `PATCH /api/v1/companies/{company_id}/memberships/{membership_id}`
 
+Implemented first cut:
+
+- `GET /api/v1/users`
+- `POST /api/v1/users`
+- `GET /api/v1/companies/{company_id}/memberships`
+- `POST /api/v1/companies/{company_id}/memberships`
+
 ### Licenses
 
 - `GET /api/v1/license-plans`
@@ -37,6 +50,13 @@
 - `GET /api/v1/companies/{company_id}/licenses`
 - `POST /api/v1/companies/{company_id}/licenses`
 - `GET /api/v1/companies/{company_id}/license-usage`
+
+Implemented first cut:
+
+- `GET /api/v1/license-plans`
+- `POST /api/v1/license-plans`
+- `GET /api/v1/companies/{company_id}/licenses`
+- `POST /api/v1/companies/{company_id}/licenses`
 
 ### Portfolio and Projects
 

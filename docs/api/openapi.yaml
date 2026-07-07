@@ -80,6 +80,171 @@
         "title": "AuditEvent",
         "type": "object"
       },
+      "Company": {
+        "description": "Enterprise tenant administered by Corporate Control Tower.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "display_name": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 2,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "legal_name": {
+            "examples": [
+              "CRTG S.A.C."
+            ],
+            "minLength": 3,
+            "title": "Legal Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CompanyStatus",
+            "default": "active"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "RUC 00000000000"
+            ],
+            "title": "Tax Id"
+          }
+        },
+        "required": [
+          "company_id",
+          "legal_name",
+          "display_name"
+        ],
+        "title": "Company",
+        "type": "object"
+      },
+      "CompanyLicense": {
+        "description": "License plan assigned to a company.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "company_license_id": {
+            "examples": [
+              "LIC-001"
+            ],
+            "minLength": 3,
+            "title": "Company License Id",
+            "type": "string"
+          },
+          "plan_id": {
+            "examples": [
+              "PLAN-ENTERPRISE"
+            ],
+            "minLength": 3,
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LicenseStatus",
+            "default": "active"
+          },
+          "valid_from": {
+            "format": "date",
+            "title": "Valid From",
+            "type": "string"
+          },
+          "valid_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid To"
+          }
+        },
+        "required": [
+          "company_license_id",
+          "company_id",
+          "plan_id",
+          "valid_from"
+        ],
+        "title": "CompanyLicense",
+        "type": "object"
+      },
+      "CompanyMembership": {
+        "description": "User membership and role inside a company.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "membership_id": {
+            "examples": [
+              "MEM-001"
+            ],
+            "minLength": 3,
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MembershipStatus",
+            "default": "active"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "membership_id",
+          "company_id",
+          "user_id",
+          "role"
+        ],
+        "title": "CompanyMembership",
+        "type": "object"
+      },
+      "CompanyStatus": {
+        "description": "Lifecycle status for an enterprise tenant.",
+        "enum": [
+          "active",
+          "suspended"
+        ],
+        "title": "CompanyStatus",
+        "type": "string"
+      },
       "GovernanceStatusPayload": {
         "description": "API payload to change project governance status.",
         "properties": {
@@ -105,6 +270,85 @@
         },
         "title": "HTTPValidationError",
         "type": "object"
+      },
+      "LicensePlan": {
+        "description": "Commercial entitlement plan.",
+        "properties": {
+          "ai_enabled": {
+            "default": false,
+            "title": "Ai Enabled",
+            "type": "boolean"
+          },
+          "enabled_modules": {
+            "default": "portfolio,provisioning,audit",
+            "title": "Enabled Modules",
+            "type": "string"
+          },
+          "max_projects": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Max Projects",
+            "type": "integer"
+          },
+          "max_users": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Max Users",
+            "type": "integer"
+          },
+          "max_websig_instances": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Max Websig Instances",
+            "type": "integer"
+          },
+          "name": {
+            "examples": [
+              "Enterprise"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "plan_id": {
+            "examples": [
+              "PLAN-ENTERPRISE"
+            ],
+            "minLength": 3,
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "reporting_enabled": {
+            "default": false,
+            "title": "Reporting Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "plan_id",
+          "name"
+        ],
+        "title": "LicensePlan",
+        "type": "object"
+      },
+      "LicenseStatus": {
+        "description": "Lifecycle status for company license assignment.",
+        "enum": [
+          "active",
+          "expired",
+          "suspended"
+        ],
+        "title": "LicenseStatus",
+        "type": "string"
+      },
+      "MembershipStatus": {
+        "description": "Lifecycle status for company membership.",
+        "enum": [
+          "active",
+          "suspended"
+        ],
+        "title": "MembershipStatus",
+        "type": "string"
       },
       "PortfolioProject": {
         "description": "Project registered at Corporate Control Tower portfolio level.",
@@ -218,6 +462,78 @@
         "title": "ProvisioningStatus",
         "type": "string"
       },
+      "User": {
+        "description": "Person or service identity known by the platform.",
+        "properties": {
+          "display_name": {
+            "examples": [
+              "Usuario Admin"
+            ],
+            "minLength": 2,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "examples": [
+              "admin@example.com"
+            ],
+            "minLength": 5,
+            "title": "Email",
+            "type": "string"
+          },
+          "identity_provider_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Provider Subject"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus",
+            "default": "active"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "display_name"
+        ],
+        "title": "User",
+        "type": "object"
+      },
+      "UserRole": {
+        "description": "Company-scoped user role.",
+        "enum": [
+          "platform_admin",
+          "portfolio_manager",
+          "project_operator",
+          "auditor",
+          "service_account"
+        ],
+        "title": "UserRole",
+        "type": "string"
+      },
+      "UserStatus": {
+        "description": "Lifecycle status for a user identity.",
+        "enum": [
+          "active",
+          "disabled"
+        ],
+        "title": "UserStatus",
+        "type": "string"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -310,6 +626,350 @@
           }
         },
         "summary": "List Audit Events"
+      }
+    },
+    "/api/v1/companies": {
+      "get": {
+        "description": "List enterprise companies.",
+        "operationId": "list_companies_api_v1_companies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Company"
+                  },
+                  "title": "Response List Companies Api V1 Companies Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Companies"
+      },
+      "post": {
+        "description": "Register an enterprise company.",
+        "operationId": "register_company_api_v1_companies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Company"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Company"
+      }
+    },
+    "/api/v1/companies/{company_id}": {
+      "get": {
+        "description": "Return one enterprise company.",
+        "operationId": "get_company_api_v1_companies__company_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Company"
+      }
+    },
+    "/api/v1/companies/{company_id}/licenses": {
+      "get": {
+        "description": "List licenses assigned to a company.",
+        "operationId": "list_company_licenses_api_v1_companies__company_id__licenses_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyLicense"
+                  },
+                  "title": "Response List Company Licenses Api V1 Companies  Company Id  Licenses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Company Licenses"
+      },
+      "post": {
+        "description": "Assign a license plan to a company.",
+        "operationId": "assign_company_license_api_v1_companies__company_id__licenses_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyLicense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyLicense"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Company License"
+      }
+    },
+    "/api/v1/companies/{company_id}/memberships": {
+      "get": {
+        "description": "List memberships for a company.",
+        "operationId": "list_company_memberships_api_v1_companies__company_id__memberships_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyMembership"
+                  },
+                  "title": "Response List Company Memberships Api V1 Companies  Company Id  Memberships Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Company Memberships"
+      },
+      "post": {
+        "description": "Assign a user role inside a company.",
+        "operationId": "add_company_membership_api_v1_companies__company_id__memberships_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyMembership"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyMembership"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Company Membership"
+      }
+    },
+    "/api/v1/license-plans": {
+      "get": {
+        "description": "List enterprise license plans.",
+        "operationId": "list_license_plans_api_v1_license_plans_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LicensePlan"
+                  },
+                  "title": "Response List License Plans Api V1 License Plans Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List License Plans"
+      },
+      "post": {
+        "description": "Create an enterprise license plan.",
+        "operationId": "create_license_plan_api_v1_license_plans_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LicensePlan"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LicensePlan"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create License Plan"
       }
     },
     "/api/v1/operational/health": {
@@ -570,6 +1230,66 @@
           }
         },
         "summary": "Provision Websig"
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "description": "List platform users.",
+        "operationId": "list_users_api_v1_users_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  },
+                  "title": "Response List Users Api V1 Users Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Users"
+      },
+      "post": {
+        "description": "Register a platform user.",
+        "operationId": "register_user_api_v1_users_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register User"
       }
     },
     "/health": {
