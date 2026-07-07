@@ -15,7 +15,11 @@ from pydantic import BaseModel, Field
 from control_tower import __version__
 from control_tower.application.enterprise_service import CompanyService, LicensingService, UserService
 from control_tower.application.portfolio_service import PortfolioService
-from control_tower.application.provisioning_service import ProvisioningService
+from control_tower.application.provisioning_service import (
+    ProjectProvisioningEngine,
+    ProjectProvisioningSpec,
+    ProvisioningService,
+)
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
@@ -82,6 +86,13 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     )
     portfolio = PortfolioService(portfolio_repository, audit_repository)
     provisioning = ProvisioningService(portfolio, provisioning_repository, audit_repository)
+    provisioning_engine = ProjectProvisioningEngine(
+        companies,
+        users,
+        portfolio,
+        provisioning_repository,
+        audit_repository,
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -309,21 +320,51 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
-    @app.post("/api/v1/provisioning/websig", status_code=status.HTTP_202_ACCEPTED)
-    def provision_websig(payload: ProvisionWebSigPayload) -> dict[str, str]:
+    @app.post(
+        "/api/v1/provisioning/websig",
+        response_model=ProvisioningRequest,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def provision_websig(payload: ProvisionWebSigPayload) -> ProvisioningRequest:
         """Request creation of a dedicated WEB SIG for a registered project."""
 
         try:
             request = provisioning.request_websig(payload.project_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-        return request.model_dump()
+        return request
+
+    @app.post(
+        "/api/v1/companies/{company_id}/provisioning/project-stack",
+        response_model=ProvisioningRequest,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def provision_project_stack(company_id: str, payload: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Provision a complete BIMSIG Enterprise project stack."""
+
+        if payload.company.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Provisioning company_id must match path company_id",
+            )
+        try:
+            return provisioning_engine.provision_project_stack(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @app.get("/api/v1/provisioning/websig", response_model=list[ProvisioningRequest])
     def list_websig_provisioning_requests() -> list[ProvisioningRequest]:
         """List WEB SIG provisioning requests."""
 
         return provisioning.list_requests()
+
+    @app.get("/api/v1/companies/{company_id}/provisioning/websig", response_model=list[ProvisioningRequest])
+    def list_company_websig_provisioning_requests(company_id: str) -> list[ProvisioningRequest]:
+        """List provisioning requests for one company."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return provisioning.list_requests_for_company(company_id)
 
     @app.get("/api/v1/audit/events", response_model=list[AuditEvent])
     def list_audit_events(limit: int = 100) -> list[AuditEvent]:

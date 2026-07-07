@@ -404,6 +404,73 @@
         "title": "PortfolioProject",
         "type": "object"
       },
+      "ProjectProvisioningSpec": {
+        "description": "Complete input for provisioning a BIMSIG Enterprise project stack.",
+        "properties": {
+          "catalogs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Catalogs",
+            "type": "array"
+          },
+          "company": {
+            "$ref": "#/components/schemas/Company"
+          },
+          "dashboard_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dashboard Id"
+          },
+          "document_structure": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Document Structure",
+            "type": "array"
+          },
+          "memberships": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyMembership"
+            },
+            "title": "Memberships",
+            "type": "array"
+          },
+          "project": {
+            "$ref": "#/components/schemas/PortfolioProject"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/User"
+            },
+            "title": "Users",
+            "type": "array"
+          },
+          "websig_slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Websig Slug"
+          }
+        },
+        "required": [
+          "company",
+          "project"
+        ],
+        "title": "ProjectProvisioningSpec",
+        "type": "object"
+      },
       "ProjectStatus": {
         "description": "Governance status for a portfolio project.",
         "enum": [
@@ -430,9 +497,34 @@
         "title": "ProvisionWebSigPayload",
         "type": "object"
       },
+      "ProvisioningOperation": {
+        "description": "Supported provisioning orchestration operations.",
+        "enum": [
+          "websig",
+          "project_stack"
+        ],
+        "title": "ProvisioningOperation",
+        "type": "string"
+      },
       "ProvisioningRequest": {
         "description": "Intent to create a dedicated WEB SIG for a portfolio project.",
         "properties": {
+          "company_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/ProvisioningOperation",
+            "default": "websig"
+          },
           "project_id": {
             "minLength": 3,
             "title": "Project Id",
@@ -447,6 +539,13 @@
             "$ref": "#/components/schemas/ProvisioningStatus",
             "default": "requested"
           },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ProvisioningStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
           "target_revision": {
             "default": "REV12",
             "title": "Target Revision",
@@ -460,6 +559,24 @@
         "title": "ProvisioningRequest",
         "type": "object"
       },
+      "ProvisioningResourceType": {
+        "description": "Resource classes created or registered by Project Provisioning Engine.",
+        "enum": [
+          "company",
+          "project",
+          "websig",
+          "postgis",
+          "nas",
+          "document_structure",
+          "geoserver",
+          "dashboard",
+          "user",
+          "role",
+          "catalog"
+        ],
+        "title": "ProvisioningResourceType",
+        "type": "string"
+      },
       "ProvisioningStatus": {
         "description": "Lifecycle status for a WEB SIG provisioning request.",
         "enum": [
@@ -469,6 +586,56 @@
           "failed"
         ],
         "title": "ProvisioningStatus",
+        "type": "string"
+      },
+      "ProvisioningStep": {
+        "description": "Auditable step produced by Project Provisioning Engine.",
+        "properties": {
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "resource_type": {
+            "$ref": "#/components/schemas/ProvisioningResourceType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProvisioningStepStatus",
+            "default": "succeeded"
+          },
+          "step_id": {
+            "minLength": 3,
+            "title": "Step Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "step_id",
+          "resource_type",
+          "name"
+        ],
+        "title": "ProvisioningStep",
+        "type": "object"
+      },
+      "ProvisioningStepStatus": {
+        "description": "Lifecycle status for one provisioning step.",
+        "enum": [
+          "planned",
+          "succeeded",
+          "failed"
+        ],
+        "title": "ProvisioningStepStatus",
         "type": "string"
       },
       "User": {
@@ -1165,6 +1332,100 @@
         "summary": "Change Company Governance Status"
       }
     },
+    "/api/v1/companies/{company_id}/provisioning/project-stack": {
+      "post": {
+        "description": "Provision a complete BIMSIG Enterprise project stack.",
+        "operationId": "provision_project_stack_api_v1_companies__company_id__provisioning_project_stack_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectProvisioningSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisioningRequest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Provision Project Stack"
+      }
+    },
+    "/api/v1/companies/{company_id}/provisioning/websig": {
+      "get": {
+        "description": "List provisioning requests for one company.",
+        "operationId": "list_company_websig_provisioning_requests_api_v1_companies__company_id__provisioning_websig_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProvisioningRequest"
+                  },
+                  "title": "Response List Company Websig Provisioning Requests Api V1 Companies  Company Id  Provisioning Websig Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Company Websig Provisioning Requests"
+      }
+    },
     "/api/v1/license-plans": {
       "get": {
         "description": "List enterprise license plans.",
@@ -1461,11 +1722,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Provision Websig Api V1 Provisioning Websig Post",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ProvisioningRequest"
                 }
               }
             },

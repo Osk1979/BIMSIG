@@ -65,6 +65,68 @@ def test_project_registration_and_websig_provisioning_contract(tmp_path) -> None
     assert summary.json()["provisioning_requested"] == 1
 
 
+def test_enterprise_project_stack_provisioning_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    provisioned = client.post(
+        "/api/v1/companies/CRTG/provisioning/project-stack",
+        json={
+            "company": {
+                "company_id": "CRTG",
+                "legal_name": "CRTG S.A.C.",
+                "display_name": "CRTG",
+            },
+            "project": {
+                "project_id": "PSZ-2026",
+                "company_id": "CRTG",
+                "name": "Proyecto Suiza",
+                "cui": "CUI 2661613",
+            },
+            "users": [
+                {
+                    "user_id": "USR-001",
+                    "email": "admin@example.com",
+                    "display_name": "Admin User",
+                }
+            ],
+            "memberships": [
+                {
+                    "membership_id": "MEM-001",
+                    "company_id": "CRTG",
+                    "user_id": "USR-001",
+                    "role": "portfolio_manager",
+                }
+            ],
+            "catalogs": ["disciplinas", "estados_gobierno"],
+        },
+    )
+    project = client.get("/api/v1/companies/CRTG/projects/PSZ-2026")
+    requests = client.get("/api/v1/companies/CRTG/provisioning/websig")
+
+    assert provisioned.status_code == 202
+    assert provisioned.json()["operation"] == "project_stack"
+    assert provisioned.json()["status"] == "provisioned"
+    assert provisioned.json()["company_id"] == "CRTG"
+    assert project.json()["status"] == "active"
+    assert requests.status_code == 200
+    assert requests.json()[0]["operation"] == "project_stack"
+    assert {
+        step["resource_type"] for step in provisioned.json()["steps"]
+    } >= {
+        "company",
+        "project",
+        "websig",
+        "postgis",
+        "nas",
+        "document_structure",
+        "geoserver",
+        "dashboard",
+        "user",
+        "role",
+        "catalog",
+    }
+
+
 def test_governance_status_and_audit_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(

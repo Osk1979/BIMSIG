@@ -7,11 +7,12 @@ ADR references:
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, create_engine, func, select, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, create_engine, func, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -29,7 +30,7 @@ from control_tower.domain.enterprise import (
     UserStatus,
 )
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
-from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningStatus
+from control_tower.domain.provisioning import ProvisioningOperation, ProvisioningRequest, ProvisioningStatus, ProvisioningStep
 
 
 class Base(DeclarativeBase):
@@ -301,6 +302,7 @@ class ProvisioningRequestRecord(Base):
     __tablename__ = "provisioning_requests"
 
     request_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=True, index=True)
     project_id: Mapped[str] = mapped_column(
         String(80),
         ForeignKey("portfolio_projects.project_id"),
@@ -309,6 +311,8 @@ class ProvisioningRequestRecord(Base):
     )
     target_revision: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(80), nullable=False)
+    operation: Mapped[str] = mapped_column(String(80), nullable=False)
+    steps_document: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -319,9 +323,12 @@ class ProvisioningRequestRecord(Base):
         now = datetime.now(UTC)
         return cls(
             request_id=request.request_id,
+            company_id=request.company_id,
             project_id=request.project_id,
             target_revision=request.target_revision,
             status=request.status.value,
+            operation=request.operation.value,
+            steps_document=json.dumps([step.model_dump(mode="json") for step in request.steps]),
             created_at=now,
             updated_at=now,
         )
@@ -331,9 +338,12 @@ class ProvisioningRequestRecord(Base):
 
         return ProvisioningRequest(
             request_id=self.request_id,
+            company_id=self.company_id,
             project_id=self.project_id,
             target_revision=self.target_revision,
             status=ProvisioningStatus(self.status),
+            operation=ProvisioningOperation(self.operation),
+            steps=[ProvisioningStep.model_validate(step) for step in json.loads(self.steps_document)],
         )
 
 
@@ -493,8 +503,18 @@ class SqlAlchemyProvisioningRequestRepository:
         """Persist a WEB SIG provisioning request."""
 
         with self._sessions.session() as db:
-            record = ProvisioningRequestRecord.from_domain(request)
-            db.add(record)
+            record = db.get(ProvisioningRequestRecord, request.request_id)
+            if record is None:
+                record = ProvisioningRequestRecord.from_domain(request)
+                db.add(record)
+            else:
+                record.company_id = request.company_id
+                record.project_id = request.project_id
+                record.target_revision = request.target_revision
+                record.status = request.status.value
+                record.operation = request.operation.value
+                record.steps_document = json.dumps([step.model_dump(mode="json") for step in request.steps])
+                record.updated_at = datetime.now(UTC)
             db.flush()
             return record.to_domain()
 
@@ -504,6 +524,17 @@ class SqlAlchemyProvisioningRequestRepository:
         with self._sessions.session() as db:
             records = db.scalars(
                 select(ProvisioningRequestRecord).order_by(ProvisioningRequestRecord.created_at)
+            )
+            return [record.to_domain() for record in records]
+
+    def list_by_company(self, company_id: str) -> list[ProvisioningRequest]:
+        """Return persisted WEB SIG provisioning requests for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(ProvisioningRequestRecord)
+                .where(ProvisioningRequestRecord.company_id == company_id)
+                .order_by(ProvisioningRequestRecord.created_at)
             )
             return [record.to_domain() for record in records]
 

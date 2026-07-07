@@ -1,5 +1,5 @@
 from control_tower.domain.portfolio import PortfolioProject
-from control_tower.domain.provisioning import ProvisioningRequest
+from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningResourceType, ProvisioningStep
 from control_tower.infrastructure.database import (
     SqlAlchemyPortfolioProjectRepository,
     SqlAlchemyProvisioningRequestRepository,
@@ -33,7 +33,24 @@ def test_sqlalchemy_provisioning_repository_persists_requests(tmp_path) -> None:
     requests = SqlAlchemyProvisioningRequestRepository(sessions)
     projects.save(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
 
-    saved = requests.save(ProvisioningRequest(request_id="PPE-001", project_id="PSZ-2026"))
+    saved = requests.save(
+        ProvisioningRequest(
+            request_id="PPE-001",
+            project_id="PSZ-2026",
+            company_id="CRTG",
+            steps=[
+                ProvisioningStep(
+                    step_id="websig",
+                    resource_type=ProvisioningResourceType.WEB_SIG,
+                    name="Create WEB SIG",
+                    reference="websig://CRTG/PSZ-2026",
+                )
+            ],
+        )
+    )
+    reloaded = requests.list_by_company("CRTG")[0]
 
     assert saved.request_id == "PPE-001"
     assert saved.project_id == "PSZ-2026"
+    assert reloaded.company_id == "CRTG"
+    assert reloaded.steps[0].resource_type == ProvisioningResourceType.WEB_SIG

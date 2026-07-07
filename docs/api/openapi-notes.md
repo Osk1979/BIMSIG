@@ -24,6 +24,8 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `POST /api/v1/companies/{company_id}/projects`: register a project inside a company.
 - `GET /api/v1/companies/{company_id}/projects/{project_id}`: get one company-scoped project.
 - `PATCH /api/v1/companies/{company_id}/projects/{project_id}/governance-status`: change company-scoped project governance status.
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack`: provision a complete BIMSIG Enterprise project stack.
+- `GET /api/v1/companies/{company_id}/provisioning/websig`: list provisioning requests for one company.
 - `GET /api/v1/portfolio/summary`: portfolio counts by governance status.
 - `GET /api/v1/projects`: list portfolio projects.
 - `POST /api/v1/projects`: register a project in the portfolio.
@@ -44,6 +46,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0015 defines the Tower vs WEB SIG operational boundary.
 - ADR-0016 defines enterprise licensing.
 - ADR-0013 defines the first durable portfolio/provisioning schema.
+- ADR-0017 defines the integrated Project Provisioning Engine.
 
 ## Configuration
 

@@ -53,6 +53,9 @@ class ProvisioningRequestRepository(Protocol):
     def list(self) -> list[ProvisioningRequest]:
         """Return all persisted provisioning requests."""
 
+    def list_by_company(self, company_id: str) -> list[ProvisioningRequest]:
+        """Return persisted provisioning requests for one company."""
+
 
 class AuditEventRepository(Protocol):
     """Persistence port for audit events."""

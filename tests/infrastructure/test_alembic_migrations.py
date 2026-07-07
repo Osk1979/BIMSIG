@@ -23,6 +23,13 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     assert "company_id" in {
         column["name"] for column in inspector.get_columns("portfolio_projects")
     }
+    provisioning_columns = {
+        column["name"] for column in inspector.get_columns("provisioning_requests")
+    }
+    assert {"company_id", "operation", "steps_document"} <= provisioning_columns
     assert "ix_provisioning_requests_project_id" in {
+        index["name"] for index in inspector.get_indexes("provisioning_requests")
+    }
+    assert "ix_provisioning_requests_company_id" in {
         index["name"] for index in inspector.get_indexes("provisioning_requests")
     }

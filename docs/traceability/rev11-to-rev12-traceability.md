@@ -17,3 +17,5 @@
 | PROMPT MASTER 002 | Tower never directly operates projects | ADR-0015 |
 | PROMPT MASTER 002 | Tower administers licenses | ADR-0016 |
 | PROMPT MASTER 002 | Users, companies, licenses, portfolio, KPIs, alerts, provisioning, integrations, dashboard, AI, reports, security, audit | `docs/backlog/prompt-002-enterprise-build-backlog.md` |
+| PROMPT MASTER 003 | Project Provisioning Engine integrated to BIMSIG Enterprise | ADR-0017, `src/control_tower/application/provisioning_service.py` |
+| PROMPT MASTER 003 | Create company, project, WEB SIG, PostGIS, NAS, document structure, GeoServer, dashboard, users, roles, and catalogs | `POST /api/v1/companies/{company_id}/provisioning/project-stack`, `docs/backlog/prompt-003-project-provisioning-engine-backlog.md` |
