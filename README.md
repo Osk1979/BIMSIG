@@ -46,3 +46,14 @@ uvicorn control_tower.api.app:create_app --factory --reload
 ```
 
 All implementation work must reference the relevant ADR and keep modules decoupled.
+
+## Technical ADR Set
+
+- ADR-0005: Persistence strategy.
+- ADR-0006: Authentication and authorization.
+- ADR-0007: NAS integration.
+- ADR-0008: PostGIS integration.
+- ADR-0009: GeoServer integration.
+- ADR-0010: Google Workspace transition integration.
+- ADR-0011: Deployment strategy.
+- ADR-0012: CI/CD strategy.

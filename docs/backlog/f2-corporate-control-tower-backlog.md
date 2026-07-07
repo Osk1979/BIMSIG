@@ -21,7 +21,7 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | F2-002 | Register REV11 baseline and traceability | Done | ADR-0001 | Traceability document maps REV11 mandates to REV12 artifacts. |
 | F2-003 | Add API scaffold and base tests | Done | ADR-0002, ADR-0003 | Health, project registration, and provisioning contracts pass tests. |
 | F2-004 | Add daily USB backup procedure | Done | ADR-0004 | Script creates ZIP and checksum. |
-| F2-005 | Add CI pipeline | In Progress | ADR-0002 | GitHub Actions runs lint and tests on push and PR. |
+| F2-005 | Add CI pipeline | Done | ADR-0002, ADR-0012 | GitHub Actions runs lint and tests on push and PR. |
 
 ## Milestone F2.1: Durable Portfolio Registry
 
@@ -55,16 +55,17 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| F2-401 | Define NAS adapter ADR | Planned | ADR-0001, ADR-0005 | Logical path and metadata contract accepted. |
-| F2-402 | Define GeoServer adapter ADR | Planned | ADR-0001, ADR-0005 | Workspace/layer publication contract accepted. |
-| F2-403 | Define Google Workspace transition ADR | Planned | ADR-0001 | Sync boundaries and ownership are documented. |
-| F2-404 | Define authentication and authorization ADR | Planned | ADR-0002 | Roles and access model are accepted before protected APIs. |
+| F2-401 | Define NAS adapter ADR | Done | ADR-0001, ADR-0005, ADR-0007 | Logical path and metadata contract accepted. |
+| F2-402 | Define GeoServer adapter ADR | Done | ADR-0001, ADR-0005, ADR-0009 | Workspace/layer publication contract accepted. |
+| F2-403 | Define Google Workspace transition ADR | Done | ADR-0001, ADR-0010 | Sync boundaries and ownership are documented. |
+| F2-404 | Define authentication and authorization ADR | Done | ADR-0002, ADR-0006 | Roles and access model are accepted before protected APIs. |
+| F2-405 | Define PostGIS integration ADR | Done | ADR-0001, ADR-0005, ADR-0008 | Spatial ownership and portfolio metadata scope are documented. |
 
 ## Milestone F2.5: Operational Readiness
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| F2-501 | Add deployment ADR | Planned | ADR-0002 | Runtime target, environment variables, and release process accepted. |
+| F2-501 | Add deployment ADR | Done | ADR-0002, ADR-0011 | Runtime target, environment variables, and release process accepted. |
 | F2-502 | Add database backup and restore procedure | Planned | ADR-0005 | Restore drill is documented and testable. |
 | F2-503 | Add observability baseline | Planned | ADR-0002 | Health, logs, and error reporting are documented. |
 | F2-504 | Add release checklist | Planned | ADR-0001 | Each release includes docs, code, tests, version, GitHub push, and USB backup. |
