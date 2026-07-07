@@ -25,6 +25,8 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `GET /api/v1/companies/{company_id}/projects/{project_id}`: get one company-scoped project.
 - `PATCH /api/v1/companies/{company_id}/projects/{project_id}/governance-status`: change company-scoped project governance status.
 - `POST /api/v1/companies/{company_id}/provisioning/project-stack`: provision a complete BIMSIG Enterprise project stack.
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack/dry-run`: preview project-stack provisioning steps without state changes.
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack/execute`: execute project-stack provisioning through configured adapters.
 - `GET /api/v1/companies/{company_id}/provisioning/websig`: list provisioning requests for one company.
 - `GET /api/v1/portfolio/summary`: portfolio counts by governance status.
 - `GET /api/v1/projects`: list portfolio projects.
@@ -51,6 +53,13 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 ## Configuration
 
 The API reads `CONTROL_TOWER_DATABASE_URL`.
+
+Project Provisioning Engine adapter configuration:
+
+- `CONTROL_TOWER_NAS_ROOT`: enables NAS and document folder creation.
+- `CONTROL_TOWER_POSTGIS_DATABASE_URL`: enables PostGIS schema creation.
+- `CONTROL_TOWER_GEOSERVER_URL`: enables GeoServer workspace creation.
+- `CONTROL_TOWER_GEOSERVER_USER` and `CONTROL_TOWER_GEOSERVER_PASSWORD`: optional GeoServer basic auth.
 
 Default local development value:
 

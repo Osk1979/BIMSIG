@@ -127,6 +127,33 @@ def test_enterprise_project_stack_provisioning_contract(tmp_path) -> None:
     }
 
 
+def test_enterprise_project_stack_dry_run_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    dry_run = client.post(
+        "/api/v1/companies/CRTG/provisioning/project-stack/dry-run",
+        json={
+            "company": {
+                "company_id": "CRTG",
+                "legal_name": "CRTG S.A.C.",
+                "display_name": "CRTG",
+            },
+            "project": {
+                "project_id": "PSZ-2026",
+                "company_id": "CRTG",
+                "name": "Proyecto Suiza",
+            },
+            "catalogs": ["disciplinas"],
+        },
+    )
+
+    assert dry_run.status_code == 200
+    assert dry_run.json()["operation"] == "project_stack"
+    assert {step["status"] for step in dry_run.json()["steps"]} == {"planned"}
+    assert client.get("/api/v1/companies/CRTG").status_code == 404
+    assert client.get("/api/v1/provisioning/websig").json() == []
+
+
 def test_governance_status_and_audit_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(

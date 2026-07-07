@@ -1382,6 +1382,106 @@
         "summary": "Provision Project Stack"
       }
     },
+    "/api/v1/companies/{company_id}/provisioning/project-stack/dry-run": {
+      "post": {
+        "description": "Return a project-stack provisioning plan without side effects.",
+        "operationId": "dry_run_project_stack_api_v1_companies__company_id__provisioning_project_stack_dry_run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectProvisioningSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisioningRequest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dry Run Project Stack"
+      }
+    },
+    "/api/v1/companies/{company_id}/provisioning/project-stack/execute": {
+      "post": {
+        "description": "Execute project-stack provisioning through configured adapters.",
+        "operationId": "execute_project_stack_api_v1_companies__company_id__provisioning_project_stack_execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectProvisioningSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisioningRequest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Execute Project Stack"
+      }
+    },
     "/api/v1/companies/{company_id}/provisioning/websig": {
       "get": {
         "description": "List provisioning requests for one company.",

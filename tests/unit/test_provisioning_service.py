@@ -10,6 +10,11 @@ from control_tower.application.enterprise_service import CompanyService, UserSer
 from control_tower.domain.enterprise import Company, CompanyMembership, User
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningOperation, ProvisioningResourceType, ProvisioningStatus
+from control_tower.infrastructure.adapters.provisioning import (
+    DocumentStructureProvisioningAdapter,
+    NasProvisioningAdapter,
+    default_project_stack_adapters,
+)
 from tests.unit.fakes import (
     FakeAuditEventRepository,
     FakeCompanyRepository,
@@ -48,7 +53,14 @@ def test_project_provisioning_engine_creates_enterprise_project_stack() -> None:
     users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies, audit)
     portfolio = PortfolioService(FakePortfolioProjectRepository(), audit)
     provisioning_repository = FakeProvisioningRequestRepository()
-    engine = ProjectProvisioningEngine(companies, users, portfolio, provisioning_repository, audit)
+    engine = ProjectProvisioningEngine(
+        companies,
+        users,
+        portfolio,
+        provisioning_repository,
+        adapters=default_project_stack_adapters(),
+        audit_repository=audit,
+    )
 
     request = engine.provision_project_stack(
         ProjectProvisioningSpec(
@@ -87,3 +99,51 @@ def test_project_provisioning_engine_creates_enterprise_project_stack() -> None:
         ProvisioningResourceType.CATALOG,
     }
     assert "provisioning.project_stack_provisioned" in {event.action for event in audit.events}
+
+
+def test_project_provisioning_engine_dry_run_has_no_side_effects() -> None:
+    companies = CompanyService(FakeCompanyRepository())
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies)
+    portfolio = PortfolioService(FakePortfolioProjectRepository())
+    engine = ProjectProvisioningEngine(companies, users, portfolio, FakeProvisioningRequestRepository())
+
+    request = engine.dry_run_project_stack(
+        ProjectProvisioningSpec(
+            company=Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"),
+            project=PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"),
+        )
+    )
+
+    assert request.operation == ProvisioningOperation.PROJECT_STACK
+    assert request.status == ProvisioningStatus.REQUESTED
+    assert {step.status for step in request.steps} == {"planned"}
+    assert companies.exists("CRTG") is False
+    assert portfolio.get_project("PSZ-2026") is None
+
+
+def test_project_provisioning_engine_executes_filesystem_adapters(tmp_path) -> None:
+    companies = CompanyService(FakeCompanyRepository())
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies)
+    portfolio = PortfolioService(FakePortfolioProjectRepository())
+    engine = ProjectProvisioningEngine(
+        companies,
+        users,
+        portfolio,
+        FakeProvisioningRequestRepository(),
+        adapters=[
+            NasProvisioningAdapter(str(tmp_path)),
+            DocumentStructureProvisioningAdapter(str(tmp_path)),
+        ],
+    )
+
+    engine.provision_project_stack(
+        ProjectProvisioningSpec(
+            company=Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"),
+            project=PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"),
+            document_structure=["00_gobierno", "03_gis"],
+        )
+    )
+
+    assert (tmp_path / "CRTG" / "PSZ-2026" / "websig").is_dir()
+    assert (tmp_path / "CRTG" / "PSZ-2026" / "documents" / "00_gobierno").is_dir()
+    assert (tmp_path / "CRTG" / "PSZ-2026" / "documents" / "03_gis").is_dir()

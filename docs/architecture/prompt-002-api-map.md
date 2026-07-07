@@ -83,6 +83,8 @@ Implemented first cut:
 ### Provisioning
 
 - `POST /api/v1/companies/{company_id}/provisioning/project-stack`
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack/dry-run`
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack/execute`
 - `POST /api/v1/companies/{company_id}/provisioning/websig/dry-run`
 - `POST /api/v1/companies/{company_id}/provisioning/websig`
 - `GET /api/v1/companies/{company_id}/provisioning/websig`
@@ -93,6 +95,8 @@ Implemented first cut:
 Implemented first cut:
 
 - `POST /api/v1/companies/{company_id}/provisioning/project-stack`
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack/dry-run`
+- `POST /api/v1/companies/{company_id}/provisioning/project-stack/execute`
 - `GET /api/v1/companies/{company_id}/provisioning/websig`
 
 ### KPIs

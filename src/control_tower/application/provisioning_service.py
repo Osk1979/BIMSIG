@@ -25,10 +25,12 @@ from control_tower.domain.provisioning import (
     ProvisioningResourceType,
     ProvisioningStatus,
     ProvisioningStep,
+    ProvisioningStepStatus,
 )
 
 from .enterprise_service import CompanyService, UserService
 from .portfolio_service import PortfolioService
+from .provisioning_adapters import ProvisioningAdapter
 from .repositories import AuditEventRepository, ProvisioningRequestRepository
 
 
@@ -52,6 +54,17 @@ class ProjectProvisioningSpec(BaseModel):
     )
     websig_slug: str | None = None
     dashboard_id: str | None = None
+
+
+class ProjectProvisioningContext(BaseModel):
+    """Adapter context for one project-stack provisioning execution."""
+
+    company_id: str
+    project_id: str
+    websig_slug: str
+    dashboard_id: str
+    document_structure: list[str]
+    catalogs: list[str]
 
 
 class ProvisioningService:
@@ -129,19 +142,35 @@ class ProjectProvisioningEngine:
         users: UserService,
         portfolio: PortfolioService,
         repository: ProvisioningRequestRepository,
+        adapters: list[ProvisioningAdapter] | None = None,
         audit_repository: AuditEventRepository | None = None,
     ) -> None:
         self._companies = companies
         self._users = users
         self._portfolio = portfolio
         self._repository = repository
+        self._adapters = adapters or []
         self._audit_repository = audit_repository
+
+    def dry_run_project_stack(self, spec: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Build a project-stack provisioning plan without side effects."""
+
+        self._validate_spec(spec)
+        context = self._context(spec)
+        return ProvisioningRequest(
+            request_id=f"PPE-DRYRUN-{uuid4().hex[:8]}",
+            project_id=spec.project.project_id,
+            company_id=spec.company.company_id,
+            status=ProvisioningStatus.REQUESTED,
+            operation=ProvisioningOperation.PROJECT_STACK,
+            steps=self._build_steps(spec, context, dry_run=True),
+        )
 
     def provision_project_stack(self, spec: ProjectProvisioningSpec) -> ProvisioningRequest:
         """Provision the enterprise control-plane records for one project stack."""
 
-        if spec.project.company_id != spec.company.company_id:
-            raise ValueError("Project company_id must match provisioning company_id")
+        self._validate_spec(spec)
+        context = self._context(spec)
 
         company = self._companies.register(spec.company)
         project = self._portfolio.register_for_company(company.company_id, spec.project)
@@ -152,7 +181,7 @@ class ProjectProvisioningEngine:
                 raise ValueError("Membership company_id must match provisioning company_id")
             self._users.add_membership(membership)
 
-        steps = self._build_steps(spec)
+        steps = self._build_steps(spec, context, dry_run=False)
         request = ProvisioningRequest(
             request_id=f"PPE-{uuid4().hex[:12]}",
             project_id=project.project_id,
@@ -174,57 +203,43 @@ class ProjectProvisioningEngine:
         )
         return saved
 
-    def _build_steps(self, spec: ProjectProvisioningSpec) -> list[ProvisioningStep]:
+    def _validate_spec(self, spec: ProjectProvisioningSpec) -> None:
+        if spec.project.company_id != spec.company.company_id:
+            raise ValueError("Project company_id must match provisioning company_id")
+
+    def _context(self, spec: ProjectProvisioningSpec) -> ProjectProvisioningContext:
         company_id = spec.company.company_id
         project_id = spec.project.project_id
-        websig_slug = spec.websig_slug or f"{company_id.lower()}-{project_id.lower()}"
-        dashboard_id = spec.dashboard_id or f"DASH-{company_id}-{project_id}"
+        return ProjectProvisioningContext(
+            company_id=company_id,
+            project_id=project_id,
+            websig_slug=spec.websig_slug or f"{company_id.lower()}-{project_id.lower()}",
+            dashboard_id=spec.dashboard_id or f"DASH-{company_id}-{project_id}",
+            document_structure=spec.document_structure,
+            catalogs=spec.catalogs,
+        )
+
+    def _build_steps(
+        self,
+        spec: ProjectProvisioningSpec,
+        context: ProjectProvisioningContext,
+        dry_run: bool,
+    ) -> list[ProvisioningStep]:
+        company_id = spec.company.company_id
+        project_id = spec.project.project_id
+        status = ProvisioningStepStatus.PLANNED if dry_run else ProvisioningStepStatus.SUCCEEDED
         steps = [
-            self._step("company", ProvisioningResourceType.COMPANY, "Create Empresa", company_id),
-            self._step("project", ProvisioningResourceType.PROJECT, "Create Proyecto", project_id),
-            self._step(
-                "websig",
-                ProvisioningResourceType.WEB_SIG,
-                "Create WEB SIG",
-                f"websig://{company_id}/{websig_slug}",
-            ),
-            self._step(
-                "postgis",
-                ProvisioningResourceType.POSTGIS,
-                "Create Base PostGIS",
-                f"postgis://{company_id}/{project_id}",
-            ),
-            self._step(
-                "nas",
-                ProvisioningResourceType.NAS,
-                "Create Espacio NAS",
-                f"nas://{company_id}/{project_id}/websig/root",
-            ),
-            self._step(
-                "documents",
-                ProvisioningResourceType.DOCUMENT_STRUCTURE,
-                "Create estructura documental",
-                ",".join(spec.document_structure),
-            ),
-            self._step(
-                "geoserver",
-                ProvisioningResourceType.GEOSERVER,
-                "Registrar GeoServer",
-                f"geoserver://workspace/{company_id}_{project_id}",
-            ),
-            self._step(
-                "dashboard",
-                ProvisioningResourceType.DASHBOARD,
-                "Crear Dashboard",
-                f"dashboard://{dashboard_id}",
-            ),
+            self._step("company", ProvisioningResourceType.COMPANY, "Create Empresa", company_id, status),
+            self._step("project", ProvisioningResourceType.PROJECT, "Create Proyecto", project_id, status),
         ]
+        steps.extend(adapter.plan(context) if dry_run else adapter.execute(context) for adapter in self._adapters)
         steps.extend(
             self._step(
                 f"user-{user.user_id}",
                 ProvisioningResourceType.USER,
                 "Crear Usuario",
                 user.user_id,
+                status,
             )
             for user in spec.users
         )
@@ -234,17 +249,9 @@ class ProjectProvisioningEngine:
                 ProvisioningResourceType.ROLE,
                 "Crear Roles",
                 f"{membership.company_id}/{membership.user_id}/{membership.role.value}",
+                status,
             )
             for membership in spec.memberships
-        )
-        steps.extend(
-            self._step(
-                f"catalog-{index}",
-                ProvisioningResourceType.CATALOG,
-                "Crear Catalogos",
-                catalog,
-            )
-            for index, catalog in enumerate(spec.catalogs, start=1)
         )
         return steps
 
@@ -254,11 +261,13 @@ class ProjectProvisioningEngine:
         resource_type: ProvisioningResourceType,
         name: str,
         reference: str,
+        status: ProvisioningStepStatus,
     ) -> ProvisioningStep:
         return ProvisioningStep(
             step_id=step_id,
             resource_type=resource_type,
             name=name,
+            status=status,
             reference=reference,
         )
 

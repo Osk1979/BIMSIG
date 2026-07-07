@@ -21,7 +21,7 @@ Existing ADRs already constrain the implementation:
 
 Corporate Control Tower REV12 adds `ProjectProvisioningEngine` inside the existing BIMSIG Enterprise application service layer.
 
-The first implementation provisions the control-plane registry automatically:
+The implementation provisions the control-plane registry automatically:
 
 - Registers or updates the company.
 - Registers the project inside the company.
@@ -30,12 +30,22 @@ The first implementation provisions the control-plane registry automatically:
 - Marks the project as active when the stack registry is provisioned.
 - Stores auditable provisioning steps in the durable provisioning registry.
 
-External infrastructure actions remain adapter-owned. Until real adapters are connected, the engine records logical references and auditable step outcomes rather than pretending to create physical databases, shares, servers, or dashboards.
+External infrastructure actions remain adapter-owned. The engine exposes a dry-run path that returns planned steps without state changes and an execution path that calls configured adapters.
+
+Initial adapters are:
+
+- NAS filesystem adapter, enabled with `CONTROL_TOWER_NAS_ROOT`.
+- Document structure filesystem adapter, enabled with `CONTROL_TOWER_NAS_ROOT`.
+- PostGIS schema adapter, enabled with `CONTROL_TOWER_POSTGIS_DATABASE_URL`.
+- GeoServer workspace adapter, enabled with `CONTROL_TOWER_GEOSERVER_URL` and optional credentials.
+- Reference adapters for WEB SIG, dashboard, and catalogs.
+
+When an external adapter is not configured, the engine still records the approved logical reference instead of attempting uncontrolled side effects.
 
 ## Consequences
 
 The WEB SIG is considered operational from the Tower control-plane perspective when all required registry steps are persisted and audited.
 
-Real adapter execution for PostGIS, NAS, GeoServer, dashboard runtime, and document repository creation must be added behind ports with contract tests before production side effects are enabled.
+Production side effects must be enabled only by explicit environment configuration and must remain covered by adapter contract tests.
 
 No separate application or service is created for Prompt 003.

@@ -38,6 +38,7 @@ from control_tower.infrastructure.database import (
     create_database_engine,
     initialize_database,
 )
+from control_tower.infrastructure.adapters.provisioning import default_project_stack_adapters
 
 
 class ProvisionWebSigPayload(BaseModel):
@@ -86,11 +87,19 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     )
     portfolio = PortfolioService(portfolio_repository, audit_repository)
     provisioning = ProvisioningService(portfolio, provisioning_repository, audit_repository)
+    project_stack_adapters = default_project_stack_adapters(
+        nas_root=os.getenv("CONTROL_TOWER_NAS_ROOT"),
+        postgis_database_url=os.getenv("CONTROL_TOWER_POSTGIS_DATABASE_URL"),
+        geoserver_url=os.getenv("CONTROL_TOWER_GEOSERVER_URL"),
+        geoserver_user=os.getenv("CONTROL_TOWER_GEOSERVER_USER"),
+        geoserver_password=os.getenv("CONTROL_TOWER_GEOSERVER_PASSWORD"),
+    )
     provisioning_engine = ProjectProvisioningEngine(
         companies,
         users,
         portfolio,
         provisioning_repository,
+        project_stack_adapters,
         audit_repository,
     )
 
@@ -351,6 +360,34 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             return provisioning_engine.provision_project_stack(payload)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/provisioning/project-stack/dry-run",
+        response_model=ProvisioningRequest,
+        status_code=status.HTTP_200_OK,
+    )
+    def dry_run_project_stack(company_id: str, payload: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Return a project-stack provisioning plan without side effects."""
+
+        if payload.company.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Provisioning company_id must match path company_id",
+            )
+        try:
+            return provisioning_engine.dry_run_project_stack(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/provisioning/project-stack/execute",
+        response_model=ProvisioningRequest,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def execute_project_stack(company_id: str, payload: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Execute project-stack provisioning through configured adapters."""
+
+        return provision_project_stack(company_id, payload)
 
     @app.get("/api/v1/provisioning/websig", response_model=list[ProvisioningRequest])
     def list_websig_provisioning_requests() -> list[ProvisioningRequest]:
