@@ -2,6 +2,8 @@
 
 The initial API is implemented with FastAPI and exposes OpenAPI at runtime.
 
+The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
+
 ## Endpoints
 
 - `GET /health`: service health and REV marker.
@@ -44,4 +46,10 @@ Schema changes are managed through Alembic:
 
 ```bash
 python -m alembic upgrade head
+```
+
+Regenerate the versioned OpenAPI contract:
+
+```bash
+python scripts/export_openapi.py
 ```

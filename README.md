@@ -66,6 +66,12 @@ Initial API groups:
 - WEB SIG provisioning: `/api/v1/provisioning/websig`
 - Audit: `/api/v1/audit/events`
 
+Regenerate the versioned OpenAPI contract:
+
+```bash
+python scripts/export_openapi.py
+```
+
 All implementation work must reference the relevant ADR and keep modules decoupled.
 
 ## Technical ADR Set

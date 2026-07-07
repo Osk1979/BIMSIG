@@ -1,0 +1,599 @@
+{
+  "components": {
+    "schemas": {
+      "AuditEvent": {
+        "description": "State-changing action recorded by Corporate Control Tower.",
+        "properties": {
+          "action": {
+            "examples": [
+              "project.registered"
+            ],
+            "minLength": 3,
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "examples": [
+              "system"
+            ],
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "entity_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 1,
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "examples": [
+              "project"
+            ],
+            "minLength": 3,
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          }
+        },
+        "required": [
+          "actor",
+          "action",
+          "entity_type",
+          "entity_id"
+        ],
+        "title": "AuditEvent",
+        "type": "object"
+      },
+      "GovernanceStatusPayload": {
+        "description": "API payload to change project governance status.",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "GovernanceStatusPayload",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "PortfolioProject": {
+        "description": "Project registered at Corporate Control Tower portfolio level.",
+        "properties": {
+          "cui": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "CUI 2661613"
+            ],
+            "title": "Cui"
+          },
+          "name": {
+            "examples": [
+              "Proyecto Suiza"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus",
+            "default": "registered"
+          }
+        },
+        "required": [
+          "project_id",
+          "name"
+        ],
+        "title": "PortfolioProject",
+        "type": "object"
+      },
+      "ProjectStatus": {
+        "description": "Governance status for a portfolio project.",
+        "enum": [
+          "registered",
+          "provisioning_requested",
+          "active",
+          "suspended"
+        ],
+        "title": "ProjectStatus",
+        "type": "string"
+      },
+      "ProvisionWebSigPayload": {
+        "description": "API payload to request a dedicated WEB SIG for a project.",
+        "properties": {
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ProvisionWebSigPayload",
+        "type": "object"
+      },
+      "ProvisioningRequest": {
+        "description": "Intent to create a dedicated WEB SIG for a portfolio project.",
+        "properties": {
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "request_id": {
+            "minLength": 3,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProvisioningStatus",
+            "default": "requested"
+          },
+          "target_revision": {
+            "default": "REV12",
+            "title": "Target Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "project_id"
+        ],
+        "title": "ProvisioningRequest",
+        "type": "object"
+      },
+      "ProvisioningStatus": {
+        "description": "Lifecycle status for a WEB SIG provisioning request.",
+        "enum": [
+          "requested",
+          "approved",
+          "provisioned",
+          "failed"
+        ],
+        "title": "ProvisioningStatus",
+        "type": "string"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Portfolio governance and WEB SIG provisioning API for BIMSIG Enterprise.",
+    "title": "Corporate Control Tower REV12",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/audit/events": {
+      "get": {
+        "description": "List recent audit events.",
+        "operationId": "list_audit_events_api_v1_audit_events_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuditEvent"
+                  },
+                  "title": "Response List Audit Events Api V1 Audit Events Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Audit Events"
+      }
+    },
+    "/api/v1/operational/health": {
+      "get": {
+        "description": "Return operational health including database connectivity.",
+        "operationId": "operational_health_api_v1_operational_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Operational Health Api V1 Operational Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Operational Health"
+      }
+    },
+    "/api/v1/portfolio/summary": {
+      "get": {
+        "description": "Return portfolio status counts.",
+        "operationId": "portfolio_summary_api_v1_portfolio_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Portfolio Summary Api V1 Portfolio Summary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Portfolio Summary"
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "description": "List projects registered in the Corporate Control Tower portfolio.",
+        "operationId": "list_projects_api_v1_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortfolioProject"
+                  },
+                  "title": "Response List Projects Api V1 Projects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Projects"
+      },
+      "post": {
+        "description": "Register a project in the Corporate Control Tower portfolio.",
+        "operationId": "register_project_api_v1_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioProject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Project"
+      }
+    },
+    "/api/v1/projects/{project_id}": {
+      "get": {
+        "description": "Return one portfolio project.",
+        "operationId": "get_project_api_v1_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project"
+      }
+    },
+    "/api/v1/projects/{project_id}/governance-status": {
+      "patch": {
+        "description": "Change project governance status.",
+        "operationId": "change_governance_status_api_v1_projects__project_id__governance_status_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GovernanceStatusPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Governance Status"
+      }
+    },
+    "/api/v1/provisioning/websig": {
+      "get": {
+        "description": "List WEB SIG provisioning requests.",
+        "operationId": "list_websig_provisioning_requests_api_v1_provisioning_websig_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProvisioningRequest"
+                  },
+                  "title": "Response List Websig Provisioning Requests Api V1 Provisioning Websig Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Websig Provisioning Requests"
+      },
+      "post": {
+        "description": "Request creation of a dedicated WEB SIG for a registered project.",
+        "operationId": "provision_websig_api_v1_provisioning_websig_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionWebSigPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Provision Websig Api V1 Provisioning Websig Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Provision Websig"
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Return service health metadata.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}

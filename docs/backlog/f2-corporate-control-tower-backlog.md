@@ -40,7 +40,7 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | F2-201 | Expand project API | Done | ADR-0002, ADR-0005 | Register/list/get/status endpoints documented in OpenAPI notes. |
 | F2-202 | Add governance status workflow | Done | ADR-0001, ADR-0005, ADR-0006 | Projects can move through approved governance states. |
 | F2-203 | Add portfolio dashboard read models | Done | ADR-0002, ADR-0005 | API returns counts, status summaries, and provisioning queue. |
-| F2-204 | Export OpenAPI contract to `docs/api/openapi.yaml` | Planned | ADR-0002 | Contract is generated and committed. |
+| F2-204 | Export OpenAPI contract to `docs/api/openapi.yaml` | Done | ADR-0002, ADR-0012 | Contract is generated, committed, and checked by tests. |
 
 ## Milestone F2.3: Project Provisioning Engine
 
