@@ -353,6 +353,14 @@
       "PortfolioProject": {
         "description": "Project registered at Corporate Control Tower portfolio level.",
         "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
           "cui": {
             "anyOf": [
               {
@@ -390,6 +398,7 @@
         },
         "required": [
           "project_id",
+          "company_id",
           "name"
         ],
         "title": "PortfolioProject",
@@ -910,6 +919,250 @@
           }
         },
         "summary": "Add Company Membership"
+      }
+    },
+    "/api/v1/companies/{company_id}/portfolio/summary": {
+      "get": {
+        "description": "Return portfolio status counts for one company.",
+        "operationId": "company_portfolio_summary_api_v1_companies__company_id__portfolio_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "title": "Response Company Portfolio Summary Api V1 Companies  Company Id  Portfolio Summary Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Company Portfolio Summary"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects": {
+      "get": {
+        "description": "List projects registered for one company.",
+        "operationId": "list_company_projects_api_v1_companies__company_id__projects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PortfolioProject"
+                  },
+                  "title": "Response List Company Projects Api V1 Companies  Company Id  Projects Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Company Projects"
+      },
+      "post": {
+        "description": "Register a project inside one company.",
+        "operationId": "register_company_project_api_v1_companies__company_id__projects_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioProject"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Company Project"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}": {
+      "get": {
+        "description": "Return one project inside one company.",
+        "operationId": "get_company_project_api_v1_companies__company_id__projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Company Project"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/governance-status": {
+      "patch": {
+        "description": "Change project governance status inside one company.",
+        "operationId": "change_company_governance_status_api_v1_companies__company_id__projects__project_id__governance_status_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GovernanceStatusPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Company Governance Status"
       }
     },
     "/api/v1/license-plans": {

@@ -6,6 +6,8 @@ ADR references:
 - ADR-0013: Database schema and migrations.
 """
 
+from __future__ import annotations
+
 from typing import Protocol
 
 from control_tower.domain.audit import AuditEvent
@@ -29,8 +31,14 @@ class PortfolioProjectRepository(Protocol):
     def list(self) -> list[PortfolioProject]:
         """Return all persisted portfolio projects."""
 
+    def list_by_company(self, company_id: str) -> list[PortfolioProject]:
+        """Return projects for one company."""
+
     def get(self, project_id: str) -> PortfolioProject | None:
         """Return one persisted project when it exists."""
+
+    def get_by_company(self, company_id: str, project_id: str) -> PortfolioProject | None:
+        """Return one project inside one company when it exists."""
 
     def exists(self, project_id: str) -> bool:
         """Return whether a project exists."""

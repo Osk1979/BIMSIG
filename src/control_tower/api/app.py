@@ -107,6 +107,14 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         return portfolio.summary()
 
+    @app.get("/api/v1/companies/{company_id}/portfolio/summary")
+    def company_portfolio_summary(company_id: str) -> dict[str, int]:
+        """Return portfolio status counts for one company."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return portfolio.summary_for_company(company_id)
+
     @app.get("/api/v1/companies", response_model=list[Company])
     def list_companies() -> list[Company]:
         """List enterprise companies."""
@@ -218,11 +226,30 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         return portfolio.list_projects()
 
+    @app.get("/api/v1/companies/{company_id}/projects", response_model=list[PortfolioProject])
+    def list_company_projects(company_id: str) -> list[PortfolioProject]:
+        """List projects registered for one company."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return portfolio.list_projects_for_company(company_id)
+
     @app.get("/api/v1/projects/{project_id}", response_model=PortfolioProject)
     def get_project(project_id: str) -> PortfolioProject:
         """Return one portfolio project."""
 
         project = portfolio.get_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        return project
+
+    @app.get("/api/v1/companies/{company_id}/projects/{project_id}", response_model=PortfolioProject)
+    def get_company_project(company_id: str, project_id: str) -> PortfolioProject:
+        """Return one project inside one company."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        project = portfolio.get_project_for_company(company_id, project_id)
         if project is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
         return project
@@ -237,6 +264,21 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         return portfolio.register(project)
 
+    @app.post(
+        "/api/v1/companies/{company_id}/projects",
+        response_model=PortfolioProject,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_company_project(company_id: str, project: PortfolioProject) -> PortfolioProject:
+        """Register a project inside one company."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        try:
+            return portfolio.register_for_company(company_id, project)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     @app.patch("/api/v1/projects/{project_id}/governance-status", response_model=PortfolioProject)
     def change_governance_status(
         project_id: str,
@@ -246,6 +288,24 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         try:
             return portfolio.change_status(project_id, payload.status)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.patch(
+        "/api/v1/companies/{company_id}/projects/{project_id}/governance-status",
+        response_model=PortfolioProject,
+    )
+    def change_company_governance_status(
+        company_id: str,
+        project_id: str,
+        payload: GovernanceStatusPayload,
+    ) -> PortfolioProject:
+        """Change project governance status inside one company."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        try:
+            return portfolio.change_status_for_company(company_id, project_id, payload.status)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

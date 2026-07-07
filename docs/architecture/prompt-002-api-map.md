@@ -66,6 +66,14 @@ Implemented first cut:
 - `GET /api/v1/companies/{company_id}/projects/{project_id}`
 - `PATCH /api/v1/companies/{company_id}/projects/{project_id}/governance-status`
 
+Implemented first cut:
+
+- `GET /api/v1/companies/{company_id}/portfolio/summary`
+- `GET /api/v1/companies/{company_id}/projects`
+- `POST /api/v1/companies/{company_id}/projects`
+- `GET /api/v1/companies/{company_id}/projects/{project_id}`
+- `PATCH /api/v1/companies/{company_id}/projects/{project_id}/governance-status`
+
 ### WEB SIG Registry
 
 - `GET /api/v1/companies/{company_id}/websig-instances`

@@ -31,10 +31,19 @@ def test_operational_health_contract() -> None:
 
 def test_project_registration_and_websig_provisioning_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
 
     created = client.post(
-        "/api/v1/projects",
-        json={"project_id": "PSZ-2026", "name": "Proyecto Suiza", "cui": "CUI 2661613"},
+        "/api/v1/companies/CRTG/projects",
+        json={
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "name": "Proyecto Suiza",
+            "cui": "CUI 2661613",
+        },
     )
     provisioned = client.post("/api/v1/provisioning/websig", json={"project_id": "PSZ-2026"})
 
@@ -45,22 +54,30 @@ def test_project_registration_and_websig_provisioning_contract(tmp_path) -> None
     assert provisioned.json()["target_revision"] == "REV12"
 
     listed_requests = client.get("/api/v1/provisioning/websig")
-    project = client.get("/api/v1/projects/PSZ-2026")
-    summary = client.get("/api/v1/portfolio/summary")
+    project = client.get("/api/v1/companies/CRTG/projects/PSZ-2026")
+    summary = client.get("/api/v1/companies/CRTG/portfolio/summary")
 
     assert listed_requests.status_code == 200
     assert len(listed_requests.json()) == 1
     assert project.json()["status"] == "provisioning_requested"
+    assert project.json()["company_id"] == "CRTG"
     assert summary.json()["total_projects"] == 1
     assert summary.json()["provisioning_requested"] == 1
 
 
 def test_governance_status_and_audit_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
-    client.post("/api/v1/projects", json={"project_id": "PSZ-2026", "name": "Proyecto Suiza"})
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+    )
 
     updated = client.patch(
-        "/api/v1/projects/PSZ-2026/governance-status",
+        "/api/v1/companies/CRTG/projects/PSZ-2026/governance-status",
         json={"status": "active"},
     )
     audit = client.get("/api/v1/audit/events")
@@ -151,16 +168,26 @@ def test_project_registration_persists_across_app_instances(tmp_path) -> None:
     first_client = TestClient(create_app(database_url=database_url))
 
     first_client.post(
-        "/api/v1/projects",
-        json={"project_id": "PSZ-2026", "name": "Proyecto Suiza", "cui": "CUI 2661613"},
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    first_client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "name": "Proyecto Suiza",
+            "cui": "CUI 2661613",
+        },
     )
     second_client = TestClient(create_app(database_url=database_url))
-    listed = second_client.get("/api/v1/projects")
+    listed = second_client.get("/api/v1/companies/CRTG/projects")
 
     assert listed.status_code == 200
     assert listed.json() == [
         {
             "project_id": "PSZ-2026",
+            "company_id": "CRTG",
             "name": "Proyecto Suiza",
             "cui": "CUI 2661613",
             "status": "registered",

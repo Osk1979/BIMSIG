@@ -5,6 +5,8 @@ ADR references:
 - ADR-0013: Database schema and migrations.
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
@@ -250,6 +252,7 @@ class PortfolioProjectRecord(Base):
     __tablename__ = "portfolio_projects"
 
     project_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     cui: Mapped[str | None] = mapped_column(String(120), nullable=True)
     status: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -263,6 +266,7 @@ class PortfolioProjectRecord(Base):
         now = datetime.now(UTC)
         return cls(
             project_id=project.project_id,
+            company_id=project.company_id,
             name=project.name,
             cui=project.cui,
             status=project.status.value,
@@ -274,6 +278,7 @@ class PortfolioProjectRecord(Base):
         """Apply domain values to an existing database record."""
 
         self.name = project.name
+        self.company_id = project.company_id
         self.cui = project.cui
         self.status = project.status.value
         self.updated_at = datetime.now(UTC)
@@ -283,6 +288,7 @@ class PortfolioProjectRecord(Base):
 
         return PortfolioProject(
             project_id=self.project_id,
+            company_id=self.company_id,
             name=self.name,
             cui=self.cui,
             status=ProjectStatus(self.status),
@@ -443,12 +449,32 @@ class SqlAlchemyPortfolioProjectRepository:
             records = db.scalars(select(PortfolioProjectRecord).order_by(PortfolioProjectRecord.project_id))
             return [record.to_domain() for record in records]
 
+    def list_by_company(self, company_id: str) -> list[PortfolioProject]:
+        """Return projects for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(PortfolioProjectRecord)
+                .where(PortfolioProjectRecord.company_id == company_id)
+                .order_by(PortfolioProjectRecord.project_id)
+            )
+            return [record.to_domain() for record in records]
+
     def get(self, project_id: str) -> PortfolioProject | None:
         """Return one persisted project when it exists."""
 
         with self._sessions.session() as db:
             record = db.get(PortfolioProjectRecord, project_id)
             return record.to_domain() if record is not None else None
+
+    def get_by_company(self, company_id: str, project_id: str) -> PortfolioProject | None:
+        """Return one project inside one company when it exists."""
+
+        with self._sessions.session() as db:
+            record = db.get(PortfolioProjectRecord, project_id)
+            if record is None or record.company_id != company_id:
+                return None
+            return record.to_domain()
 
     def exists(self, project_id: str) -> bool:
         """Return whether a project exists."""

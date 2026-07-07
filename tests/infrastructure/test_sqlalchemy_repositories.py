@@ -16,11 +16,12 @@ def test_sqlalchemy_project_repository_persists_records(tmp_path) -> None:
     sessions = SqlAlchemySessionProvider(engine)
     repository = SqlAlchemyPortfolioProjectRepository(sessions)
 
-    repository.save(PortfolioProject(project_id="PSZ-2026", name="Proyecto Suiza"))
+    repository.save(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
     reloaded_repository = SqlAlchemyPortfolioProjectRepository(SqlAlchemySessionProvider(engine))
 
     assert reloaded_repository.exists("PSZ-2026")
     assert reloaded_repository.list()[0].name == "Proyecto Suiza"
+    assert reloaded_repository.list_by_company("CRTG")[0].project_id == "PSZ-2026"
 
 
 def test_sqlalchemy_provisioning_repository_persists_requests(tmp_path) -> None:
@@ -30,7 +31,7 @@ def test_sqlalchemy_provisioning_repository_persists_requests(tmp_path) -> None:
     sessions = SqlAlchemySessionProvider(engine)
     projects = SqlAlchemyPortfolioProjectRepository(sessions)
     requests = SqlAlchemyProvisioningRequestRepository(sessions)
-    projects.save(PortfolioProject(project_id="PSZ-2026", name="Proyecto Suiza"))
+    projects.save(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
 
     saved = requests.save(ProvisioningRequest(request_id="PPE-001", project_id="PSZ-2026"))
 

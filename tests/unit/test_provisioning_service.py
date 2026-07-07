@@ -21,7 +21,7 @@ def test_request_websig_requires_registered_project() -> None:
 
 def test_request_websig_for_registered_project() -> None:
     portfolio = PortfolioService(FakePortfolioProjectRepository())
-    portfolio.register(PortfolioProject(project_id="PSZ-2026", name="Proyecto Suiza"))
+    portfolio.register(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
     provisioning = ProvisioningService(portfolio, FakeProvisioningRequestRepository(), FakeAuditEventRepository())
 
     request = provisioning.request_websig("PSZ-2026")

@@ -3,6 +3,7 @@
 ADR references:
 - ADR-0001: REV11 architecture baseline.
 - ADR-0002: Layered modular API scaffold.
+- ADR-0014: Enterprise multitenancy.
 """
 
 from enum import StrEnum
@@ -23,6 +24,7 @@ class PortfolioProject(BaseModel):
     """Project registered at Corporate Control Tower portfolio level."""
 
     project_id: str = Field(min_length=3, examples=["PSZ-2026"])
+    company_id: str = Field(min_length=3, examples=["CRTG"])
     name: str = Field(min_length=3, examples=["Proyecto Suiza"])
     cui: str | None = Field(default=None, examples=["CUI 2661613"])
     status: ProjectStatus = ProjectStatus.REGISTERED

@@ -19,6 +19,11 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `POST /api/v1/license-plans`: create a license plan.
 - `GET /api/v1/companies/{company_id}/licenses`: list company licenses.
 - `POST /api/v1/companies/{company_id}/licenses`: assign a license plan to company.
+- `GET /api/v1/companies/{company_id}/portfolio/summary`: company-scoped portfolio counts.
+- `GET /api/v1/companies/{company_id}/projects`: list company-scoped projects.
+- `POST /api/v1/companies/{company_id}/projects`: register a project inside a company.
+- `GET /api/v1/companies/{company_id}/projects/{project_id}`: get one company-scoped project.
+- `PATCH /api/v1/companies/{company_id}/projects/{project_id}/governance-status`: change company-scoped project governance status.
 - `GET /api/v1/portfolio/summary`: portfolio counts by governance status.
 - `GET /api/v1/projects`: list portfolio projects.
 - `POST /api/v1/projects`: register a project in the portfolio.
@@ -36,6 +41,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0005 defines PostgreSQL/PostGIS as the production persistence direction.
 - ADR-0006 defines actor and authorization requirements for protected operations.
 - ADR-0014 defines enterprise multitenancy.
+- ADR-0015 defines the Tower vs WEB SIG operational boundary.
 - ADR-0016 defines enterprise licensing.
 - ADR-0013 defines the first durable portfolio/provisioning schema.
 

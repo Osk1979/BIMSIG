@@ -9,9 +9,9 @@ Build Corporate Control Tower REV12 as a complete enterprise platform for multip
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
 | P2-101 | Add company domain model | Done | ADR-0014 | Companies can be created, listed, and audited. |
-| P2-102 | Add tenant-scoped project model | Planned | ADR-0014, ADR-0015 | Projects belong to exactly one company. |
+| P2-102 | Add tenant-scoped project model | Done | ADR-0014, ADR-0015 | Projects belong to exactly one company. |
 | P2-103 | Add tenant context middleware/dependency | Planned | ADR-0006, ADR-0014 | API resolves company context before data access. |
-| P2-104 | Add company-scoped migrations | In Progress | ADR-0013, ADR-0014 | Company, membership, and license tables include tenant scope and indexes; project scoping remains pending. |
+| P2-104 | Add company-scoped migrations | Done | ADR-0013, ADR-0014 | Company, membership, license, and project tables include tenant scope and indexes. |
 
 ## Milestone P2.2: Users and Security
 

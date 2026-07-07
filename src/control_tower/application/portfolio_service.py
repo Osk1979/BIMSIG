@@ -4,6 +4,7 @@ ADR references:
 - ADR-0001: REV11 architecture baseline.
 - ADR-0002: Layered modular API scaffold.
 - ADR-0005: Persistence strategy.
+- ADR-0014: Enterprise multitenancy.
 """
 
 from control_tower.domain.audit import AuditEvent
@@ -34,10 +35,22 @@ class PortfolioService:
         )
         return saved
 
+    def register_for_company(self, company_id: str, project: PortfolioProject) -> PortfolioProject:
+        """Register a project inside a company tenant."""
+
+        if project.company_id != company_id:
+            raise ValueError("Project company_id must match tenant company_id")
+        return self.register(project)
+
     def list_projects(self) -> list[PortfolioProject]:
         """Return all registered portfolio projects."""
 
         return self._repository.list()
+
+    def list_projects_for_company(self, company_id: str) -> list[PortfolioProject]:
+        """Return projects for one company."""
+
+        return self._repository.list_by_company(company_id)
 
     def exists(self, project_id: str) -> bool:
         """Return whether a project is registered in the portfolio."""
@@ -48,6 +61,15 @@ class PortfolioService:
         """Return a project by identifier when it exists."""
 
         return self._repository.get(project_id)
+
+    def get_project_for_company(
+        self,
+        company_id: str,
+        project_id: str,
+    ) -> PortfolioProject | None:
+        """Return a project by identifier inside one company."""
+
+        return self._repository.get_by_company(company_id, project_id)
 
     def change_status(self, project_id: str, status: ProjectStatus) -> PortfolioProject:
         """Change the governance status of a registered project."""
@@ -64,10 +86,41 @@ class PortfolioService:
         )
         return saved
 
+    def change_status_for_company(
+        self,
+        company_id: str,
+        project_id: str,
+        status: ProjectStatus,
+    ) -> PortfolioProject:
+        """Change governance status for a project inside one company."""
+
+        project = self._repository.get_by_company(company_id, project_id)
+        if project is None:
+            raise ValueError(f"Project is not registered for company {company_id}: {project_id}")
+        updated = project.model_copy(update={"status": status})
+        saved = self._repository.save(updated)
+        self._audit(
+            action="project.status_changed",
+            entity_id=saved.project_id,
+            detail=f"Project status changed to {saved.status.value}.",
+        )
+        return saved
+
     def summary(self) -> dict[str, int]:
         """Return portfolio counts by governance status."""
 
         projects = self.list_projects()
+        summary = {"total_projects": len(projects)}
+        for project_status in ProjectStatus:
+            summary[project_status.value] = sum(
+                1 for project in projects if project.status == project_status
+            )
+        return summary
+
+    def summary_for_company(self, company_id: str) -> dict[str, int]:
+        """Return portfolio counts by governance status for one company."""
+
+        projects = self.list_projects_for_company(company_id)
         summary = {"total_projects": len(projects)}
         for project_status in ProjectStatus:
             summary[project_status.value] = sum(
