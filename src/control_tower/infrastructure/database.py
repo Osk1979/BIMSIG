@@ -9,10 +9,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, create_engine, select
+from sqlalchemy import DateTime, ForeignKey, Integer, String, create_engine, func, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
+from control_tower.domain.audit import AuditEvent
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningStatus
 
@@ -108,6 +109,46 @@ class ProvisioningRequestRecord(Base):
         )
 
 
+class AuditEventRecord(Base):
+    """Persistent audit event row."""
+
+    __tablename__ = "audit_events"
+
+    event_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    actor: Mapped[str] = mapped_column(String(120), nullable=False)
+    action: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    entity_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    entity_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    detail: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    @classmethod
+    def from_domain(cls, event: AuditEvent) -> "AuditEventRecord":
+        """Create a database record from a domain audit event."""
+
+        return cls(
+            actor=event.actor,
+            action=event.action,
+            entity_type=event.entity_type,
+            entity_id=event.entity_id,
+            detail=event.detail,
+            created_at=event.created_at or datetime.now(UTC),
+        )
+
+    def to_domain(self) -> AuditEvent:
+        """Convert the database record to a domain audit event."""
+
+        return AuditEvent(
+            event_id=self.event_id,
+            actor=self.actor,
+            action=self.action,
+            entity_type=self.entity_type,
+            entity_id=self.entity_id,
+            detail=self.detail,
+            created_at=self.created_at,
+        )
+
+
 def create_database_engine(database_url: str) -> Engine:
     """Create a SQLAlchemy engine for the configured database URL."""
 
@@ -123,6 +164,14 @@ def initialize_database(engine: Engine) -> None:
     """
 
     Base.metadata.create_all(engine)
+
+
+def check_database(engine: Engine) -> bool:
+    """Return whether the configured database responds to a simple query."""
+
+    with engine.connect() as connection:
+        connection.execute(text("select 1"))
+    return True
 
 
 class SqlAlchemySessionProvider:
@@ -172,6 +221,13 @@ class SqlAlchemyPortfolioProjectRepository:
             records = db.scalars(select(PortfolioProjectRecord).order_by(PortfolioProjectRecord.project_id))
             return [record.to_domain() for record in records]
 
+    def get(self, project_id: str) -> PortfolioProject | None:
+        """Return one persisted project when it exists."""
+
+        with self._sessions.session() as db:
+            record = db.get(PortfolioProjectRecord, project_id)
+            return record.to_domain() if record is not None else None
+
     def exists(self, project_id: str) -> bool:
         """Return whether a project exists."""
 
@@ -193,3 +249,45 @@ class SqlAlchemyProvisioningRequestRepository:
             db.add(record)
             db.flush()
             return record.to_domain()
+
+    def list(self) -> list[ProvisioningRequest]:
+        """Return all persisted WEB SIG provisioning requests."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(ProvisioningRequestRecord).order_by(ProvisioningRequestRecord.created_at)
+            )
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyAuditEventRepository:
+    """SQLAlchemy implementation of the audit event repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, event: AuditEvent) -> AuditEvent:
+        """Persist an audit event."""
+
+        with self._sessions.session() as db:
+            record = AuditEventRecord.from_domain(event)
+            db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list(self, limit: int = 100) -> list[AuditEvent]:
+        """Return recent audit events."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(AuditEventRecord)
+                .order_by(AuditEventRecord.created_at.desc(), AuditEventRecord.event_id.desc())
+                .limit(limit)
+            )
+            return [record.to_domain() for record in records]
+
+    def count(self) -> int:
+        """Return total audit events."""
+
+        with self._sessions.session() as db:
+            return db.scalar(select(func.count()).select_from(AuditEventRecord)) or 0

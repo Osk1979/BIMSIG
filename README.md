@@ -57,6 +57,15 @@ Apply database migrations:
 python -m alembic upgrade head
 ```
 
+Initial API groups:
+
+- Health: `/health`, `/api/v1/operational/health`
+- Portfolio: `/api/v1/portfolio/summary`
+- Projects: `/api/v1/projects`
+- Governance status: `/api/v1/projects/{project_id}/governance-status`
+- WEB SIG provisioning: `/api/v1/provisioning/websig`
+- Audit: `/api/v1/audit/events`
+
 All implementation work must reference the relevant ADR and keep modules decoupled.
 
 ## Technical ADR Set

@@ -16,6 +16,7 @@ The first schema contains:
 
 - `portfolio_projects`: portfolio-level project registry.
 - `provisioning_requests`: Project Provisioning Engine request registry.
+- `audit_events`: state-changing action log.
 
 Schema changes are managed with Alembic migrations. Infrastructure bootstrapping may still use `metadata.create_all()` only as an explicit dev/test fallback.
 
@@ -43,6 +44,18 @@ Schema changes are managed with Alembic migrations. Infrastructure bootstrapping
 | `created_at` | First persistence timestamp. |
 | `updated_at` | Last persistence timestamp. |
 
+### `audit_events`
+
+| Column | Purpose |
+| --- | --- |
+| `event_id` | Stable audit event primary key. |
+| `actor` | Actor responsible for the operation. |
+| `action` | State-changing action name. |
+| `entity_type` | Entity category affected by the action. |
+| `entity_id` | Entity identifier affected by the action. |
+| `detail` | Optional human-readable detail. |
+| `created_at` | Event timestamp. |
+
 ## Migration Rule
 
 Alembic is the formal migration tool. Production and staging schema changes must be applied through committed Alembic revision files.
@@ -56,7 +69,6 @@ Application services depend on repository ports, not SQLAlchemy. Infrastructure 
 Follow-up work must add:
 
 - PostGIS geometry columns for portfolio spatial metadata.
-- Audit event table.
 - Database backup and restore procedure.
 
 ## References

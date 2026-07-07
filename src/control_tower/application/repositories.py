@@ -8,6 +8,7 @@ ADR references:
 
 from typing import Protocol
 
+from control_tower.domain.audit import AuditEvent
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
 
@@ -21,6 +22,9 @@ class PortfolioProjectRepository(Protocol):
     def list(self) -> list[PortfolioProject]:
         """Return all persisted portfolio projects."""
 
+    def get(self, project_id: str) -> PortfolioProject | None:
+        """Return one persisted project when it exists."""
+
     def exists(self, project_id: str) -> bool:
         """Return whether a project exists."""
 
@@ -30,3 +34,16 @@ class ProvisioningRequestRepository(Protocol):
 
     def save(self, request: ProvisioningRequest) -> ProvisioningRequest:
         """Persist a provisioning request."""
+
+    def list(self) -> list[ProvisioningRequest]:
+        """Return all persisted provisioning requests."""
+
+
+class AuditEventRepository(Protocol):
+    """Persistence port for audit events."""
+
+    def save(self, event: AuditEvent) -> AuditEvent:
+        """Persist an audit event."""
+
+    def list(self, limit: int = 100) -> list[AuditEvent]:
+        """Return recent audit events."""

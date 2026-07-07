@@ -31,15 +31,15 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | F2-102 | Add repository ports for projects and provisioning | Done | ADR-0002, ADR-0005, ADR-0013 | Application services depend on interfaces, not concrete storage. |
 | F2-103 | Implement SQLAlchemy project repository | Done | ADR-0005, ADR-0013 | Projects persist and reload across service restarts. |
 | F2-104 | Implement provisioning request repository | Done | ADR-0003, ADR-0005, ADR-0013 | WEB SIG requests persist with status history. |
-| F2-105 | Add audit event persistence | Planned | ADR-0005 | Project and provisioning changes create queryable audit events. |
+| F2-105 | Add audit event persistence | Done | ADR-0005, ADR-0006, ADR-0013 | Project and provisioning changes create queryable audit events. |
 
 ## Milestone F2.2: Governance API
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| F2-201 | Expand project API | Planned | ADR-0002, ADR-0005 | CRUD/list/status endpoints documented in OpenAPI. |
-| F2-202 | Add governance status workflow | Planned | ADR-0001, ADR-0005 | Projects can move through approved governance states. |
-| F2-203 | Add portfolio dashboard read models | Planned | ADR-0002, ADR-0005 | API returns counts, status summaries, and provisioning queue. |
+| F2-201 | Expand project API | Done | ADR-0002, ADR-0005 | Register/list/get/status endpoints documented in OpenAPI notes. |
+| F2-202 | Add governance status workflow | Done | ADR-0001, ADR-0005, ADR-0006 | Projects can move through approved governance states. |
+| F2-203 | Add portfolio dashboard read models | Done | ADR-0002, ADR-0005 | API returns counts, status summaries, and provisioning queue. |
 | F2-204 | Export OpenAPI contract to `docs/api/openapi.yaml` | Planned | ADR-0002 | Contract is generated and committed. |
 
 ## Milestone F2.3: Project Provisioning Engine
@@ -49,7 +49,7 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | F2-301 | Define provisioning adapter contracts | Planned | ADR-0003 | Interfaces for GitHub, NAS, database, and GeoServer provisioning exist. |
 | F2-302 | Create WEB SIG registry model | Planned | ADR-0001, ADR-0003, ADR-0005 | Tower can register WEB SIG instances per project. |
 | F2-303 | Add dry-run provisioning plan endpoint | Planned | ADR-0003 | API returns planned actions without side effects. |
-| F2-304 | Add provisioning execution audit trail | Planned | ADR-0003, ADR-0005 | Every provisioning step is recorded and queryable. |
+| F2-304 | Add provisioning request audit trail | Done | ADR-0003, ADR-0005, ADR-0006 | Provisioning requests are recorded and queryable through audit events. |
 
 ## Milestone F2.4: Enterprise Integrations
 
@@ -67,5 +67,5 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | --- | --- | --- | --- | --- |
 | F2-501 | Add deployment ADR | Done | ADR-0002, ADR-0011 | Runtime target, environment variables, and release process accepted. |
 | F2-502 | Add database backup and restore procedure | Planned | ADR-0005 | Restore drill is documented and testable. |
-| F2-503 | Add observability baseline | Planned | ADR-0002 | Health, logs, and error reporting are documented. |
+| F2-503 | Add observability baseline | In Progress | ADR-0002 | Health and database checks are exposed; logs and error reporting remain pending. |
 | F2-504 | Add release checklist | Planned | ADR-0001 | Each release includes docs, code, tests, version, GitHub push, and USB backup. |

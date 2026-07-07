@@ -14,6 +14,7 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     inspector = inspect(engine)
     assert "portfolio_projects" in inspector.get_table_names()
     assert "provisioning_requests" in inspector.get_table_names()
+    assert "audit_events" in inspector.get_table_names()
     assert "ix_provisioning_requests_project_id" in {
         index["name"] for index in inspector.get_indexes("provisioning_requests")
     }
