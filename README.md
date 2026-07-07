@@ -45,6 +45,12 @@ pytest
 uvicorn control_tower.api.app:create_app --factory --reload
 ```
 
+Set `CONTROL_TOWER_DATABASE_URL` to use PostgreSQL/PostGIS in an integrated environment:
+
+```bash
+CONTROL_TOWER_DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/bimsig
+```
+
 All implementation work must reference the relevant ADR and keep modules decoupled.
 
 ## Technical ADR Set
@@ -57,3 +63,4 @@ All implementation work must reference the relevant ADR and keep modules decoupl
 - ADR-0010: Google Workspace transition integration.
 - ADR-0011: Deployment strategy.
 - ADR-0012: CI/CD strategy.
+- ADR-0013: Database schema and migrations.

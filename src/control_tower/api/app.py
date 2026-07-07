@@ -4,7 +4,10 @@ ADR references:
 - ADR-0001: REV11 architecture baseline.
 - ADR-0002: Layered modular API scaffold.
 - ADR-0003: Project provisioning as a port.
+- ADR-0005: Persistence strategy.
 """
+
+import os
 
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
@@ -13,6 +16,13 @@ from control_tower import __version__
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import ProvisioningService
 from control_tower.domain.portfolio import PortfolioProject
+from control_tower.infrastructure.database import (
+    SqlAlchemyPortfolioProjectRepository,
+    SqlAlchemyProvisioningRequestRepository,
+    SqlAlchemySessionProvider,
+    create_database_engine,
+    initialize_database,
+)
 
 
 class ProvisionWebSigPayload(BaseModel):
@@ -21,7 +31,7 @@ class ProvisionWebSigPayload(BaseModel):
     project_id: str = Field(min_length=3)
 
 
-def create_app() -> FastAPI:
+def create_app(database_url: str | None = None) -> FastAPI:
     """Create the Corporate Control Tower API application."""
 
     app = FastAPI(
@@ -29,8 +39,17 @@ def create_app() -> FastAPI:
         version=__version__,
         description="Portfolio governance and WEB SIG provisioning API for BIMSIG Enterprise.",
     )
-    portfolio = PortfolioService()
-    provisioning = ProvisioningService(portfolio)
+    resolved_database_url = database_url or os.getenv(
+        "CONTROL_TOWER_DATABASE_URL",
+        "sqlite:///./control_tower.db",
+    )
+    engine = create_database_engine(resolved_database_url)
+    initialize_database(engine)
+    sessions = SqlAlchemySessionProvider(engine)
+    portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
+    provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)
+    portfolio = PortfolioService(portfolio_repository)
+    provisioning = ProvisioningService(portfolio, provisioning_repository)
 
     @app.get("/health")
     def health() -> dict[str, str]:

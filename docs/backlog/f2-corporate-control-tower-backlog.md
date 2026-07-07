@@ -27,10 +27,10 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| F2-101 | Define database schema ADR and migrations | Planned | ADR-0005 | Schema ADR accepted; migration workflow documented. |
-| F2-102 | Add repository ports for projects and provisioning | Planned | ADR-0002, ADR-0005 | Application services depend on interfaces, not concrete storage. |
-| F2-103 | Implement PostgreSQL project repository | Planned | ADR-0005 | Projects persist and reload across service restarts. |
-| F2-104 | Implement provisioning request repository | Planned | ADR-0003, ADR-0005 | WEB SIG requests persist with status history. |
+| F2-101 | Define database schema ADR and migrations | Done | ADR-0005, ADR-0013 | Schema ADR accepted; migration workflow documented. |
+| F2-102 | Add repository ports for projects and provisioning | Done | ADR-0002, ADR-0005, ADR-0013 | Application services depend on interfaces, not concrete storage. |
+| F2-103 | Implement SQLAlchemy project repository | Done | ADR-0005, ADR-0013 | Projects persist and reload across service restarts. |
+| F2-104 | Implement provisioning request repository | Done | ADR-0003, ADR-0005, ADR-0013 | WEB SIG requests persist with status history. |
 | F2-105 | Add audit event persistence | Planned | ADR-0005 | Project and provisioning changes create queryable audit events. |
 
 ## Milestone F2.2: Governance API

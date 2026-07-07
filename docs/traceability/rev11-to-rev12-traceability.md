@@ -12,3 +12,4 @@
 | Documento C | Register architecture decisions before code | `docs/adr/ADR-0001..0003` |
 | Documento C | Register architecture decisions before code | `docs/adr/ADR-0005-persistence-strategy.md` |
 | Documento C | Register architecture decisions before code | `docs/adr/ADR-0006..0012` |
+| Documento C | Register architecture decisions before code | `docs/adr/ADR-0013-database-schema-and-migrations.md` |
