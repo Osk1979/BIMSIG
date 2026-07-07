@@ -26,6 +26,7 @@ The implementation is constrained by the approved REV11 documents:
 docs/adr/                  Architecture Decision Records
 docs/api/                  API contracts and OpenAPI documentation
 docs/architecture/         Architecture notes derived from REV11
+docs/backlog/              Phase backlog and delivery tracking
 docs/traceability/         Traceability from REV11 documents to code
 src/control_tower/api/     HTTP API boundary
 src/control_tower/application/ Application services and use cases
