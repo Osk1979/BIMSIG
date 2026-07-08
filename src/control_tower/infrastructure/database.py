@@ -56,7 +56,15 @@ from control_tower.domain.nas import (
     InformationSnapshot,
     InformationVersion,
 )
-from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
+from control_tower.domain.portfolio import (
+    CorporateCustomer,
+    CorporateProgram,
+    CustomerStatus,
+    PortfolioProject,
+    ProgramStatus,
+    ProjectLifecycleStage,
+    ProjectStatus,
+)
 from control_tower.domain.provisioning import ProvisioningOperation, ProvisioningRequest, ProvisioningStatus, ProvisioningStep
 
 
@@ -104,6 +112,76 @@ class CompanyRecord(Base):
             display_name=self.display_name,
             tax_id=self.tax_id,
             status=CompanyStatus(self.status),
+        )
+
+
+class CorporateCustomerRecord(Base):
+    """Persistent corporate portfolio customer row."""
+
+    __tablename__ = "portfolio_customers"
+
+    customer_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    legal_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    tax_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, customer: CorporateCustomer) -> "CorporateCustomerRecord":
+        return cls(**customer.model_dump(mode="json"))
+
+    def update_from_domain(self, customer: CorporateCustomer) -> None:
+        self.company_id = customer.company_id
+        self.legal_name = customer.legal_name
+        self.display_name = customer.display_name
+        self.tax_id = customer.tax_id
+        self.status = customer.status.value
+
+    def to_domain(self) -> CorporateCustomer:
+        return CorporateCustomer(
+            customer_id=self.customer_id,
+            company_id=self.company_id,
+            legal_name=self.legal_name,
+            display_name=self.display_name,
+            tax_id=self.tax_id,
+            status=CustomerStatus(self.status),
+        )
+
+
+class CorporateProgramRecord(Base):
+    """Persistent corporate portfolio program row."""
+
+    __tablename__ = "portfolio_programs"
+
+    program_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    customer_id: Mapped[str | None] = mapped_column(
+        String(80),
+        ForeignKey("portfolio_customers.customer_id"),
+        nullable=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, program: CorporateProgram) -> "CorporateProgramRecord":
+        return cls(**program.model_dump(mode="json"))
+
+    def update_from_domain(self, program: CorporateProgram) -> None:
+        self.company_id = program.company_id
+        self.customer_id = program.customer_id
+        self.name = program.name
+        self.status = program.status.value
+
+    def to_domain(self) -> CorporateProgram:
+        return CorporateProgram(
+            program_id=self.program_id,
+            company_id=self.company_id,
+            customer_id=self.customer_id,
+            name=self.name,
+            status=ProgramStatus(self.status),
         )
 
 
@@ -466,7 +544,25 @@ class PortfolioProjectRecord(Base):
     company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     cui: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    customer_id: Mapped[str | None] = mapped_column(
+        String(80),
+        ForeignKey("portfolio_customers.customer_id"),
+        nullable=True,
+        index=True,
+    )
+    program_id: Mapped[str | None] = mapped_column(
+        String(80),
+        ForeignKey("portfolio_programs.program_id"),
+        nullable=True,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String(80), nullable=False)
+    lifecycle_stage: Mapped[str] = mapped_column(String(80), nullable=False)
+    websig_instance_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    websig_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    nas_root_uri: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    gis_binding_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    google_drive_folder_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -480,7 +576,15 @@ class PortfolioProjectRecord(Base):
             company_id=project.company_id,
             name=project.name,
             cui=project.cui,
+            customer_id=project.customer_id,
+            program_id=project.program_id,
             status=project.status.value,
+            lifecycle_stage=project.lifecycle_stage.value,
+            websig_instance_id=project.websig_instance_id,
+            websig_url=project.websig_url,
+            nas_root_uri=project.nas_root_uri,
+            gis_binding_id=project.gis_binding_id,
+            google_drive_folder_id=project.google_drive_folder_id,
             created_at=now,
             updated_at=now,
         )
@@ -491,7 +595,15 @@ class PortfolioProjectRecord(Base):
         self.name = project.name
         self.company_id = project.company_id
         self.cui = project.cui
+        self.customer_id = project.customer_id
+        self.program_id = project.program_id
         self.status = project.status.value
+        self.lifecycle_stage = project.lifecycle_stage.value
+        self.websig_instance_id = project.websig_instance_id
+        self.websig_url = project.websig_url
+        self.nas_root_uri = project.nas_root_uri
+        self.gis_binding_id = project.gis_binding_id
+        self.google_drive_folder_id = project.google_drive_folder_id
         self.updated_at = datetime.now(UTC)
 
     def to_domain(self) -> PortfolioProject:
@@ -502,7 +614,15 @@ class PortfolioProjectRecord(Base):
             company_id=self.company_id,
             name=self.name,
             cui=self.cui,
+            customer_id=self.customer_id,
+            program_id=self.program_id,
             status=ProjectStatus(self.status),
+            lifecycle_stage=ProjectLifecycleStage(self.lifecycle_stage),
+            websig_instance_id=self.websig_instance_id,
+            websig_url=self.websig_url,
+            nas_root_uri=self.nas_root_uri,
+            gis_binding_id=self.gis_binding_id,
+            google_drive_folder_id=self.google_drive_folder_id,
         )
 
 
@@ -1026,6 +1146,82 @@ class SqlAlchemySessionProvider:
             raise
         finally:
             db.close()
+
+
+class SqlAlchemyCorporateCustomerRepository:
+    """SQLAlchemy implementation of the portfolio customer repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, customer: CorporateCustomer) -> CorporateCustomer:
+        """Persist a corporate customer."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateCustomerRecord, customer.customer_id)
+            if record is None:
+                record = CorporateCustomerRecord.from_domain(customer)
+                db.add(record)
+            else:
+                record.update_from_domain(customer)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_company(self, company_id: str) -> list[CorporateCustomer]:
+        """Return customers for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(CorporateCustomerRecord)
+                .where(CorporateCustomerRecord.company_id == company_id)
+                .order_by(CorporateCustomerRecord.customer_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def get(self, customer_id: str) -> CorporateCustomer | None:
+        """Return one customer when it exists."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateCustomerRecord, customer_id)
+            return record.to_domain() if record is not None else None
+
+
+class SqlAlchemyCorporateProgramRepository:
+    """SQLAlchemy implementation of the portfolio program repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, program: CorporateProgram) -> CorporateProgram:
+        """Persist a corporate program."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateProgramRecord, program.program_id)
+            if record is None:
+                record = CorporateProgramRecord.from_domain(program)
+                db.add(record)
+            else:
+                record.update_from_domain(program)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_company(self, company_id: str) -> list[CorporateProgram]:
+        """Return programs for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(CorporateProgramRecord)
+                .where(CorporateProgramRecord.company_id == company_id)
+                .order_by(CorporateProgramRecord.program_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def get(self, program_id: str) -> CorporateProgram | None:
+        """Return one program when it exists."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateProgramRecord, program_id)
+            return record.to_domain() if record is not None else None
 
 
 class SqlAlchemyPortfolioProjectRepository:

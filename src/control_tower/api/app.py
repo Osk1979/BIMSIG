@@ -26,7 +26,7 @@ from control_tower.application.enterprise_service import (
 )
 from control_tower.application.gis_service import CorporateGisService
 from control_tower.application.nas_service import NasInformationCenterService
-from control_tower.application.portfolio_service import PortfolioService
+from control_tower.application.portfolio_service import CorporatePortfolioDomainService, PortfolioService
 from control_tower.application.provisioning_service import (
     ProjectProvisioningEngine,
     ProjectProvisioningSpec,
@@ -65,6 +65,12 @@ from control_tower.domain.nas import (
     InformationVersion,
 )
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
+from control_tower.domain.portfolio import (
+    CorporateCustomer,
+    CorporatePortfolioProjectView,
+    CorporateProgram,
+    PortfolioLifecycleTransition,
+)
 from control_tower.domain.provisioning import ProvisioningRequest
 from control_tower.infrastructure.database import (
     SqlAlchemyAuditEventRepository,
@@ -72,6 +78,8 @@ from control_tower.infrastructure.database import (
     SqlAlchemyCompanyLicenseRepository,
     SqlAlchemyCompanyMembershipRepository,
     SqlAlchemyCorporateGisRepository,
+    SqlAlchemyCorporateCustomerRepository,
+    SqlAlchemyCorporateProgramRepository,
     SqlAlchemyCompanyRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyLicensePlanRepository,
@@ -186,6 +194,8 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     company_license_repository = SqlAlchemyCompanyLicenseRepository(sessions)
     information_repository = SqlAlchemyInformationAssetRepository(sessions)
     gis_repository = SqlAlchemyCorporateGisRepository(sessions)
+    customer_repository = SqlAlchemyCorporateCustomerRepository(sessions)
+    program_repository = SqlAlchemyCorporateProgramRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
     provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)
     specialty_repository = SqlAlchemySpecialtyRepository(sessions)
@@ -203,6 +213,15 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         audit_repository,
     )
     portfolio = PortfolioService(portfolio_repository, audit_repository)
+    corporate_portfolio = CorporatePortfolioDomainService(
+        customer_repository,
+        program_repository,
+        portfolio,
+        provisioning_repository,
+        information_repository,
+        gis_repository,
+        audit_repository,
+    )
     provisioning = ProvisioningService(portfolio, provisioning_repository, audit_repository)
     project_stack_adapters = default_project_stack_adapters(
         nas_root=os.getenv("CONTROL_TOWER_NAS_ROOT"),
@@ -873,6 +892,62 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
+    @app.get("/api/v1/companies/{company_id}/portfolio/customers", response_model=list[CorporateCustomer])
+    def list_portfolio_customers(company_id: str) -> list[CorporateCustomer]:
+        """List customers governed by one corporate portfolio."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return corporate_portfolio.list_customers(company_id)
+
+    @app.post(
+        "/api/v1/companies/{company_id}/portfolio/customers",
+        response_model=CorporateCustomer,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_portfolio_customer(
+        company_id: str,
+        customer: CorporateCustomer,
+    ) -> CorporateCustomer:
+        """Register a customer for corporate portfolio governance."""
+
+        if customer.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Customer company_id must match path company_id",
+            )
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return corporate_portfolio.register_customer(customer)
+
+    @app.get("/api/v1/companies/{company_id}/portfolio/programs", response_model=list[CorporateProgram])
+    def list_portfolio_programs(company_id: str) -> list[CorporateProgram]:
+        """List programs governed by one corporate portfolio."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        return corporate_portfolio.list_programs(company_id)
+
+    @app.post(
+        "/api/v1/companies/{company_id}/portfolio/programs",
+        response_model=CorporateProgram,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_portfolio_program(company_id: str, program: CorporateProgram) -> CorporateProgram:
+        """Register a program for corporate portfolio governance."""
+
+        if program.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Program company_id must match path company_id",
+            )
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        try:
+            return corporate_portfolio.register_program(program)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     @app.get("/api/v1/projects", response_model=list[PortfolioProject])
     def list_projects() -> list[PortfolioProject]:
         """List projects registered in the Corporate Control Tower portfolio."""
@@ -915,7 +990,10 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     def register_project(project: PortfolioProject) -> PortfolioProject:
         """Register a project in the Corporate Control Tower portfolio."""
 
-        return portfolio.register(project)
+        try:
+            return corporate_portfolio.register_project(project)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @app.post(
         "/api/v1/companies/{company_id}/projects",
@@ -928,7 +1006,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         if not companies.exists(company_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
         try:
-            return portfolio.register_for_company(company_id, project)
+            return corporate_portfolio.register_project_for_company(company_id, project)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -959,6 +1037,41 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
         try:
             return portfolio.change_status_for_company(company_id, project_id, payload.status)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.patch(
+        "/api/v1/companies/{company_id}/projects/{project_id}/lifecycle",
+        response_model=PortfolioProject,
+    )
+    def transition_project_lifecycle(
+        company_id: str,
+        project_id: str,
+        payload: PortfolioLifecycleTransition,
+    ) -> PortfolioProject:
+        """Transition a project through the corporate portfolio lifecycle."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        try:
+            return portfolio.transition_lifecycle_for_company(company_id, project_id, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/projects/{project_id}/portfolio-governance",
+        response_model=CorporatePortfolioProjectView,
+    )
+    def project_portfolio_governance(
+        company_id: str,
+        project_id: str,
+    ) -> CorporatePortfolioProjectView:
+        """Return integrated portfolio governance for one project."""
+
+        if not companies.exists(company_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+        try:
+            return corporate_portfolio.project_view(company_id, project_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

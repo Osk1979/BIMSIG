@@ -23,7 +23,7 @@ from control_tower.domain.gis import (
     ProjectGisBinding,
 )
 from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
-from control_tower.domain.portfolio import PortfolioProject
+from control_tower.domain.portfolio import CorporateCustomer, CorporateProgram, PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
 
 
@@ -234,6 +234,36 @@ class FakePortfolioProjectRepository:
 
     def exists(self, project_id: str) -> bool:
         return project_id in self.projects
+
+
+class FakeCorporateCustomerRepository:
+    def __init__(self) -> None:
+        self.customers: dict[str, CorporateCustomer] = {}
+
+    def save(self, customer: CorporateCustomer) -> CorporateCustomer:
+        self.customers[customer.customer_id] = customer
+        return customer
+
+    def list_by_company(self, company_id: str) -> list[CorporateCustomer]:
+        return [customer for customer in self.customers.values() if customer.company_id == company_id]
+
+    def get(self, customer_id: str) -> CorporateCustomer | None:
+        return self.customers.get(customer_id)
+
+
+class FakeCorporateProgramRepository:
+    def __init__(self) -> None:
+        self.programs: dict[str, CorporateProgram] = {}
+
+    def save(self, program: CorporateProgram) -> CorporateProgram:
+        self.programs[program.program_id] = program
+        return program
+
+    def list_by_company(self, company_id: str) -> list[CorporateProgram]:
+        return [program for program in self.programs.values() if program.company_id == company_id]
+
+    def get(self, program_id: str) -> CorporateProgram | None:
+        return self.programs.get(program_id)
 
 
 class FakeProvisioningRequestRepository:

@@ -440,6 +440,69 @@
         "title": "CompanyStatus",
         "type": "string"
       },
+      "CorporateCustomer": {
+        "description": "Client governed by the Corporate Control Tower portfolio domain.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "customer_id": {
+            "examples": [
+              "CLI-MTC"
+            ],
+            "minLength": 3,
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "display_name": {
+            "examples": [
+              "MTC"
+            ],
+            "minLength": 3,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "legal_name": {
+            "examples": [
+              "Ministerio de Transportes"
+            ],
+            "minLength": 3,
+            "title": "Legal Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CustomerStatus",
+            "default": "active"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "20131379944"
+            ],
+            "title": "Tax Id"
+          }
+        },
+        "required": [
+          "customer_id",
+          "company_id",
+          "legal_name",
+          "display_name"
+        ],
+        "title": "CorporateCustomer",
+        "type": "object"
+      },
       "CorporateDashboard": {
         "description": "Executive read model for one enterprise company.",
         "properties": {
@@ -603,6 +666,107 @@
         ],
         "title": "CorporateMapPoint",
         "type": "object"
+      },
+      "CorporatePortfolioProjectView": {
+        "description": "Integrated governance view for one project without operating WEB SIG.",
+        "properties": {
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorporateCustomer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "integrations": {
+            "$ref": "#/components/schemas/ProjectIntegrationSummary"
+          },
+          "program": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorporateProgram"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "$ref": "#/components/schemas/PortfolioProject"
+          }
+        },
+        "required": [
+          "project",
+          "integrations"
+        ],
+        "title": "CorporatePortfolioProjectView",
+        "type": "object"
+      },
+      "CorporateProgram": {
+        "description": "Program that groups multiple projects for corporate governance.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "CLI-MTC"
+            ],
+            "title": "Customer Id"
+          },
+          "name": {
+            "examples": [
+              "Programa Transporte 2026"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "program_id": {
+            "examples": [
+              "PRG-TRANSPORTE-2026"
+            ],
+            "minLength": 3,
+            "title": "Program Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgramStatus",
+            "default": "planned"
+          }
+        },
+        "required": [
+          "program_id",
+          "company_id",
+          "name"
+        ],
+        "title": "CorporateProgram",
+        "type": "object"
+      },
+      "CustomerStatus": {
+        "description": "Lifecycle status for a corporate customer record.",
+        "enum": [
+          "active",
+          "inactive"
+        ],
+        "title": "CustomerStatus",
+        "type": "string"
       },
       "DashboardMetric": {
         "description": "Single executive dashboard metric.",
@@ -1443,6 +1607,29 @@
         "title": "PermissionScope",
         "type": "string"
       },
+      "PortfolioLifecycleTransition": {
+        "description": "Allowed corporate lifecycle transition request.",
+        "properties": {
+          "lifecycle_stage": {
+            "$ref": "#/components/schemas/ProjectLifecycleStage"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "lifecycle_stage"
+        ],
+        "title": "PortfolioLifecycleTransition",
+        "type": "object"
+      },
       "PortfolioProject": {
         "description": "Project registered at Corporate Control Tower portfolio level.",
         "properties": {
@@ -1468,6 +1655,55 @@
             ],
             "title": "Cui"
           },
+          "customer_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "CLI-MTC"
+            ],
+            "title": "Customer Id"
+          },
+          "gis_binding_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "GBD-001"
+            ],
+            "title": "Gis Binding Id"
+          },
+          "google_drive_folder_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "drive-folder-id"
+            ],
+            "title": "Google Drive Folder Id"
+          },
+          "lifecycle_stage": {
+            "$ref": "#/components/schemas/ProjectLifecycleStage",
+            "default": "intake"
+          },
           "name": {
             "examples": [
               "Proyecto Suiza"
@@ -1475,6 +1711,36 @@
             "minLength": 3,
             "title": "Name",
             "type": "string"
+          },
+          "nas_root_uri": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "nas://CRTG/PSZ-2026"
+            ],
+            "title": "Nas Root Uri"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "PRG-TRANSPORTE-2026"
+            ],
+            "title": "Program Id"
           },
           "project_id": {
             "examples": [
@@ -1487,6 +1753,36 @@
           "status": {
             "$ref": "#/components/schemas/ProjectStatus",
             "default": "registered"
+          },
+          "websig_instance_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "WEB-PSZ-2026"
+            ],
+            "title": "Websig Instance Id"
+          },
+          "websig_url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "https://websig.example.com/psz"
+            ],
+            "title": "Websig Url"
           }
         },
         "required": [
@@ -1554,6 +1850,17 @@
         ],
         "title": "PostgisSchema",
         "type": "object"
+      },
+      "ProgramStatus": {
+        "description": "Governance status for a corporate program.",
+        "enum": [
+          "planned",
+          "active",
+          "suspended",
+          "closed"
+        ],
+        "title": "ProgramStatus",
+        "type": "string"
       },
       "ProjectComparison": {
         "description": "Comparable portfolio row between projects.",
@@ -1733,6 +2040,96 @@
         "title": "ProjectGisResources",
         "type": "object"
       },
+      "ProjectIntegrationSummary": {
+        "description": "Read model for project integrations governed by the Tower.",
+        "properties": {
+          "gis_binding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gis Binding Id"
+          },
+          "gis_layers": {
+            "default": 0,
+            "title": "Gis Layers",
+            "type": "integer"
+          },
+          "google_drive_folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Drive Folder Id"
+          },
+          "nas_assets": {
+            "default": 0,
+            "title": "Nas Assets",
+            "type": "integer"
+          },
+          "nas_root_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nas Root Uri"
+          },
+          "provisioning_requests": {
+            "default": 0,
+            "title": "Provisioning Requests",
+            "type": "integer"
+          },
+          "websig_instance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Websig Instance Id"
+          },
+          "websig_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Websig Url"
+          }
+        },
+        "title": "ProjectIntegrationSummary",
+        "type": "object"
+      },
+      "ProjectLifecycleStage": {
+        "description": "Corporate lifecycle stage governed by the Tower.",
+        "enum": [
+          "intake",
+          "planning",
+          "provisioning",
+          "execution",
+          "closure",
+          "archived"
+        ],
+        "title": "ProjectLifecycleStage",
+        "type": "string"
+      },
       "ProjectMembership": {
         "description": "User role assignment inside one project.",
         "properties": {
@@ -1859,7 +2256,8 @@
           "registered",
           "provisioning_requested",
           "active",
-          "suspended"
+          "suspended",
+          "closed"
         ],
         "title": "ProjectStatus",
         "type": "string"
@@ -3430,6 +3828,190 @@
         "summary": "Create Information Snapshot"
       }
     },
+    "/api/v1/companies/{company_id}/portfolio/customers": {
+      "get": {
+        "description": "List customers governed by one corporate portfolio.",
+        "operationId": "list_portfolio_customers_api_v1_companies__company_id__portfolio_customers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateCustomer"
+                  },
+                  "title": "Response List Portfolio Customers Api V1 Companies  Company Id  Portfolio Customers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Portfolio Customers"
+      },
+      "post": {
+        "description": "Register a customer for corporate portfolio governance.",
+        "operationId": "register_portfolio_customer_api_v1_companies__company_id__portfolio_customers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateCustomer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateCustomer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Portfolio Customer"
+      }
+    },
+    "/api/v1/companies/{company_id}/portfolio/programs": {
+      "get": {
+        "description": "List programs governed by one corporate portfolio.",
+        "operationId": "list_portfolio_programs_api_v1_companies__company_id__portfolio_programs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateProgram"
+                  },
+                  "title": "Response List Portfolio Programs Api V1 Companies  Company Id  Portfolio Programs Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Portfolio Programs"
+      },
+      "post": {
+        "description": "Register a program for corporate portfolio governance.",
+        "operationId": "register_portfolio_program_api_v1_companies__company_id__portfolio_programs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateProgram"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateProgram"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Portfolio Program"
+      }
+    },
     "/api/v1/companies/{company_id}/portfolio/summary": {
       "get": {
         "description": "Return portfolio status counts for one company.",
@@ -3884,6 +4466,65 @@
         "summary": "Change Company Governance Status"
       }
     },
+    "/api/v1/companies/{company_id}/projects/{project_id}/lifecycle": {
+      "patch": {
+        "description": "Transition a project through the corporate portfolio lifecycle.",
+        "operationId": "transition_project_lifecycle_api_v1_companies__company_id__projects__project_id__lifecycle_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioLifecycleTransition"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transition Project Lifecycle"
+      }
+    },
     "/api/v1/companies/{company_id}/projects/{project_id}/memberships": {
       "get": {
         "description": "List user memberships scoped to one project.",
@@ -3992,6 +4633,55 @@
           }
         },
         "summary": "Assign Project Membership"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/portfolio-governance": {
+      "get": {
+        "description": "Return integrated portfolio governance for one project.",
+        "operationId": "project_portfolio_governance_api_v1_companies__company_id__projects__project_id__portfolio_governance_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporatePortfolioProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Portfolio Governance"
       }
     },
     "/api/v1/companies/{company_id}/provisioning/project-stack": {

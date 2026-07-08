@@ -34,6 +34,7 @@ Corporate Governance System defined by REV13 and local ADR-0024.
 | F2-103 | Implement SQLAlchemy project repository | Done | ADR-0005, ADR-0013 | Projects persist and reload across service restarts. |
 | F2-104 | Implement provisioning request repository | Done | ADR-0003, ADR-0005, ADR-0013 | WEB SIG requests persist with status history. |
 | F2-105 | Add audit event persistence | Done | ADR-0005, ADR-0006, ADR-0013 | Project and provisioning changes create queryable audit events. |
+| F2-106 | Implement Corporate Portfolio Domain | Done | ADR-0009, ADR-0010, ADR-0025 | Customers, programs, project lifecycle, WEB SIG, NAS, GIS, and dashboard references are governed without operating WEB SIG. |
 
 ## Milestone F2.2: Governance API
 

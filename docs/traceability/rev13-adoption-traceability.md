@@ -13,3 +13,4 @@
 | Documento A | Corporate CDE, BIM Platform, PMO Digital, AI, Digital Twin, and Commercialization are formal phases | prompt-010 backlog |
 | Documento B | F2 is Corporate Control Tower as Corporate Governance System | f2 backlog, ADR-0024 |
 | Documento C | Prompt for F2 must include Corporate Governance System language | prompt-010 backlog |
+| PROMPT MASTER 010 | Corporate Portfolio Domain governs companies, customers, programs, projects, lifecycle, WEB SIG Factory relationships, NAS, GIS, and dashboard references without operating WEB SIG | ADR-0025, prompt-010-corporate-portfolio-domain backlog, `src/control_tower/domain/portfolio/models.py` |

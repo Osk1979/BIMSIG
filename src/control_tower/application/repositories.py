@@ -33,7 +33,34 @@ from control_tower.domain.gis import (
 )
 from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
+from control_tower.domain.portfolio import CorporateCustomer, CorporateProgram
 from control_tower.domain.provisioning import ProvisioningRequest
+
+
+class CorporateCustomerRepository(Protocol):
+    """Persistence port for portfolio customer records."""
+
+    def save(self, customer: CorporateCustomer) -> CorporateCustomer:
+        """Persist a corporate customer."""
+
+    def list_by_company(self, company_id: str) -> list[CorporateCustomer]:
+        """Return customers for one company."""
+
+    def get(self, customer_id: str) -> CorporateCustomer | None:
+        """Return one customer when it exists."""
+
+
+class CorporateProgramRepository(Protocol):
+    """Persistence port for portfolio program records."""
+
+    def save(self, program: CorporateProgram) -> CorporateProgram:
+        """Persist a corporate program."""
+
+    def list_by_company(self, company_id: str) -> list[CorporateProgram]:
+        """Return programs for one company."""
+
+    def get(self, program_id: str) -> CorporateProgram | None:
+        """Return one program when it exists."""
 
 
 class PortfolioProjectRepository(Protocol):

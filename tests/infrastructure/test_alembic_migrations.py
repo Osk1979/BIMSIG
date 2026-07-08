@@ -35,6 +35,8 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     assert "gis_geoserver_datastores" in inspector.get_table_names()
     assert "gis_geoserver_layers" in inspector.get_table_names()
     assert "gis_project_bindings" in inspector.get_table_names()
+    assert "portfolio_customers" in inspector.get_table_names()
+    assert "portfolio_programs" in inspector.get_table_names()
     assert "company_id" in {
         column["name"] for column in inspector.get_columns("portfolio_projects")
     }
@@ -71,4 +73,23 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     }
     assert "ix_gis_geoserver_layers_project_id" in {
         index["name"] for index in inspector.get_indexes("gis_geoserver_layers")
+    }
+    portfolio_project_columns = {
+        column["name"] for column in inspector.get_columns("portfolio_projects")
+    }
+    assert {
+        "customer_id",
+        "program_id",
+        "lifecycle_stage",
+        "websig_instance_id",
+        "websig_url",
+        "nas_root_uri",
+        "gis_binding_id",
+        "google_drive_folder_id",
+    } <= portfolio_project_columns
+    assert "ix_portfolio_customers_company_id" in {
+        index["name"] for index in inspector.get_indexes("portfolio_customers")
+    }
+    assert "ix_portfolio_programs_company_id" in {
+        index["name"] for index in inspector.get_indexes("portfolio_programs")
     }

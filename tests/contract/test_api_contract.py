@@ -370,9 +370,74 @@ def test_project_registration_persists_across_app_instances(tmp_path) -> None:
             "company_id": "CRTG",
             "name": "Proyecto Suiza",
             "cui": "CUI 2661613",
+            "customer_id": None,
+            "program_id": None,
             "status": "registered",
+            "lifecycle_stage": "intake",
+            "websig_instance_id": None,
+            "websig_url": None,
+            "nas_root_uri": None,
+            "gis_binding_id": None,
+            "google_drive_folder_id": None,
         }
     ]
+
+
+def test_corporate_portfolio_domain_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    customer = client.post(
+        "/api/v1/companies/CRTG/portfolio/customers",
+        json={
+            "customer_id": "CLI-MTC",
+            "company_id": "CRTG",
+            "legal_name": "Ministerio de Transportes",
+            "display_name": "MTC",
+        },
+    )
+    program = client.post(
+        "/api/v1/companies/CRTG/portfolio/programs",
+        json={
+            "program_id": "PRG-TRANSPORTE",
+            "company_id": "CRTG",
+            "customer_id": "CLI-MTC",
+            "name": "Programa Transporte",
+        },
+    )
+    project = client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "customer_id": "CLI-MTC",
+            "program_id": "PRG-TRANSPORTE",
+            "name": "Proyecto Suiza",
+            "websig_instance_id": "WEB-PSZ-2026",
+            "websig_url": "https://websig.example.com/psz",
+            "nas_root_uri": "nas://CRTG/PSZ-2026",
+            "google_drive_folder_id": "DRIVE-PSZ",
+        },
+    )
+    lifecycle = client.patch(
+        "/api/v1/companies/CRTG/projects/PSZ-2026/lifecycle",
+        json={"lifecycle_stage": "execution"},
+    )
+    view = client.get("/api/v1/companies/CRTG/projects/PSZ-2026/portfolio-governance")
+
+    assert customer.status_code == 201
+    assert program.status_code == 201
+    assert project.status_code == 201
+    assert lifecycle.status_code == 200
+    assert lifecycle.json()["status"] == "active"
+    assert view.status_code == 200
+    assert view.json()["project"]["customer_id"] == "CLI-MTC"
+    assert view.json()["customer"]["display_name"] == "MTC"
+    assert view.json()["program"]["program_id"] == "PRG-TRANSPORTE"
+    assert view.json()["integrations"]["websig_instance_id"] == "WEB-PSZ-2026"
+    assert view.json()["integrations"]["nas_root_uri"] == "nas://CRTG/PSZ-2026"
 
 
 def test_corporate_user_security_contract(tmp_path) -> None:
