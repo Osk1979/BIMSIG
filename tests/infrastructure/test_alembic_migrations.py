@@ -40,3 +40,9 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     assert "ix_information_assets_company_id" in {
         index["name"] for index in inspector.get_indexes("information_assets")
     }
+    assert "category" in {
+        column["name"] for column in inspector.get_columns("information_assets")
+    }
+    assert "ix_information_assets_category" in {
+        index["name"] for index in inspector.get_indexes("information_assets")
+    }

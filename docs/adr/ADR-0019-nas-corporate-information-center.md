@@ -24,8 +24,9 @@ The Tower stores corporate information registry records:
 
 - Logical NAS URI.
 - Company and optional project scope.
+- Corporate category: BIM, GIS, CDE, Field, QA/QC, Environmental, SSOMA, or PMO.
 - Asset type.
-- Version and status.
+- Version and document lifecycle status: draft, review, approved, or archived.
 - Metadata.
 - Permissions.
 - Checksums.

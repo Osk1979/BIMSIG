@@ -28,6 +28,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `GET /api/v1/nas/assets/{asset_id}/versions`: list information asset versions.
 - `PATCH /api/v1/nas/assets/{asset_id}/metadata`: update information asset metadata.
 - `PATCH /api/v1/nas/assets/{asset_id}/permissions`: set information asset permission.
+- `PATCH /api/v1/nas/assets/{asset_id}/archive`: archive an information asset registry entry.
 - `GET /api/v1/companies/{company_id}/nas/snapshots`: list information snapshots.
 - `POST /api/v1/companies/{company_id}/nas/snapshots`: create an information snapshot.
 - `GET /api/v1/companies/{company_id}/nas/backups`: list information backups.

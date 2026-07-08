@@ -293,6 +293,7 @@ def test_nas_information_center_contract(tmp_path) -> None:
             "project_id": "PSZ-2026",
             "name": "Modelo federado IFC",
             "asset_type": "ifc",
+            "category": "bim",
             "logical_uri": "nas://CRTG/PSZ-2026/bim/ifc/model.ifc",
             "metadata": {"discipline": "bim"},
             "google_drive_id": "drive-folder-1",
@@ -309,6 +310,10 @@ def test_nas_information_center_contract(tmp_path) -> None:
         "/api/v1/nas/assets/NAS-001/permissions",
         json={"principal": "role:portfolio_manager", "permission": "admin"},
     )
+    metadata = client.patch(
+        "/api/v1/nas/assets/NAS-001/metadata",
+        json={"metadata": {"document_status": "review"}},
+    )
     snapshot = client.post(
         "/api/v1/companies/CRTG/nas/snapshots",
         json={"name": "Cierre Semanal", "project_id": "PSZ-2026", "asset_ids": ["NAS-001"]},
@@ -321,14 +326,19 @@ def test_nas_information_center_contract(tmp_path) -> None:
             "logical_uri": "nas://CRTG/PSZ-2026/backups/cierre.zip",
         },
     )
+    archived = client.patch("/api/v1/nas/assets/NAS-001/archive")
 
     assert asset.status_code == 201
     assert asset.json()["asset_type"] == "ifc"
+    assert asset.json()["category"] == "bim"
+    assert asset.json()["status"] == "draft"
     assert version.status_code == 200
     assert version.json()["version"] == "v2"
     assert permission.json()["permissions"]["role:portfolio_manager"] == "admin"
+    assert metadata.json()["metadata"]["document_status"] == "review"
     assert snapshot.status_code == 200
     assert backup.status_code == 200
+    assert archived.json()["status"] == "archived"
     assert client.get("/api/v1/companies/CRTG/nas/assets").json()[0]["asset_id"] == "NAS-001"
     assert client.get("/api/v1/nas/assets/NAS-001/versions").json()[0]["version"] == "v2"
 

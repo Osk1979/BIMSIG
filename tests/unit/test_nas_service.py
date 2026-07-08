@@ -2,7 +2,12 @@ from control_tower.application.enterprise_service import CompanyService
 from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.domain.enterprise import Company
-from control_tower.domain.nas import InformationAsset, InformationAssetStatus, InformationAssetType
+from control_tower.domain.nas import (
+    InformationAsset,
+    InformationAssetStatus,
+    InformationAssetType,
+    InformationCategory,
+)
 from control_tower.domain.portfolio import PortfolioProject
 from tests.unit.fakes import (
     FakeAuditEventRepository,
@@ -28,6 +33,7 @@ def test_nas_information_center_registers_versions_snapshots_backups_and_permiss
             project_id="PSZ-2026",
             name="Modelo federado IFC",
             asset_type=InformationAssetType.IFC,
+            category=InformationCategory.BIM,
             logical_uri="nas://CRTG/PSZ-2026/bim/ifc/model.ifc",
             metadata={"discipline": "bim"},
             google_drive_id="drive-folder-1",
@@ -50,14 +56,15 @@ def test_nas_information_center_registers_versions_snapshots_backups_and_permiss
         project_id="PSZ-2026",
         snapshot_id=snapshot.snapshot_id,
     )
+    archived = service.archive_asset(asset.asset_id)
 
-    assert asset.status == InformationAssetStatus.REGISTERED
+    assert asset.status == InformationAssetStatus.DRAFT
     assert version.version == "v2"
     assert updated.permissions["role:portfolio_manager"] == "admin"
     assert enriched.metadata["format"] == "IFC4"
     assert snapshot.asset_ids == ["NAS-001"]
     assert backup.snapshot_id == snapshot.snapshot_id
-    assert repository.get_asset("NAS-001").status == InformationAssetStatus.SNAPSHOTTED
+    assert archived.status == InformationAssetStatus.ARCHIVED
     assert {
         event.action for event in audit.events
     } >= {
@@ -67,4 +74,5 @@ def test_nas_information_center_registers_versions_snapshots_backups_and_permiss
         "nas.metadata_updated",
         "nas.snapshot_created",
         "nas.backup_registered",
+        "nas.asset_archived",
     }

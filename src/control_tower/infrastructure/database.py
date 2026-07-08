@@ -34,6 +34,7 @@ from control_tower.domain.nas import (
     InformationAssetStatus,
     InformationAssetType,
     InformationBackup,
+    InformationCategory,
     InformationPermission,
     InformationSnapshot,
     InformationVersion,
@@ -366,6 +367,7 @@ class InformationAssetRecord(Base):
     project_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     asset_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     logical_uri: Mapped[str] = mapped_column(String(1000), nullable=False)
     version: Mapped[str] = mapped_column(String(80), nullable=False)
     status: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -388,6 +390,7 @@ class InformationAssetRecord(Base):
             project_id=asset.project_id,
             name=asset.name,
             asset_type=asset.asset_type.value,
+            category=asset.category.value,
             logical_uri=asset.logical_uri,
             version=asset.version,
             status=asset.status.value,
@@ -407,6 +410,7 @@ class InformationAssetRecord(Base):
         self.project_id = asset.project_id
         self.name = asset.name
         self.asset_type = asset.asset_type.value
+        self.category = asset.category.value
         self.logical_uri = asset.logical_uri
         self.version = asset.version
         self.status = asset.status.value
@@ -426,6 +430,7 @@ class InformationAssetRecord(Base):
             project_id=self.project_id,
             name=self.name,
             asset_type=InformationAssetType(self.asset_type),
+            category=InformationCategory(self.category),
             logical_uri=self.logical_uri,
             version=self.version,
             status=InformationAssetStatus(self.status),

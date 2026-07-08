@@ -89,7 +89,7 @@ class NasInformationCenterService:
                     "version": version,
                     "logical_uri": logical_uri,
                     "checksum_sha256": checksum_sha256 or asset.checksum_sha256,
-                    "status": InformationAssetStatus.VERSIONED,
+                    "status": InformationAssetStatus.REVIEW,
                     "updated_at": datetime.now(UTC),
                 }
             )
@@ -133,7 +133,7 @@ class NasInformationCenterService:
             self._repository.save_asset(
                 asset.model_copy(
                     update={
-                        "status": InformationAssetStatus.SNAPSHOTTED,
+                        "status": InformationAssetStatus.APPROVED,
                         "updated_at": datetime.now(UTC),
                     }
                 )
@@ -204,6 +204,21 @@ class NasInformationCenterService:
             asset.model_copy(update={"metadata": merged, "updated_at": datetime.now(UTC)})
         )
         self._audit_event("nas.metadata_updated", "information_asset", asset_id)
+        return saved
+
+    def archive_asset(self, asset_id: str) -> InformationAsset:
+        """Archive an information asset without deleting its registry."""
+
+        asset = self._require_asset(asset_id)
+        saved = self._repository.save_asset(
+            asset.model_copy(
+                update={
+                    "status": InformationAssetStatus.ARCHIVED,
+                    "updated_at": datetime.now(UTC),
+                }
+            )
+        )
+        self._audit_event("nas.asset_archived", "information_asset", asset_id)
         return saved
 
     def _validate_scope(self, company_id: str, project_id: str | None) -> None:

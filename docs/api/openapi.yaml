@@ -618,6 +618,10 @@
           "asset_type": {
             "$ref": "#/components/schemas/InformationAssetType"
           },
+          "category": {
+            "$ref": "#/components/schemas/InformationCategory",
+            "default": "cde"
+          },
           "checksum_sha256": {
             "anyOf": [
               {
@@ -740,7 +744,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/InformationAssetStatus",
-            "default": "registered"
+            "default": "draft"
           },
           "updated_at": {
             "anyOf": [
@@ -773,10 +777,9 @@
       "InformationAssetStatus": {
         "description": "Lifecycle status for a registered information asset.",
         "enum": [
-          "registered",
-          "versioned",
-          "snapshotted",
-          "backed_up",
+          "draft",
+          "review",
+          "approved",
           "archived"
         ],
         "title": "InformationAssetStatus",
@@ -870,6 +873,21 @@
         ],
         "title": "InformationBackup",
         "type": "object"
+      },
+      "InformationCategory": {
+        "description": "Corporate information categories governed by NAS.",
+        "enum": [
+          "bim",
+          "gis",
+          "cde",
+          "field",
+          "qa_qc",
+          "environmental",
+          "ssoma",
+          "pmo"
+        ],
+        "title": "InformationCategory",
+        "type": "string"
       },
       "InformationPermission": {
         "description": "Coarse-grained permission levels for information assets.",
@@ -2756,6 +2774,46 @@
           }
         },
         "summary": "Get Information Asset"
+      }
+    },
+    "/api/v1/nas/assets/{asset_id}/archive": {
+      "patch": {
+        "description": "Archive an information asset registry entry.",
+        "operationId": "archive_information_asset_api_v1_nas_assets__asset_id__archive_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationAsset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Archive Information Asset"
       }
     },
     "/api/v1/nas/assets/{asset_id}/metadata": {

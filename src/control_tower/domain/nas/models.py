@@ -32,13 +32,25 @@ class InformationAssetType(StrEnum):
     BACKUP = "backup"
 
 
+class InformationCategory(StrEnum):
+    """Corporate information categories governed by NAS."""
+
+    BIM = "bim"
+    GIS = "gis"
+    CDE = "cde"
+    FIELD = "field"
+    QA_QC = "qa_qc"
+    ENVIRONMENTAL = "environmental"
+    SSOMA = "ssoma"
+    PMO = "pmo"
+
+
 class InformationAssetStatus(StrEnum):
     """Lifecycle status for a registered information asset."""
 
-    REGISTERED = "registered"
-    VERSIONED = "versioned"
-    SNAPSHOTTED = "snapshotted"
-    BACKED_UP = "backed_up"
+    DRAFT = "draft"
+    REVIEW = "review"
+    APPROVED = "approved"
     ARCHIVED = "archived"
 
 
@@ -58,9 +70,10 @@ class InformationAsset(BaseModel):
     project_id: str | None = Field(default=None, min_length=3, examples=["PSZ-2026"])
     name: str = Field(min_length=3, examples=["Modelo federado IFC"])
     asset_type: InformationAssetType
+    category: InformationCategory = InformationCategory.CDE
     logical_uri: str = Field(min_length=6, examples=["nas://CRTG/PSZ-2026/bim/ifc/model.ifc"])
     version: str = Field(default="v1")
-    status: InformationAssetStatus = InformationAssetStatus.REGISTERED
+    status: InformationAssetStatus = InformationAssetStatus.DRAFT
     metadata: dict[str, str] = Field(default_factory=dict)
     permissions: dict[str, InformationPermission] = Field(default_factory=dict)
     google_drive_id: str | None = None

@@ -1,5 +1,5 @@
 from control_tower.domain.portfolio import PortfolioProject
-from control_tower.domain.nas import InformationAsset, InformationAssetType
+from control_tower.domain.nas import InformationAsset, InformationAssetType, InformationCategory
 from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningResourceType, ProvisioningStep
 from control_tower.infrastructure.database import (
     SqlAlchemyCompanyRepository,
@@ -78,6 +78,7 @@ def test_sqlalchemy_information_asset_repository_persists_registry(tmp_path) -> 
             project_id="PSZ-2026",
             name="Modelo IFC",
             asset_type=InformationAssetType.IFC,
+            category=InformationCategory.BIM,
             logical_uri="nas://CRTG/PSZ-2026/bim/ifc/model.ifc",
             metadata={"discipline": "bim"},
             permissions={"role:portfolio_manager": "admin"},
@@ -85,5 +86,6 @@ def test_sqlalchemy_information_asset_repository_persists_registry(tmp_path) -> 
     )
 
     assert asset.asset_id == "NAS-001"
+    assert asset.category == InformationCategory.BIM
     assert repository.list_assets_by_company("CRTG")[0].metadata["discipline"] == "bim"
     assert repository.get_asset("NAS-001").permissions["role:portfolio_manager"] == "admin"

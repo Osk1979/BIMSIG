@@ -8,18 +8,20 @@ Design and build the NAS module as the Corporate Information Center for BIMSIG E
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
-| P5-101 | Add NAS information domain model | Done | ADR-0019 | Domain supports assets, versions, snapshots, backups, permissions, metadata, and external references. |
+| P5-101 | Add NAS information domain model | Done | ADR-0019 | Domain supports assets, categories, document lifecycle states, versions, snapshots, backups, permissions, metadata, and external references. |
 | P5-102 | Add asset registry API | Done | ADR-0019 | Company-scoped API registers and lists information assets. |
 | P5-103 | Add version registry | Done | ADR-0019 | Assets can register immutable version records. |
 | P5-104 | Add snapshot registry | Done | ADR-0019 | Company/project information snapshots can be created and listed. |
 | P5-105 | Add backup registry | Done | ADR-0019 | Backup manifests can be registered and listed. |
 | P5-106 | Add permissions and metadata operations | Done | ADR-0019 | API can update asset permissions and metadata. |
+| P5-107 | Add document archive operation | Done | ADR-0019 | API can archive an information asset without deleting metadata or references. |
 
 ## Milestone P5.2: Information Types and Integrations
 
 | ID | Item | Status | ADR | Acceptance Criteria |
 | --- | --- | --- | --- | --- |
 | P5-201 | Support BIM/CAD/geospatial/media asset types | Done | ADR-0019 | IFC, DWG, LandXML, photography, video, Shapefile, GeoJSON, and documentation are typed. |
+| P5-206 | Support corporate information categories | Done | ADR-0007, ADR-0019 | BIM, GIS, CDE, Field, QA/QC, Environmental, SSOMA, and PMO categories are explicit. |
 | P5-202 | Register Google Drive references | Done | ADR-0010, ADR-0019 | Assets can store transitional Google Drive identifiers. |
 | P5-203 | Register GeoServer references | Done | ADR-0009, ADR-0019 | Assets can store GeoServer references. |
 | P5-204 | Register PostGIS references | Done | ADR-0008, ADR-0019 | Assets can store PostGIS references. |

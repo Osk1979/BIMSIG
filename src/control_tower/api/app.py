@@ -369,6 +369,15 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
+    @app.patch("/api/v1/nas/assets/{asset_id}/archive", response_model=InformationAsset)
+    def archive_information_asset(asset_id: str) -> InformationAsset:
+        """Archive an information asset registry entry."""
+
+        try:
+            return nas.archive_asset(asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
     @app.get("/api/v1/companies/{company_id}/nas/snapshots", response_model=list[InformationSnapshot])
     def list_information_snapshots(company_id: str) -> list[InformationSnapshot]:
         """List information snapshots for one company."""
