@@ -10,6 +10,9 @@ $ErrorActionPreference = "Stop"
 Write-Host "Running ruff"
 & $PythonPath -m ruff check .
 
+Write-Host "Validating architecture guardrails"
+& $PythonPath scripts/validate_architecture.py
+
 Write-Host "Exporting OpenAPI"
 & $PythonPath scripts/export_openapi.py
 

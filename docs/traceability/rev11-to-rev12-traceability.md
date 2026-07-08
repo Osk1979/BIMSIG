@@ -4,8 +4,10 @@
 | --- | --- | --- |
 | Documento A | Corporate Control Tower governs portfolio | `src/control_tower/domain/portfolio` |
 | Documento A | Tower creates and registers WEB SIG | `src/control_tower/domain/provisioning`, ADR-0003 |
+| Documento A | WEB SIG Factory must remain integrated through Project Provisioning Engine | ADR-0017, ADR-0022 |
 | Documento A | NAS + PostGIS + GeoServer information core | ADR-0007, ADR-0008, ADR-0009 |
 | Documento A | Google Workspace integration during transition | ADR-0010 |
+| Documento A | BIMSIG Field must remain integrated through Enterprise architecture boundaries | ADR-0022 |
 | Documento B | F2 Corporate Control Tower | Repository scope and API scaffold |
 | Documento B | Each phase is organized by controlled phases | `docs/backlog/f2-corporate-control-tower-backlog.md` |
 | Documento B | Each phase produces documentation, code, tests, version | `docs/`, `src/`, `tests/`, `pyproject.toml` |
@@ -23,3 +25,4 @@
 | PROMPT MASTER 005 | NAS as Corporate Information Center with versioning, snapshots, backups, Google Drive, GeoServer, PostGIS, Docker, file types, permissions, and metadata | ADR-0019, `src/control_tower/domain/nas`, `docs/backlog/prompt-005-nas-information-center-backlog.md` |
 | PROMPT MASTER 006 | Corporate user system for companies, projects, roles, specialties, permissions, licenses, authentication, SSO, audit, history, multitenancy, and enterprise security | ADR-0020, `src/control_tower/domain/enterprise`, `docs/backlog/prompt-006-corporate-user-security-backlog.md` |
 | PROMPT MASTER 007 | DevSecOps across GitHub, Docker, CI/CD, testing, versioning, releases, ADR, backups, logs, monitoring, observability, and security | ADR-0021, `.github/workflows/ci.yml`, `Dockerfile`, `docs/backlog/prompt-007-devsecops-backlog.md` |
+| PROMPT MASTER 008 | Permanent rule to verify the Master Architecture before code, preserve Enterprise structure, integrate through corporate systems, and scale to hundreds of simultaneous projects | ADR-0022, `scripts/validate_architecture.py`, `docs/operations/architecture-verification-checklist.md` |
