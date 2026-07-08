@@ -1282,7 +1282,7 @@ def render_dashboard_html() -> str:
           region: point.region || "Region por registrar",
           province: point.province || "Provincia por registrar",
           district: point.district || "Distrito por registrar",
-          source: "dato corporativo"
+          source: `${point.location_source || "portfolio_domain"} / ${point.location_validation_status || "pendiente"}`
         };
       }
       const inferred = inferPeruAdminFromCoordinates(point.latitude, point.longitude, index);

@@ -176,6 +176,14 @@ class EnterpriseWizardService:
                 nas_root_uri=str(nas_data["nas_root_uri"]),
                 gis_binding_id=gis_data.get("gis_binding_id"),
                 google_drive_folder_id=nas_data.get("google_drive_folder_id"),
+                country=str(location_data["country"]),
+                region=str(location_data["region"]),
+                province=str(location_data["province"]),
+                district=str(location_data["district"]),
+                latitude=float(location_data["latitude"]),
+                longitude=float(location_data["longitude"]),
+                location_source=str(location_data["location_source"]),
+                location_validation_status=str(location_data["location_validation_status"]),
             )
         )
         self._register_users_and_memberships(data[EnterpriseWizardStep.USERS], company.company_id)

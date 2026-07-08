@@ -503,7 +503,16 @@ def test_enterprise_wizard_contract(tmp_path) -> None:
         },
         "program": {"program_id": "PRG-WIZ", "name": "Programa Wizard"},
         "project": {"project_id": "PSZ-WIZ", "name": "Proyecto Wizard"},
-        "location": {"country": "PE", "region": "Lima"},
+        "location": {
+            "country": "PE",
+            "region": "Lima",
+            "province": "Lima",
+            "district": "Miraflores",
+            "latitude": -12.1211,
+            "longitude": -77.0305,
+            "location_source": "enterprise_wizard",
+            "location_validation_status": "validated",
+        },
         "specialties": {"specialties": ["bim", "gis"]},
         "web_sig": {
             "template_id": "WEB-SIG-ENTERPRISE-REV13",
@@ -561,6 +570,10 @@ def test_enterprise_wizard_contract(tmp_path) -> None:
     assert activated.json()["workflow_id"] == "CWF-WIZ-API-001"
     assert project.json()["status"] == "active"
     assert project.json()["websig_instance_id"] == "WEB-CRTG-WIZ-PSZ"
+    assert project.json()["region"] == "Lima"
+    assert project.json()["province"] == "Lima"
+    assert project.json()["district"] == "Miraflores"
+    assert project.json()["location_validation_status"] == "validated"
     assert workflow.json()["current_stage"] == "activate_project"
 
 
@@ -798,6 +811,14 @@ def test_project_registration_persists_across_app_instances(tmp_path) -> None:
             "nas_root_uri": None,
             "gis_binding_id": None,
             "google_drive_folder_id": None,
+            "country": None,
+            "region": None,
+            "province": None,
+            "district": None,
+            "latitude": None,
+            "longitude": None,
+            "location_source": None,
+            "location_validation_status": None,
         }
     ]
 

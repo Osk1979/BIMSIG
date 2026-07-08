@@ -67,7 +67,16 @@ ENTERPRISE_WIZARD_STEPS: tuple[EnterpriseWizardStepDefinition, ...] = (
     ),
     EnterpriseWizardStepDefinition(
         step=EnterpriseWizardStep.LOCATION,
-        required_fields=["country", "region"],
+        required_fields=[
+            "country",
+            "region",
+            "province",
+            "district",
+            "latitude",
+            "longitude",
+            "location_source",
+            "location_validation_status",
+        ],
     ),
     EnterpriseWizardStepDefinition(
         step=EnterpriseWizardStep.SPECIALTIES,

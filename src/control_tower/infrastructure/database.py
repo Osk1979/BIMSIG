@@ -590,6 +590,14 @@ class PortfolioProjectRecord(Base):
     nas_root_uri: Mapped[str | None] = mapped_column(String(500), nullable=True)
     gis_binding_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     google_drive_folder_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    region: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    province: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    district: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(nullable=True)
+    longitude: Mapped[float | None] = mapped_column(nullable=True)
+    location_source: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    location_validation_status: Mapped[str | None] = mapped_column(String(80), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -612,6 +620,14 @@ class PortfolioProjectRecord(Base):
             nas_root_uri=project.nas_root_uri,
             gis_binding_id=project.gis_binding_id,
             google_drive_folder_id=project.google_drive_folder_id,
+            country=project.country,
+            region=project.region,
+            province=project.province,
+            district=project.district,
+            latitude=project.latitude,
+            longitude=project.longitude,
+            location_source=project.location_source,
+            location_validation_status=project.location_validation_status,
             created_at=now,
             updated_at=now,
         )
@@ -631,6 +647,14 @@ class PortfolioProjectRecord(Base):
         self.nas_root_uri = project.nas_root_uri
         self.gis_binding_id = project.gis_binding_id
         self.google_drive_folder_id = project.google_drive_folder_id
+        self.country = project.country
+        self.region = project.region
+        self.province = project.province
+        self.district = project.district
+        self.latitude = project.latitude
+        self.longitude = project.longitude
+        self.location_source = project.location_source
+        self.location_validation_status = project.location_validation_status
         self.updated_at = datetime.now(UTC)
 
     def to_domain(self) -> PortfolioProject:
@@ -650,6 +674,14 @@ class PortfolioProjectRecord(Base):
             nas_root_uri=self.nas_root_uri,
             gis_binding_id=self.gis_binding_id,
             google_drive_folder_id=self.google_drive_folder_id,
+            country=self.country,
+            region=self.region,
+            province=self.province,
+            district=self.district,
+            latitude=self.latitude,
+            longitude=self.longitude,
+            location_source=self.location_source,
+            location_validation_status=self.location_validation_status,
         )
 
 

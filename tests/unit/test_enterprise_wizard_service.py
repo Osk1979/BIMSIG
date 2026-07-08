@@ -67,7 +67,16 @@ def complete_wizard(service: EnterpriseWizardService, wizard_id: str) -> None:
         },
         EnterpriseWizardStep.PROGRAM: {"program_id": "PRG-WIZ", "name": "Programa Wizard"},
         EnterpriseWizardStep.PROJECT: {"project_id": "PSZ-WIZ", "name": "Proyecto Wizard"},
-        EnterpriseWizardStep.LOCATION: {"country": "PE", "region": "Lima"},
+        EnterpriseWizardStep.LOCATION: {
+            "country": "PE",
+            "region": "Lima",
+            "province": "Lima",
+            "district": "Miraflores",
+            "latitude": -12.1211,
+            "longitude": -77.0305,
+            "location_source": "enterprise_wizard",
+            "location_validation_status": "validated",
+        },
         EnterpriseWizardStep.SPECIALTIES: {"specialties": ["bim", "gis"]},
         EnterpriseWizardStep.WEB_SIG: {
             "template_id": "WEB-SIG-ENTERPRISE-REV13",
@@ -150,6 +159,10 @@ def test_enterprise_wizard_activation_creates_governed_project_and_workflow() ->
     assert project.status == "active"
     assert project.websig_instance_id == "WEB-CRTG-WIZ-PSZ"
     assert project.nas_root_uri == "nas://CRTG-WIZ/PSZ-WIZ"
+    assert project.region == "Lima"
+    assert project.province == "Lima"
+    assert project.district == "Miraflores"
+    assert project.location_validation_status == "validated"
     assert workflow is not None
     assert workflow.current_stage == "activate_project"
     assert "enterprise_wizard.activated" in {event.action for event in audit.events}

@@ -1061,9 +1061,53 @@
       "CorporateMapPoint": {
         "description": "Portfolio map point used by the corporate dashboard.",
         "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "District"
+          },
           "latitude": {
             "title": "Latitude",
             "type": "number"
+          },
+          "location_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Source"
+          },
+          "location_validation_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Validation Status"
           },
           "longitude": {
             "title": "Longitude",
@@ -1078,6 +1122,28 @@
             "minLength": 3,
             "title": "Project Id",
             "type": "string"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Province"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
           },
           "status": {
             "minLength": 3,
@@ -3028,6 +3094,21 @@
             "title": "Company Id",
             "type": "string"
           },
+          "country": {
+            "anyOf": [
+              {
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "PE"
+            ],
+            "title": "Country"
+          },
           "cui": {
             "anyOf": [
               {
@@ -3056,6 +3137,21 @@
               "CLI-MTC"
             ],
             "title": "Customer Id"
+          },
+          "district": {
+            "anyOf": [
+              {
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Miraflores"
+            ],
+            "title": "District"
           },
           "gis_binding_id": {
             "anyOf": [
@@ -3087,9 +3183,65 @@
             ],
             "title": "Google Drive Folder Id"
           },
+          "latitude": {
+            "anyOf": [
+              {
+                "maximum": 90.0,
+                "minimum": -90.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
           "lifecycle_stage": {
             "$ref": "#/components/schemas/ProjectLifecycleStage",
             "default": "intake"
+          },
+          "location_source": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "enterprise_wizard"
+            ],
+            "title": "Location Source"
+          },
+          "location_validation_status": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "validated"
+            ],
+            "title": "Location Validation Status"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "maximum": 180.0,
+                "minimum": -180.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           },
           "name": {
             "examples": [
@@ -3136,6 +3288,36 @@
             "minLength": 3,
             "title": "Project Id",
             "type": "string"
+          },
+          "province": {
+            "anyOf": [
+              {
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Lima"
+            ],
+            "title": "Province"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "Lima"
+            ],
+            "title": "Region"
           },
           "status": {
             "$ref": "#/components/schemas/ProjectStatus",

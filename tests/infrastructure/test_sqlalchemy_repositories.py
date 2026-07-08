@@ -90,13 +90,27 @@ def test_sqlalchemy_corporate_portfolio_domain_persists_customer_program_links(t
             websig_instance_id="WEB-PSZ-2026",
             nas_root_uri="nas://CRTG/PSZ-2026",
             google_drive_folder_id="DRIVE-PSZ",
+            country="PE",
+            region="Lima",
+            province="Lima",
+            district="Miraflores",
+            latitude=-12.1211,
+            longitude=-77.0305,
+            location_source="portfolio_domain",
+            location_validation_status="validated",
         )
     )
 
     assert customers.list_by_company("CRTG")[0].customer_id == "CLI-MTC"
     assert programs.list_by_company("CRTG")[0].program_id == "PRG-TRANSPORTE"
     assert saved.websig_instance_id == "WEB-PSZ-2026"
-    assert projects.get_by_company("CRTG", "PSZ-2026").program_id == "PRG-TRANSPORTE"
+    reloaded = projects.get_by_company("CRTG", "PSZ-2026")
+    assert reloaded.program_id == "PRG-TRANSPORTE"
+    assert reloaded.region == "Lima"
+    assert reloaded.province == "Lima"
+    assert reloaded.district == "Miraflores"
+    assert reloaded.latitude == -12.1211
+    assert reloaded.location_validation_status == "validated"
 
 
 def test_sqlalchemy_provisioning_repository_persists_requests(tmp_path) -> None:

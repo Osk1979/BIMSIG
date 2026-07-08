@@ -148,3 +148,9 @@ for executive location review. It shows projects by region, province, and
 district using existing corporate map points and GIS intelligence references,
 and synchronizes project selection with the radar and GIS map without editing
 geometries.
+
+Project administrative location is now formalized through the Enterprise Wizard
+and Portfolio Domain. The Wizard location step captures country, region,
+province, district, corporate coordinates, source, and validation status; Wizard
+activation persists those values into the portfolio project so the Peru map can
+prefer official corporate data over inferred coordinates.

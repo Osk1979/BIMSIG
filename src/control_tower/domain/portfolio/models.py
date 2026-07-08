@@ -89,6 +89,14 @@ class PortfolioProject(BaseModel):
     nas_root_uri: str | None = Field(default=None, min_length=6, examples=["nas://CRTG/PSZ-2026"])
     gis_binding_id: str | None = Field(default=None, min_length=3, examples=["GBD-001"])
     google_drive_folder_id: str | None = Field(default=None, min_length=3, examples=["drive-folder-id"])
+    country: str | None = Field(default=None, min_length=2, examples=["PE"])
+    region: str | None = Field(default=None, min_length=2, examples=["Lima"])
+    province: str | None = Field(default=None, min_length=2, examples=["Lima"])
+    district: str | None = Field(default=None, min_length=2, examples=["Miraflores"])
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    location_source: str | None = Field(default=None, min_length=3, examples=["enterprise_wizard"])
+    location_validation_status: str | None = Field(default=None, min_length=3, examples=["validated"])
 
 
 class PortfolioLifecycleTransition(BaseModel):

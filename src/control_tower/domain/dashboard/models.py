@@ -33,6 +33,12 @@ class CorporateMapPoint(BaseModel):
     status: str = Field(min_length=3)
     latitude: float
     longitude: float
+    country: str | None = None
+    region: str | None = None
+    province: str | None = None
+    district: str | None = None
+    location_source: str | None = None
+    location_validation_status: str | None = None
 
 
 class ProjectComparison(BaseModel):

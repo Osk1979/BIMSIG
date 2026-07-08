@@ -51,7 +51,21 @@ def test_dashboard_service_builds_company_executive_read_model() -> None:
             valid_from=date(2026, 7, 8),
         )
     )
-    portfolio.register(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
+    portfolio.register(
+        PortfolioProject(
+            project_id="PSZ-2026",
+            company_id="CRTG",
+            name="Proyecto Suiza",
+            country="PE",
+            region="Lima",
+            province="Lima",
+            district="Miraflores",
+            latitude=-12.1211,
+            longitude=-77.0305,
+            location_source="portfolio_domain",
+            location_validation_status="validated",
+        )
+    )
     provisioning.request_websig("PSZ-2026")
 
     result = dashboard.executive_dashboard("CRTG")
@@ -59,6 +73,11 @@ def test_dashboard_service_builds_company_executive_read_model() -> None:
     assert result.company_id == "CRTG"
     assert result.portfolio["total_projects"] == 1
     assert result.map_points[0].project_id == "PSZ-2026"
+    assert result.map_points[0].region == "Lima"
+    assert result.map_points[0].province == "Lima"
+    assert result.map_points[0].district == "Miraflores"
+    assert result.map_points[0].latitude == -12.1211
+    assert result.map_points[0].location_validation_status == "validated"
     assert result.users[0].value == "1"
     assert result.licenses[0].value == "1"
     assert result.comparisons[0].name == "Proyecto Suiza"

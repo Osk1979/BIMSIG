@@ -159,8 +159,14 @@ class DashboardService:
                 project_id=project.project_id,
                 name=project.name,
                 status=project.status.value,
-                latitude=round(base_latitude - index * 0.35, 5),
-                longitude=round(base_longitude + index * 0.42, 5),
+                latitude=project.latitude or round(base_latitude - index * 0.35, 5),
+                longitude=project.longitude or round(base_longitude + index * 0.42, 5),
+                country=project.country,
+                region=project.region,
+                province=project.province,
+                district=project.district,
+                location_source=project.location_source,
+                location_validation_status=project.location_validation_status,
             )
             for index, project in enumerate(projects)
         ]
