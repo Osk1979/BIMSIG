@@ -3517,6 +3517,52 @@
         "summary": "Operational Health"
       }
     },
+    "/api/v1/operational/readiness": {
+      "get": {
+        "description": "Return readiness checks required by CI/CD and container orchestration.",
+        "operationId": "operational_readiness_api_v1_operational_readiness_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Operational Readiness Api V1 Operational Readiness Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Operational Readiness"
+      }
+    },
+    "/api/v1/operational/version": {
+      "get": {
+        "description": "Return deployable version metadata.",
+        "operationId": "operational_version_api_v1_operational_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Operational Version Api V1 Operational Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Operational Version"
+      }
+    },
     "/api/v1/portfolio/summary": {
       "get": {
         "description": "Return portfolio status counts.",

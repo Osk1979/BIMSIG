@@ -8,6 +8,8 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 
 - `GET /health`: service health and REV marker.
 - `GET /api/v1/operational/health`: operational service and database health.
+- `GET /api/v1/operational/readiness`: readiness checks for CI/CD and orchestration.
+- `GET /api/v1/operational/version`: deployable service version metadata.
 - `GET /api/v1/companies`: list enterprise companies.
 - `POST /api/v1/companies`: register an enterprise company.
 - `GET /api/v1/companies/{company_id}`: get one enterprise company.
@@ -78,6 +80,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0018 defines the Corporate Executive Dashboard.
 - ADR-0019 defines the NAS Corporate Information Center.
 - ADR-0020 defines the Corporate User Security System.
+- ADR-0021 defines the DevSecOps operating model.
 
 ## Configuration
 

@@ -1,0 +1,32 @@
+services:
+  control-tower:
+    build:
+      context: .
+    environment:
+      CONTROL_TOWER_DATABASE_URL: postgresql+psycopg://controltower:controltower@postgis:5432/controltower
+      CONTROL_TOWER_NAS_ROOT: /data/nas
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgis:
+        condition: service_healthy
+    volumes:
+      - control_tower_data:/data
+
+  postgis:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: controltower
+      POSTGRES_USER: controltower
+      POSTGRES_PASSWORD: controltower
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U controltower -d controltower"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+
+volumes:
+  control_tower_data:
+  postgis_data:

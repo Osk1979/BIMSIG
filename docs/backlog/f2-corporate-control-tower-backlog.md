@@ -67,5 +67,5 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | --- | --- | --- | --- | --- |
 | F2-501 | Add deployment ADR | Done | ADR-0002, ADR-0011 | Runtime target, environment variables, and release process accepted. |
 | F2-502 | Add database backup and restore procedure | Planned | ADR-0005 | Restore drill is documented and testable. |
-| F2-503 | Add observability baseline | In Progress | ADR-0002 | Health and database checks are exposed; logs and error reporting remain pending. |
-| F2-504 | Add release checklist | Planned | ADR-0001 | Each release includes docs, code, tests, version, GitHub push, and USB backup. |
+| F2-503 | Add observability baseline | Done | ADR-0021 | Health, readiness, version, request IDs, logs, and security headers are exposed. |
+| F2-504 | Add release checklist | Done | ADR-0021 | Each release includes docs, code, tests, OpenAPI, Docker build, GitHub push, and USB backup. |

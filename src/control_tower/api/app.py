@@ -8,8 +8,11 @@ ADR references:
 """
 
 import os
+import logging
+import time
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
@@ -76,6 +79,16 @@ from control_tower.infrastructure.database import (
 )
 from control_tower.infrastructure.adapters.provisioning import default_project_stack_adapters
 from control_tower.presentation.dashboard_ui import render_dashboard_html
+
+
+logger = logging.getLogger("control_tower.api")
+
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+}
 
 
 class ProvisionWebSigPayload(BaseModel):
@@ -209,6 +222,30 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         audit_repository,
     )
 
+    @app.middleware("http")
+    async def devsecops_request_controls(request: Request, call_next) -> Response:
+        """Add request traceability, baseline security headers, and HTTP access logs."""
+
+        request_id = request.headers.get("X-Request-ID", uuid4().hex)
+        started = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Response-Time-Ms"] = str(duration_ms)
+        for header, value in SECURITY_HEADERS.items():
+            response.headers.setdefault(header, value)
+        logger.info(
+            "http_request",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
+        return response
+
     @app.get("/health")
     def health() -> dict[str, str]:
         """Return service health metadata."""
@@ -225,6 +262,27 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "revision": "REV12",
             "service": "corporate-control-tower",
             "database": "ok",
+        }
+
+    @app.get("/api/v1/operational/readiness")
+    def operational_readiness() -> dict[str, str]:
+        """Return readiness checks required by CI/CD and container orchestration."""
+
+        check_database(engine)
+        return {
+            "status": "ready",
+            "database": "ready",
+            "revision": "REV12",
+        }
+
+    @app.get("/api/v1/operational/version")
+    def operational_version() -> dict[str, str]:
+        """Return deployable version metadata."""
+
+        return {
+            "service": "corporate-control-tower",
+            "version": __version__,
+            "revision": "REV12",
         }
 
     @app.get("/api/v1/portfolio/summary")
