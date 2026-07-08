@@ -65,7 +65,13 @@ from control_tower.domain.portfolio import (
     ProjectLifecycleStage,
     ProjectStatus,
 )
-from control_tower.domain.provisioning import ProvisioningOperation, ProvisioningRequest, ProvisioningStatus, ProvisioningStep
+from control_tower.domain.provisioning import (
+    ProvisioningExecutionMode,
+    ProvisioningOperation,
+    ProvisioningRequest,
+    ProvisioningStatus,
+    ProvisioningStep,
+)
 
 
 class Base(DeclarativeBase):
@@ -827,6 +833,8 @@ class ProvisioningRequestRecord(Base):
     target_revision: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(80), nullable=False)
     operation: Mapped[str] = mapped_column(String(80), nullable=False)
+    execution_mode: Mapped[str] = mapped_column(String(80), nullable=False)
+    approved_by: Mapped[str | None] = mapped_column(String(160), nullable=True)
     steps_document: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -843,6 +851,8 @@ class ProvisioningRequestRecord(Base):
             target_revision=request.target_revision,
             status=request.status.value,
             operation=request.operation.value,
+            execution_mode=request.execution_mode.value,
+            approved_by=request.approved_by,
             steps_document=json.dumps([step.model_dump(mode="json") for step in request.steps]),
             created_at=now,
             updated_at=now,
@@ -858,6 +868,8 @@ class ProvisioningRequestRecord(Base):
             target_revision=self.target_revision,
             status=ProvisioningStatus(self.status),
             operation=ProvisioningOperation(self.operation),
+            execution_mode=ProvisioningExecutionMode(self.execution_mode),
+            approved_by=self.approved_by,
             steps=[ProvisioningStep.model_validate(step) for step in json.loads(self.steps_document)],
         )
 
@@ -1304,6 +1316,8 @@ class SqlAlchemyProvisioningRequestRepository:
                 record.target_revision = request.target_revision
                 record.status = request.status.value
                 record.operation = request.operation.value
+                record.execution_mode = request.execution_mode.value
+                record.approved_by = request.approved_by
                 record.steps_document = json.dumps([step.model_dump(mode="json") for step in request.steps])
                 record.updated_at = datetime.now(UTC)
             db.flush()

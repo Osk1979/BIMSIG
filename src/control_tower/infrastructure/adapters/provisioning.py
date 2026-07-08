@@ -89,12 +89,12 @@ class PostGISProvisioningAdapter:
             resource_type=self.resource_type,
             name="Create Base PostGIS",
             status=status,
-            reference=f"postgis://{context.company_id}/{self._schema_name(context)}",
+            reference=f"postgis://{context.company_id}/{context.postgis_schema_name}",
         )
 
     @staticmethod
     def _schema_name(context: ProvisioningAdapterContext) -> str:
-        raw = f"{context.company_id}_{context.project_id}".lower()
+        raw = context.postgis_schema_name.lower()
         return re.sub(r"[^a-z0-9_]+", "_", raw).strip("_")
 
 
@@ -124,7 +124,7 @@ class NasProvisioningAdapter:
             resource_type=self.resource_type,
             name="Create Espacio NAS",
             status=status,
-            reference=f"nas://{context.company_id}/{context.project_id}/websig/root",
+            reference=context.nas_root_uri,
         )
 
     def _target(self, context: ProvisioningAdapterContext) -> Path:
@@ -219,7 +219,7 @@ class GeoServerProvisioningAdapter:
 
     @staticmethod
     def _workspace(context: ProvisioningAdapterContext) -> str:
-        return re.sub(r"[^A-Za-z0-9_]+", "_", f"{context.company_id}_{context.project_id}")
+        return re.sub(r"[^A-Za-z0-9_]+", "_", context.geoserver_workspace)
 
 
 class CatalogProvisioningAdapter:

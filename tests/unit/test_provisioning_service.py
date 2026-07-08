@@ -9,7 +9,12 @@ from control_tower.application.provisioning_service import (
 from control_tower.application.enterprise_service import CompanyService, UserService
 from control_tower.domain.enterprise import Company, CompanyMembership, User
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
-from control_tower.domain.provisioning import ProvisioningOperation, ProvisioningResourceType, ProvisioningStatus
+from control_tower.domain.provisioning import (
+    ProvisioningExecutionMode,
+    ProvisioningOperation,
+    ProvisioningResourceType,
+    ProvisioningStatus,
+)
 from control_tower.infrastructure.adapters.provisioning import (
     DocumentStructureProvisioningAdapter,
     NasProvisioningAdapter,
@@ -76,11 +81,14 @@ def test_project_provisioning_engine_creates_enterprise_project_stack() -> None:
                 )
             ],
             catalogs=["disciplinas", "estados_gobierno"],
+            approved_by="portfolio-manager",
         )
     )
 
     assert request.operation == ProvisioningOperation.PROJECT_STACK
     assert request.status == ProvisioningStatus.PROVISIONED
+    assert request.execution_mode == ProvisioningExecutionMode.CONTROLLED
+    assert request.approved_by == "portfolio-manager"
     assert request.company_id == "CRTG"
     assert portfolio.get_project_for_company("CRTG", "PSZ-2026").status == ProjectStatus.ACTIVE
     assert {
@@ -101,6 +109,21 @@ def test_project_provisioning_engine_creates_enterprise_project_stack() -> None:
     assert "provisioning.project_stack_provisioned" in {event.action for event in audit.events}
 
 
+def test_project_provisioning_engine_requires_approval_for_controlled_execution() -> None:
+    companies = CompanyService(FakeCompanyRepository())
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies)
+    portfolio = PortfolioService(FakePortfolioProjectRepository())
+    engine = ProjectProvisioningEngine(companies, users, portfolio, FakeProvisioningRequestRepository())
+
+    with pytest.raises(ValueError, match="approved_by"):
+        engine.provision_project_stack(
+            ProjectProvisioningSpec(
+                company=Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"),
+                project=PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"),
+            )
+        )
+
+
 def test_project_provisioning_engine_dry_run_has_no_side_effects() -> None:
     companies = CompanyService(FakeCompanyRepository())
     users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies)
@@ -116,6 +139,7 @@ def test_project_provisioning_engine_dry_run_has_no_side_effects() -> None:
 
     assert request.operation == ProvisioningOperation.PROJECT_STACK
     assert request.status == ProvisioningStatus.REQUESTED
+    assert request.execution_mode == ProvisioningExecutionMode.DRY_RUN
     assert {step.status for step in request.steps} == {"planned"}
     assert companies.exists("CRTG") is False
     assert portfolio.get_project("PSZ-2026") is None
@@ -141,9 +165,44 @@ def test_project_provisioning_engine_executes_filesystem_adapters(tmp_path) -> N
             company=Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"),
             project=PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"),
             document_structure=["00_gobierno", "03_gis"],
+            approved_by="portfolio-manager",
         )
     )
 
     assert (tmp_path / "CRTG" / "PSZ-2026" / "websig").is_dir()
     assert (tmp_path / "CRTG" / "PSZ-2026" / "documents" / "00_gobierno").is_dir()
     assert (tmp_path / "CRTG" / "PSZ-2026" / "documents" / "03_gis").is_dir()
+
+
+def test_websig_factory_execute_updates_project_references() -> None:
+    companies = CompanyService(FakeCompanyRepository())
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies)
+    portfolio = PortfolioService(FakePortfolioProjectRepository())
+    engine = ProjectProvisioningEngine(
+        companies,
+        users,
+        portfolio,
+        FakeProvisioningRequestRepository(),
+        adapters=default_project_stack_adapters(),
+    )
+
+    request = engine.execute_websig_factory(
+        ProjectProvisioningSpec(
+            company=Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"),
+            project=PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"),
+            approved_by="portfolio-manager",
+        )
+    )
+    project = portfolio.get_project_for_company("CRTG", "PSZ-2026")
+
+    assert request.operation == ProvisioningOperation.WEB_SIG_FACTORY
+    assert request.status == ProvisioningStatus.PROVISIONED
+    assert {step.resource_type for step in request.steps} >= {
+        ProvisioningResourceType.FACTORY_BLUEPRINT,
+        ProvisioningResourceType.GOVERNANCE_GATE,
+        ProvisioningResourceType.WEB_SIG,
+    }
+    assert project.websig_instance_id == "WEB-CRTG-PSZ-2026"
+    assert project.websig_url == "websig://CRTG/crtg-psz-2026"
+    assert project.nas_root_uri == "nas://CRTG/PSZ-2026/websig/root"
+    assert project.gis_binding_id == "GBD-CRTG-PSZ-2026"

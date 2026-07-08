@@ -90,6 +90,7 @@ def test_sqlalchemy_provisioning_repository_persists_requests(tmp_path) -> None:
             request_id="PPE-001",
             project_id="PSZ-2026",
             company_id="CRTG",
+            approved_by="portfolio-manager",
             steps=[
                 ProvisioningStep(
                     step_id="websig",
@@ -104,6 +105,8 @@ def test_sqlalchemy_provisioning_repository_persists_requests(tmp_path) -> None:
 
     assert saved.request_id == "PPE-001"
     assert saved.project_id == "PSZ-2026"
+    assert reloaded.approved_by == "portfolio-manager"
+    assert reloaded.execution_mode == "controlled"
     assert reloaded.company_id == "CRTG"
     assert reloaded.steps[0].resource_type == ProvisioningResourceType.WEB_SIG
 

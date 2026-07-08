@@ -31,6 +31,11 @@ class ProvisioningAdapterContext(Protocol):
     company_id: str
     project_id: str
     websig_slug: str
+    websig_url: str
+    nas_root_uri: str
+    postgis_schema_name: str
+    geoserver_workspace: str
     dashboard_id: str
     document_structure: list[str]
     catalogs: list[str]
+    enabled_modules: list[str]

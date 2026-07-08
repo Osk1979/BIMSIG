@@ -1142,6 +1142,42 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         return provision_project_stack(company_id, payload)
 
+    @app.post(
+        "/api/v1/companies/{company_id}/websig-factory/dry-run",
+        response_model=ProvisioningRequest,
+        status_code=status.HTTP_200_OK,
+    )
+    def dry_run_websig_factory(company_id: str, payload: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Return a governed WEB SIG Factory plan without side effects."""
+
+        if payload.company.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Factory company_id must match path company_id",
+            )
+        try:
+            return provisioning_engine.dry_run_websig_factory(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/websig-factory/execute",
+        response_model=ProvisioningRequest,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def execute_websig_factory(company_id: str, payload: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Execute controlled WEB SIG Factory provisioning."""
+
+        if payload.company.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Factory company_id must match path company_id",
+            )
+        try:
+            return provisioning_engine.execute_websig_factory(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
     @app.get("/api/v1/provisioning/websig", response_model=list[ProvisioningRequest])
     def list_websig_provisioning_requests() -> list[ProvisioningRequest]:
         """List WEB SIG provisioning requests."""

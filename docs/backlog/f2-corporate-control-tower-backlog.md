@@ -53,6 +53,7 @@ Corporate Governance System defined by REV13 and local ADR-0024.
 | F2-302 | Create WEB SIG registry model | Planned | ADR-0001, ADR-0003, ADR-0005 | Tower can register WEB SIG instances per project. |
 | F2-303 | Add dry-run provisioning plan endpoint | Planned | ADR-0003 | API returns planned actions without side effects. |
 | F2-304 | Add provisioning request audit trail | Done | ADR-0003, ADR-0005, ADR-0006 | Provisioning requests are recorded and queryable through audit events. |
+| F2-305 | Add controlled WEB SIG Factory provisioning | Done | ADR-0026 | Dry-run and approved execution govern WEB SIG creation references without operating WEB SIG. |
 
 ## Milestone F2.4: Enterprise Integrations
 

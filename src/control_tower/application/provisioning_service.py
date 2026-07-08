@@ -18,14 +18,16 @@ from pydantic import BaseModel, Field
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.enterprise import Company, CompanyMembership, User
 from control_tower.domain.portfolio import PortfolioProject
-from control_tower.domain.portfolio import ProjectStatus
+from control_tower.domain.portfolio import ProjectLifecycleStage, ProjectStatus
 from control_tower.domain.provisioning import (
+    ProvisioningExecutionMode,
     ProvisioningOperation,
     ProvisioningRequest,
     ProvisioningResourceType,
     ProvisioningStatus,
     ProvisioningStep,
     ProvisioningStepStatus,
+    WebSigFactoryBlueprint,
 )
 
 from .enterprise_service import CompanyService, UserService
@@ -54,6 +56,8 @@ class ProjectProvisioningSpec(BaseModel):
     )
     websig_slug: str | None = None
     dashboard_id: str | None = None
+    factory_blueprint: WebSigFactoryBlueprint = Field(default_factory=WebSigFactoryBlueprint)
+    approved_by: str | None = Field(default=None, min_length=3)
 
 
 class ProjectProvisioningContext(BaseModel):
@@ -62,9 +66,14 @@ class ProjectProvisioningContext(BaseModel):
     company_id: str
     project_id: str
     websig_slug: str
+    websig_url: str
+    nas_root_uri: str
+    postgis_schema_name: str
+    geoserver_workspace: str
     dashboard_id: str
     document_structure: list[str]
     catalogs: list[str]
+    enabled_modules: list[str]
 
 
 class ProvisioningService:
@@ -163,13 +172,43 @@ class ProjectProvisioningEngine:
             company_id=spec.company.company_id,
             status=ProvisioningStatus.REQUESTED,
             operation=ProvisioningOperation.PROJECT_STACK,
+            execution_mode=ProvisioningExecutionMode.DRY_RUN,
             steps=self._build_steps(spec, context, dry_run=True),
         )
+
+    def dry_run_websig_factory(self, spec: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Build a governed WEB SIG Factory plan without side effects."""
+
+        self._validate_spec(spec)
+        context = self._context(spec)
+        return ProvisioningRequest(
+            request_id=f"WSF-DRYRUN-{uuid4().hex[:8]}",
+            project_id=spec.project.project_id,
+            company_id=spec.company.company_id,
+            status=ProvisioningStatus.REQUESTED,
+            operation=ProvisioningOperation.WEB_SIG_FACTORY,
+            execution_mode=ProvisioningExecutionMode.DRY_RUN,
+            steps=self._build_steps(spec, context, dry_run=True, operation=ProvisioningOperation.WEB_SIG_FACTORY),
+        )
+
+    def execute_websig_factory(self, spec: ProjectProvisioningSpec) -> ProvisioningRequest:
+        """Execute controlled WEB SIG Factory provisioning for one project."""
+
+        return self._provision(spec, operation=ProvisioningOperation.WEB_SIG_FACTORY)
 
     def provision_project_stack(self, spec: ProjectProvisioningSpec) -> ProvisioningRequest:
         """Provision the enterprise control-plane records for one project stack."""
 
+        return self._provision(spec, operation=ProvisioningOperation.PROJECT_STACK)
+
+    def _provision(
+        self,
+        spec: ProjectProvisioningSpec,
+        operation: ProvisioningOperation,
+    ) -> ProvisioningRequest:
         self._validate_spec(spec)
+        if spec.approved_by is None:
+            raise ValueError("Controlled provisioning requires approved_by")
         context = self._context(spec)
 
         company = self._companies.register(spec.company)
@@ -181,13 +220,17 @@ class ProjectProvisioningEngine:
                 raise ValueError("Membership company_id must match provisioning company_id")
             self._users.add_membership(membership)
 
-        steps = self._build_steps(spec, context, dry_run=False)
+        steps = self._build_steps(spec, context, dry_run=False, operation=operation)
+        project = self._apply_factory_references(project, context)
+        self._portfolio.register_for_company(company.company_id, project)
         request = ProvisioningRequest(
             request_id=f"PPE-{uuid4().hex[:12]}",
             project_id=project.project_id,
             company_id=company.company_id,
             status=ProvisioningStatus.PROVISIONED,
-            operation=ProvisioningOperation.PROJECT_STACK,
+            operation=operation,
+            execution_mode=ProvisioningExecutionMode.CONTROLLED,
+            approved_by=spec.approved_by,
             steps=steps,
         )
         saved = self._repository.save(request)
@@ -197,7 +240,7 @@ class ProjectProvisioningEngine:
             ProjectStatus.ACTIVE,
         )
         self._audit(
-            action="provisioning.project_stack_provisioned",
+            action=f"provisioning.{operation.value}_provisioned",
             entity_id=saved.request_id,
             detail=f"Enterprise project stack provisioned for {company.company_id}/{project.project_id}.",
         )
@@ -210,13 +253,22 @@ class ProjectProvisioningEngine:
     def _context(self, spec: ProjectProvisioningSpec) -> ProjectProvisioningContext:
         company_id = spec.company.company_id
         project_id = spec.project.project_id
+        blueprint = spec.factory_blueprint
+        websig_slug = spec.websig_slug or blueprint.websig_slug or f"{company_id.lower()}-{project_id.lower()}"
+        postgis_schema = blueprint.postgis_schema_name or self._safe_identifier(f"{company_id}_{project_id}")
+        geoserver_workspace = blueprint.geoserver_workspace or self._safe_identifier(f"{company_id}_{project_id}").upper()
         return ProjectProvisioningContext(
             company_id=company_id,
             project_id=project_id,
-            websig_slug=spec.websig_slug or f"{company_id.lower()}-{project_id.lower()}",
+            websig_slug=websig_slug,
+            websig_url=blueprint.websig_url or f"websig://{company_id}/{websig_slug}",
+            nas_root_uri=blueprint.nas_root_uri or f"nas://{company_id}/{project_id}/websig/root",
+            postgis_schema_name=postgis_schema,
+            geoserver_workspace=geoserver_workspace,
             dashboard_id=spec.dashboard_id or f"DASH-{company_id}-{project_id}",
             document_structure=spec.document_structure,
             catalogs=spec.catalogs,
+            enabled_modules=blueprint.enabled_modules,
         )
 
     def _build_steps(
@@ -224,11 +276,26 @@ class ProjectProvisioningEngine:
         spec: ProjectProvisioningSpec,
         context: ProjectProvisioningContext,
         dry_run: bool,
+        operation: ProvisioningOperation = ProvisioningOperation.PROJECT_STACK,
     ) -> list[ProvisioningStep]:
         company_id = spec.company.company_id
         project_id = spec.project.project_id
         status = ProvisioningStepStatus.PLANNED if dry_run else ProvisioningStepStatus.SUCCEEDED
         steps = [
+            self._step(
+                "factory-blueprint",
+                ProvisioningResourceType.FACTORY_BLUEPRINT,
+                "Validar WEB SIG Factory Blueprint",
+                spec.factory_blueprint.template_id,
+                status,
+            ),
+            self._step(
+                "governance-gate",
+                ProvisioningResourceType.GOVERNANCE_GATE,
+                f"Verificar aprobacion {operation.value}",
+                "dry-run" if dry_run else f"approved-by:{spec.approved_by}",
+                status,
+            ),
             self._step("company", ProvisioningResourceType.COMPANY, "Create Empresa", company_id, status),
             self._step("project", ProvisioningResourceType.PROJECT, "Create Proyecto", project_id, status),
         ]
@@ -254,6 +321,27 @@ class ProjectProvisioningEngine:
             for membership in spec.memberships
         )
         return steps
+
+    @staticmethod
+    def _apply_factory_references(
+        project: PortfolioProject,
+        context: ProjectProvisioningContext,
+    ) -> PortfolioProject:
+        return project.model_copy(
+            update={
+                "websig_instance_id": f"WEB-{context.company_id}-{context.project_id}",
+                "websig_url": context.websig_url,
+                "nas_root_uri": context.nas_root_uri,
+                "gis_binding_id": f"GBD-{context.company_id}-{context.project_id}",
+                "lifecycle_stage": ProjectLifecycleStage.EXECUTION,
+            }
+        )
+
+    @staticmethod
+    def _safe_identifier(value: str) -> str:
+        import re
+
+        return re.sub(r"[^A-Za-z0-9_]+", "_", value).strip("_")
 
     @staticmethod
     def _step(

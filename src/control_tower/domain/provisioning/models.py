@@ -8,6 +8,7 @@ ADR references:
 - ADR-0009: GeoServer integration.
 - ADR-0014: Enterprise multitenancy.
 - ADR-0015: Tower vs WEB SIG operational boundary.
+- ADR-0025: Corporate Portfolio Domain.
 """
 
 from enum import StrEnum
@@ -29,6 +30,14 @@ class ProvisioningOperation(StrEnum):
 
     WEB_SIG = "websig"
     PROJECT_STACK = "project_stack"
+    WEB_SIG_FACTORY = "websig_factory"
+
+
+class ProvisioningExecutionMode(StrEnum):
+    """Execution mode for controlled provisioning workflows."""
+
+    DRY_RUN = "dry_run"
+    CONTROLLED = "controlled"
 
 
 class ProvisioningStepStatus(StrEnum):
@@ -53,6 +62,22 @@ class ProvisioningResourceType(StrEnum):
     USER = "user"
     ROLE = "role"
     CATALOG = "catalog"
+    FACTORY_BLUEPRINT = "factory_blueprint"
+    GOVERNANCE_GATE = "governance_gate"
+
+
+class WebSigFactoryBlueprint(BaseModel):
+    """Governed WEB SIG Factory blueprint used to provision a project instance."""
+
+    template_id: str = Field(default="WEB-SIG-ENTERPRISE-REV13", min_length=3)
+    websig_slug: str | None = Field(default=None, min_length=3)
+    websig_url: str | None = Field(default=None, min_length=6)
+    nas_root_uri: str | None = Field(default=None, min_length=6)
+    postgis_schema_name: str | None = Field(default=None, min_length=3)
+    geoserver_workspace: str | None = Field(default=None, min_length=3)
+    enabled_modules: list[str] = Field(
+        default_factory=lambda: ["portfolio", "gis", "nas", "dashboard", "audit"]
+    )
 
 
 class ProvisioningStep(BaseModel):
@@ -74,4 +99,6 @@ class ProvisioningRequest(BaseModel):
     target_revision: str = Field(default="REV12")
     status: ProvisioningStatus = ProvisioningStatus.REQUESTED
     operation: ProvisioningOperation = ProvisioningOperation.WEB_SIG
+    execution_mode: ProvisioningExecutionMode = ProvisioningExecutionMode.CONTROLLED
+    approved_by: str | None = Field(default=None, min_length=3)
     steps: list[ProvisioningStep] = Field(default_factory=list)

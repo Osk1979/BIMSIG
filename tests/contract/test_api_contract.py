@@ -98,6 +98,7 @@ def test_enterprise_project_stack_provisioning_contract(tmp_path) -> None:
                 }
             ],
             "catalogs": ["disciplinas", "estados_gobierno"],
+            "approved_by": "portfolio-manager",
         },
     )
     project = client.get("/api/v1/companies/CRTG/projects/PSZ-2026")
@@ -106,6 +107,8 @@ def test_enterprise_project_stack_provisioning_contract(tmp_path) -> None:
     assert provisioned.status_code == 202
     assert provisioned.json()["operation"] == "project_stack"
     assert provisioned.json()["status"] == "provisioned"
+    assert provisioned.json()["execution_mode"] == "controlled"
+    assert provisioned.json()["approved_by"] == "portfolio-manager"
     assert provisioned.json()["company_id"] == "CRTG"
     assert project.json()["status"] == "active"
     assert requests.status_code == 200
@@ -113,6 +116,8 @@ def test_enterprise_project_stack_provisioning_contract(tmp_path) -> None:
     assert {
         step["resource_type"] for step in provisioned.json()["steps"]
     } >= {
+        "factory_blueprint",
+        "governance_gate",
         "company",
         "project",
         "websig",
@@ -152,6 +157,52 @@ def test_enterprise_project_stack_dry_run_contract(tmp_path) -> None:
     assert {step["status"] for step in dry_run.json()["steps"]} == {"planned"}
     assert client.get("/api/v1/companies/CRTG").status_code == 404
     assert client.get("/api/v1/provisioning/websig").json() == []
+
+
+def test_websig_factory_controlled_execution_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    payload = {
+        "company": {
+            "company_id": "CRTG",
+            "legal_name": "CRTG S.A.C.",
+            "display_name": "CRTG",
+        },
+        "project": {
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "name": "Proyecto Suiza",
+        },
+        "factory_blueprint": {
+            "template_id": "WEB-SIG-ENTERPRISE-REV13",
+            "websig_slug": "crtg-psz-2026",
+            "websig_url": "https://websig.example.com/crtg/psz-2026",
+            "nas_root_uri": "nas://CRTG/PSZ-2026/websig/root",
+            "postgis_schema_name": "crtg_psz_2026",
+            "geoserver_workspace": "CRTG_PSZ_2026",
+        },
+    }
+
+    dry_run = client.post("/api/v1/companies/CRTG/websig-factory/dry-run", json=payload)
+    rejected = client.post("/api/v1/companies/CRTG/websig-factory/execute", json=payload)
+    executed = client.post(
+        "/api/v1/companies/CRTG/websig-factory/execute",
+        json={**payload, "approved_by": "portfolio-manager"},
+    )
+    project = client.get("/api/v1/companies/CRTG/projects/PSZ-2026")
+
+    assert dry_run.status_code == 200
+    assert dry_run.json()["operation"] == "websig_factory"
+    assert dry_run.json()["execution_mode"] == "dry_run"
+    assert {step["status"] for step in dry_run.json()["steps"]} == {"planned"}
+    assert rejected.status_code == 400
+    assert "approved_by" in rejected.json()["detail"]
+    assert executed.status_code == 202
+    assert executed.json()["status"] == "provisioned"
+    assert executed.json()["approved_by"] == "portfolio-manager"
+    assert project.json()["websig_instance_id"] == "WEB-CRTG-PSZ-2026"
+    assert project.json()["websig_url"] == "https://websig.example.com/crtg/psz-2026"
+    assert project.json()["nas_root_uri"] == "nas://CRTG/PSZ-2026/websig/root"
+    assert project.json()["gis_binding_id"] == "GBD-CRTG-PSZ-2026"
 
 
 def test_governance_status_and_audit_contract(tmp_path) -> None:

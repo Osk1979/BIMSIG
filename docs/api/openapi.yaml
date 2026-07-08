@@ -2284,6 +2284,18 @@
       "ProjectProvisioningSpec": {
         "description": "Complete input for provisioning a BIMSIG Enterprise project stack.",
         "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
           "catalogs": {
             "items": {
               "type": "string"
@@ -2311,6 +2323,9 @@
             },
             "title": "Document Structure",
             "type": "array"
+          },
+          "factory_blueprint": {
+            "$ref": "#/components/schemas/WebSigFactoryBlueprint"
           },
           "memberships": {
             "items": {
@@ -2375,11 +2390,21 @@
         "title": "ProvisionWebSigPayload",
         "type": "object"
       },
+      "ProvisioningExecutionMode": {
+        "description": "Execution mode for controlled provisioning workflows.",
+        "enum": [
+          "dry_run",
+          "controlled"
+        ],
+        "title": "ProvisioningExecutionMode",
+        "type": "string"
+      },
       "ProvisioningOperation": {
         "description": "Supported provisioning orchestration operations.",
         "enum": [
           "websig",
-          "project_stack"
+          "project_stack",
+          "websig_factory"
         ],
         "title": "ProvisioningOperation",
         "type": "string"
@@ -2387,6 +2412,18 @@
       "ProvisioningRequest": {
         "description": "Intent to create a dedicated WEB SIG for a portfolio project.",
         "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
           "company_id": {
             "anyOf": [
               {
@@ -2398,6 +2435,10 @@
               }
             ],
             "title": "Company Id"
+          },
+          "execution_mode": {
+            "$ref": "#/components/schemas/ProvisioningExecutionMode",
+            "default": "controlled"
           },
           "operation": {
             "$ref": "#/components/schemas/ProvisioningOperation",
@@ -2450,7 +2491,9 @@
           "dashboard",
           "user",
           "role",
-          "catalog"
+          "catalog",
+          "factory_blueprint",
+          "governance_gate"
         ],
         "title": "ProvisioningResourceType",
         "type": "string"
@@ -2863,6 +2906,86 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "WebSigFactoryBlueprint": {
+        "description": "Governed WEB SIG Factory blueprint used to provision a project instance.",
+        "properties": {
+          "enabled_modules": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Enabled Modules",
+            "type": "array"
+          },
+          "geoserver_workspace": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geoserver Workspace"
+          },
+          "nas_root_uri": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nas Root Uri"
+          },
+          "postgis_schema_name": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postgis Schema Name"
+          },
+          "template_id": {
+            "default": "WEB-SIG-ENTERPRISE-REV13",
+            "minLength": 3,
+            "title": "Template Id",
+            "type": "string"
+          },
+          "websig_slug": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Websig Slug"
+          },
+          "websig_url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Websig Url"
+          }
+        },
+        "title": "WebSigFactoryBlueprint",
         "type": "object"
       }
     }
@@ -4974,6 +5097,106 @@
           }
         },
         "summary": "List Company Websig Provisioning Requests"
+      }
+    },
+    "/api/v1/companies/{company_id}/websig-factory/dry-run": {
+      "post": {
+        "description": "Return a governed WEB SIG Factory plan without side effects.",
+        "operationId": "dry_run_websig_factory_api_v1_companies__company_id__websig_factory_dry_run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectProvisioningSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisioningRequest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dry Run Websig Factory"
+      }
+    },
+    "/api/v1/companies/{company_id}/websig-factory/execute": {
+      "post": {
+        "description": "Execute controlled WEB SIG Factory provisioning.",
+        "operationId": "execute_websig_factory_api_v1_companies__company_id__websig_factory_execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectProvisioningSpec"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisioningRequest"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Execute Websig Factory"
       }
     },
     "/api/v1/license-plans": {
