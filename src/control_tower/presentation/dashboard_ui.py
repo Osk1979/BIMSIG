@@ -316,7 +316,7 @@ def render_dashboard_html() -> str:
       font-weight: 760;
       text-transform: uppercase;
       font-size: 11px;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
       line-height: 1.25;
     }
     .notification .message {
@@ -978,8 +978,8 @@ def render_dashboard_html() -> str:
     function recentEvents() {
       if (auditEvents.length) {
         return auditEvents.map(event => ({
-          kind: event.action || event.event_type || "Auditoria",
-          message: event.description || event.entity_id || event.actor || "Evento corporativo registrado",
+          kind: auditKind(event.action || event.event_type),
+          message: auditMessage(event),
           time: event.created_at || event.timestamp || "audit"
         }));
       }
@@ -1000,6 +1000,32 @@ def render_dashboard_html() -> str:
         message,
         time: `T-${index + 1}`
       }));
+    }
+
+    function auditKind(action) {
+      const value = String(action || "Auditoria").toLowerCase();
+      if (value.includes("wizard")) return "Wizard";
+      if (value.includes("workflow")) return "Workflow";
+      if (value.includes("lifecycle")) return "Lifecycle";
+      if (value.includes("provision")) return "Provisioning";
+      if (value.includes("gis")) return "GIS";
+      if (value.includes("nas")) return "NAS";
+      if (value.includes("security") || value.includes("user")) return "Security";
+      return "Audit";
+    }
+
+    function auditMessage(event) {
+      const action = event.action || event.event_type || "Evento corporativo";
+      const entity = event.entity_id || event.description || event.actor || "sin entidad";
+      return `${readableAction(action)} / ${entity}`;
+    }
+
+    function readableAction(action) {
+      return String(action)
+        .replaceAll("_", " ")
+        .replaceAll(".", " ")
+        .toLowerCase()
+        .replace(/\\b\\w/g, letter => letter.toUpperCase());
     }
 
     function labelPhase(phase) {
