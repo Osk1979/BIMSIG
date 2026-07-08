@@ -21,6 +21,17 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `POST /api/v1/companies/{company_id}/licenses`: assign a license plan to company.
 - `GET /dashboard`: integrated corporate executive dashboard UI.
 - `GET /api/v1/companies/{company_id}/dashboard/executive`: company-scoped executive dashboard read model.
+- `GET /api/v1/companies/{company_id}/nas/assets`: list Corporate Information Center assets.
+- `POST /api/v1/companies/{company_id}/nas/assets`: register a Corporate Information Center asset.
+- `GET /api/v1/nas/assets/{asset_id}`: get one information asset.
+- `POST /api/v1/nas/assets/{asset_id}/versions`: register an information asset version.
+- `GET /api/v1/nas/assets/{asset_id}/versions`: list information asset versions.
+- `PATCH /api/v1/nas/assets/{asset_id}/metadata`: update information asset metadata.
+- `PATCH /api/v1/nas/assets/{asset_id}/permissions`: set information asset permission.
+- `GET /api/v1/companies/{company_id}/nas/snapshots`: list information snapshots.
+- `POST /api/v1/companies/{company_id}/nas/snapshots`: create an information snapshot.
+- `GET /api/v1/companies/{company_id}/nas/backups`: list information backups.
+- `POST /api/v1/companies/{company_id}/nas/backups`: register an information backup.
 - `GET /api/v1/companies/{company_id}/portfolio/summary`: company-scoped portfolio counts.
 - `GET /api/v1/companies/{company_id}/projects`: list company-scoped projects.
 - `POST /api/v1/companies/{company_id}/projects`: register a project inside a company.
@@ -52,6 +63,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0013 defines the first durable portfolio/provisioning schema.
 - ADR-0017 defines the integrated Project Provisioning Engine.
 - ADR-0018 defines the Corporate Executive Dashboard.
+- ADR-0019 defines the NAS Corporate Information Center.
 
 ## Configuration
 

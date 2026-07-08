@@ -274,6 +274,65 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "data-theme=\"dark\"" in html.text
 
 
+def test_nas_information_center_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+    )
+
+    asset = client.post(
+        "/api/v1/companies/CRTG/nas/assets",
+        json={
+            "asset_id": "NAS-001",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "name": "Modelo federado IFC",
+            "asset_type": "ifc",
+            "logical_uri": "nas://CRTG/PSZ-2026/bim/ifc/model.ifc",
+            "metadata": {"discipline": "bim"},
+            "google_drive_id": "drive-folder-1",
+            "geoserver_reference": "geoserver://workspace/CRTG_PSZ",
+            "postgis_reference": "postgis://CRTG/psz_2026",
+            "docker_reference": "docker://websig/psz-2026",
+        },
+    )
+    version = client.post(
+        "/api/v1/nas/assets/NAS-001/versions",
+        json={"version": "v2", "logical_uri": "nas://CRTG/PSZ-2026/bim/ifc/model-v2.ifc"},
+    )
+    permission = client.patch(
+        "/api/v1/nas/assets/NAS-001/permissions",
+        json={"principal": "role:portfolio_manager", "permission": "admin"},
+    )
+    snapshot = client.post(
+        "/api/v1/companies/CRTG/nas/snapshots",
+        json={"name": "Cierre Semanal", "project_id": "PSZ-2026", "asset_ids": ["NAS-001"]},
+    )
+    backup = client.post(
+        "/api/v1/companies/CRTG/nas/backups",
+        json={
+            "project_id": "PSZ-2026",
+            "snapshot_id": snapshot.json()["snapshot_id"],
+            "logical_uri": "nas://CRTG/PSZ-2026/backups/cierre.zip",
+        },
+    )
+
+    assert asset.status_code == 201
+    assert asset.json()["asset_type"] == "ifc"
+    assert version.status_code == 200
+    assert version.json()["version"] == "v2"
+    assert permission.json()["permissions"]["role:portfolio_manager"] == "admin"
+    assert snapshot.status_code == 200
+    assert backup.status_code == 200
+    assert client.get("/api/v1/companies/CRTG/nas/assets").json()[0]["asset_id"] == "NAS-001"
+    assert client.get("/api/v1/nas/assets/NAS-001/versions").json()[0]["version"] == "v2"
+
+
 def test_project_registration_persists_across_app_instances(tmp_path) -> None:
     database_url = sqlite_url(tmp_path)
     first_client = TestClient(create_app(database_url=database_url))

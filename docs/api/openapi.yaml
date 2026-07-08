@@ -1,6 +1,81 @@
 {
   "components": {
     "schemas": {
+      "AssetMetadataPayload": {
+        "description": "API payload to merge information asset metadata.",
+        "properties": {
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          }
+        },
+        "required": [
+          "metadata"
+        ],
+        "title": "AssetMetadataPayload",
+        "type": "object"
+      },
+      "AssetPermissionPayload": {
+        "description": "API payload to set one information asset permission.",
+        "properties": {
+          "permission": {
+            "$ref": "#/components/schemas/InformationPermission"
+          },
+          "principal": {
+            "minLength": 3,
+            "title": "Principal",
+            "type": "string"
+          }
+        },
+        "required": [
+          "principal",
+          "permission"
+        ],
+        "title": "AssetPermissionPayload",
+        "type": "object"
+      },
+      "AssetVersionPayload": {
+        "description": "API payload to register an information asset version.",
+        "properties": {
+          "checksum_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256"
+          },
+          "logical_uri": {
+            "minLength": 6,
+            "title": "Logical Uri",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "version": {
+            "minLength": 1,
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "logical_uri"
+        ],
+        "title": "AssetVersionPayload",
+        "type": "object"
+      },
       "AuditEvent": {
         "description": "State-changing action recorded by Corporate Control Tower.",
         "properties": {
@@ -78,6 +153,63 @@
           "entity_id"
         ],
         "title": "AuditEvent",
+        "type": "object"
+      },
+      "BackupPayload": {
+        "description": "API payload to register an information backup.",
+        "properties": {
+          "checksum_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256"
+          },
+          "logical_uri": {
+            "minLength": 6,
+            "title": "Logical Uri",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          }
+        },
+        "required": [
+          "logical_uri"
+        ],
+        "title": "BackupPayload",
         "type": "object"
       },
       "Company": {
@@ -470,6 +602,393 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InformationAsset": {
+        "description": "Enterprise information asset registered by the Corporate Information Center.",
+        "properties": {
+          "asset_id": {
+            "examples": [
+              "NAS-001"
+            ],
+            "minLength": 3,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "asset_type": {
+            "$ref": "#/components/schemas/InformationAssetType"
+          },
+          "checksum_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256"
+          },
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "docker_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Docker Reference"
+          },
+          "geoserver_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geoserver Reference"
+          },
+          "google_drive_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Google Drive Id"
+          },
+          "logical_uri": {
+            "examples": [
+              "nas://CRTG/PSZ-2026/bim/ifc/model.ifc"
+            ],
+            "minLength": 6,
+            "title": "Logical Uri",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "name": {
+            "examples": [
+              "Modelo federado IFC"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "permissions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/InformationPermission"
+            },
+            "title": "Permissions",
+            "type": "object"
+          },
+          "postgis_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postgis Reference"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "PSZ-2026"
+            ],
+            "title": "Project Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InformationAssetStatus",
+            "default": "registered"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "version": {
+            "default": "v1",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "company_id",
+          "name",
+          "asset_type",
+          "logical_uri"
+        ],
+        "title": "InformationAsset",
+        "type": "object"
+      },
+      "InformationAssetStatus": {
+        "description": "Lifecycle status for a registered information asset.",
+        "enum": [
+          "registered",
+          "versioned",
+          "snapshotted",
+          "backed_up",
+          "archived"
+        ],
+        "title": "InformationAssetStatus",
+        "type": "string"
+      },
+      "InformationAssetType": {
+        "description": "Information asset file and resource classes governed through NAS.",
+        "enum": [
+          "documentation",
+          "ifc",
+          "dwg",
+          "landxml",
+          "photography",
+          "video",
+          "shapefile",
+          "geojson",
+          "geoserver",
+          "postgis",
+          "docker",
+          "google_drive",
+          "backup"
+        ],
+        "title": "InformationAssetType",
+        "type": "string"
+      },
+      "InformationBackup": {
+        "description": "Backup manifest registered by the Corporate Information Center.",
+        "properties": {
+          "backup_id": {
+            "minLength": 3,
+            "title": "Backup Id",
+            "type": "string"
+          },
+          "checksum_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "logical_uri": {
+            "minLength": 6,
+            "title": "Logical Uri",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          }
+        },
+        "required": [
+          "backup_id",
+          "company_id",
+          "logical_uri"
+        ],
+        "title": "InformationBackup",
+        "type": "object"
+      },
+      "InformationPermission": {
+        "description": "Coarse-grained permission levels for information assets.",
+        "enum": [
+          "read",
+          "write",
+          "admin"
+        ],
+        "title": "InformationPermission",
+        "type": "string"
+      },
+      "InformationSnapshot": {
+        "description": "Snapshot manifest for a company or project information state.",
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "logical_uri": {
+            "minLength": 6,
+            "title": "Logical Uri",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "snapshot_id": {
+            "minLength": 3,
+            "title": "Snapshot Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "company_id",
+          "name",
+          "logical_uri"
+        ],
+        "title": "InformationSnapshot",
+        "type": "object"
+      },
+      "InformationVersion": {
+        "description": "Immutable version reference for an information asset.",
+        "properties": {
+          "asset_id": {
+            "minLength": 3,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "checksum_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum Sha256"
+          },
+          "logical_uri": {
+            "minLength": 6,
+            "title": "Logical Uri",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "version": {
+            "minLength": 1,
+            "title": "Version",
+            "type": "string"
+          },
+          "version_id": {
+            "minLength": 3,
+            "title": "Version Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version_id",
+          "asset_id",
+          "version",
+          "logical_uri"
+        ],
+        "title": "InformationVersion",
         "type": "object"
       },
       "LicensePlan": {
@@ -893,6 +1412,47 @@
         ],
         "title": "ProvisioningStepStatus",
         "type": "string"
+      },
+      "SnapshotPayload": {
+        "description": "API payload to create an information snapshot.",
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "SnapshotPayload",
+        "type": "object"
       },
       "User": {
         "description": "Person or service identity known by the platform.",
@@ -1382,6 +1942,282 @@
           }
         },
         "summary": "Add Company Membership"
+      }
+    },
+    "/api/v1/companies/{company_id}/nas/assets": {
+      "get": {
+        "description": "List Corporate Information Center assets for one company.",
+        "operationId": "list_information_assets_api_v1_companies__company_id__nas_assets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InformationAsset"
+                  },
+                  "title": "Response List Information Assets Api V1 Companies  Company Id  Nas Assets Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Information Assets"
+      },
+      "post": {
+        "description": "Register a Corporate Information Center asset.",
+        "operationId": "register_information_asset_api_v1_companies__company_id__nas_assets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InformationAsset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationAsset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Information Asset"
+      }
+    },
+    "/api/v1/companies/{company_id}/nas/backups": {
+      "get": {
+        "description": "List information backup manifests for one company.",
+        "operationId": "list_information_backups_api_v1_companies__company_id__nas_backups_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InformationBackup"
+                  },
+                  "title": "Response List Information Backups Api V1 Companies  Company Id  Nas Backups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Information Backups"
+      },
+      "post": {
+        "description": "Register an information backup manifest.",
+        "operationId": "register_information_backup_api_v1_companies__company_id__nas_backups_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationBackup"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Information Backup"
+      }
+    },
+    "/api/v1/companies/{company_id}/nas/snapshots": {
+      "get": {
+        "description": "List information snapshots for one company.",
+        "operationId": "list_information_snapshots_api_v1_companies__company_id__nas_snapshots_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InformationSnapshot"
+                  },
+                  "title": "Response List Information Snapshots Api V1 Companies  Company Id  Nas Snapshots Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Information Snapshots"
+      },
+      "post": {
+        "description": "Create an information snapshot manifest.",
+        "operationId": "create_information_snapshot_api_v1_companies__company_id__nas_snapshots_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnapshotPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationSnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Information Snapshot"
       }
     },
     "/api/v1/companies/{company_id}/portfolio/summary": {
@@ -1880,6 +2716,238 @@
           }
         },
         "summary": "Create License Plan"
+      }
+    },
+    "/api/v1/nas/assets/{asset_id}": {
+      "get": {
+        "description": "Return one Corporate Information Center asset.",
+        "operationId": "get_information_asset_api_v1_nas_assets__asset_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationAsset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Information Asset"
+      }
+    },
+    "/api/v1/nas/assets/{asset_id}/metadata": {
+      "patch": {
+        "description": "Merge metadata into an information asset.",
+        "operationId": "update_information_metadata_api_v1_nas_assets__asset_id__metadata_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetMetadataPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationAsset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Information Metadata"
+      }
+    },
+    "/api/v1/nas/assets/{asset_id}/permissions": {
+      "patch": {
+        "description": "Set a permission on an information asset.",
+        "operationId": "set_information_permission_api_v1_nas_assets__asset_id__permissions_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetPermissionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationAsset"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Information Permission"
+      }
+    },
+    "/api/v1/nas/assets/{asset_id}/versions": {
+      "get": {
+        "description": "List versions for an information asset.",
+        "operationId": "list_information_versions_api_v1_nas_assets__asset_id__versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InformationVersion"
+                  },
+                  "title": "Response List Information Versions Api V1 Nas Assets  Asset Id  Versions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Information Versions"
+      },
+      "post": {
+        "description": "Register an immutable version for an information asset.",
+        "operationId": "register_information_version_api_v1_nas_assets__asset_id__versions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetVersionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InformationVersion"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Information Version"
       }
     },
     "/api/v1/operational/health": {

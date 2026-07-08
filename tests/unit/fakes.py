@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
+from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
 
@@ -123,6 +124,45 @@ class FakeProvisioningRequestRepository:
 
     def list_by_company(self, company_id: str) -> list[ProvisioningRequest]:
         return [request for request in self.requests.values() if request.company_id == company_id]
+
+
+class FakeInformationAssetRepository:
+    def __init__(self) -> None:
+        self.assets: dict[str, InformationAsset] = {}
+        self.versions: dict[str, InformationVersion] = {}
+        self.snapshots: dict[str, InformationSnapshot] = {}
+        self.backups: dict[str, InformationBackup] = {}
+
+    def save_asset(self, asset: InformationAsset) -> InformationAsset:
+        self.assets[asset.asset_id] = asset
+        return asset
+
+    def list_assets_by_company(self, company_id: str) -> list[InformationAsset]:
+        return [asset for asset in self.assets.values() if asset.company_id == company_id]
+
+    def get_asset(self, asset_id: str) -> InformationAsset | None:
+        return self.assets.get(asset_id)
+
+    def save_version(self, version: InformationVersion) -> InformationVersion:
+        self.versions[version.version_id] = version
+        return version
+
+    def list_versions(self, asset_id: str) -> list[InformationVersion]:
+        return [version for version in self.versions.values() if version.asset_id == asset_id]
+
+    def save_snapshot(self, snapshot: InformationSnapshot) -> InformationSnapshot:
+        self.snapshots[snapshot.snapshot_id] = snapshot
+        return snapshot
+
+    def list_snapshots_by_company(self, company_id: str) -> list[InformationSnapshot]:
+        return [snapshot for snapshot in self.snapshots.values() if snapshot.company_id == company_id]
+
+    def save_backup(self, backup: InformationBackup) -> InformationBackup:
+        self.backups[backup.backup_id] = backup
+        return backup
+
+    def list_backups_by_company(self, company_id: str) -> list[InformationBackup]:
+        return [backup for backup in self.backups.values() if backup.company_id == company_id]
 
 
 class FakeAuditEventRepository:

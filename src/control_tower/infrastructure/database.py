@@ -29,6 +29,15 @@ from control_tower.domain.enterprise import (
     UserRole,
     UserStatus,
 )
+from control_tower.domain.nas import (
+    InformationAsset,
+    InformationAssetStatus,
+    InformationAssetType,
+    InformationBackup,
+    InformationPermission,
+    InformationSnapshot,
+    InformationVersion,
+)
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningOperation, ProvisioningRequest, ProvisioningStatus, ProvisioningStep
 
@@ -344,6 +353,202 @@ class ProvisioningRequestRecord(Base):
             status=ProvisioningStatus(self.status),
             operation=ProvisioningOperation(self.operation),
             steps=[ProvisioningStep.model_validate(step) for step in json.loads(self.steps_document)],
+        )
+
+
+class InformationAssetRecord(Base):
+    """Persistent Corporate Information Center asset row."""
+
+    __tablename__ = "information_assets"
+
+    asset_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    asset_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    logical_uri: Mapped[str] = mapped_column(String(1000), nullable=False)
+    version: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+    metadata_document: Mapped[str] = mapped_column(Text, nullable=False)
+    permissions_document: Mapped[str] = mapped_column(Text, nullable=False)
+    google_drive_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    geoserver_reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    postgis_reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    docker_reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    checksum_sha256: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    @classmethod
+    def from_domain(cls, asset: InformationAsset) -> "InformationAssetRecord":
+        now = datetime.now(UTC)
+        return cls(
+            asset_id=asset.asset_id,
+            company_id=asset.company_id,
+            project_id=asset.project_id,
+            name=asset.name,
+            asset_type=asset.asset_type.value,
+            logical_uri=asset.logical_uri,
+            version=asset.version,
+            status=asset.status.value,
+            metadata_document=json.dumps(asset.metadata),
+            permissions_document=json.dumps({key: value.value for key, value in asset.permissions.items()}),
+            google_drive_id=asset.google_drive_id,
+            geoserver_reference=asset.geoserver_reference,
+            postgis_reference=asset.postgis_reference,
+            docker_reference=asset.docker_reference,
+            checksum_sha256=asset.checksum_sha256,
+            created_at=asset.created_at or now,
+            updated_at=asset.updated_at or now,
+        )
+
+    def update_from_domain(self, asset: InformationAsset) -> None:
+        self.company_id = asset.company_id
+        self.project_id = asset.project_id
+        self.name = asset.name
+        self.asset_type = asset.asset_type.value
+        self.logical_uri = asset.logical_uri
+        self.version = asset.version
+        self.status = asset.status.value
+        self.metadata_document = json.dumps(asset.metadata)
+        self.permissions_document = json.dumps({key: value.value for key, value in asset.permissions.items()})
+        self.google_drive_id = asset.google_drive_id
+        self.geoserver_reference = asset.geoserver_reference
+        self.postgis_reference = asset.postgis_reference
+        self.docker_reference = asset.docker_reference
+        self.checksum_sha256 = asset.checksum_sha256
+        self.updated_at = asset.updated_at or datetime.now(UTC)
+
+    def to_domain(self) -> InformationAsset:
+        return InformationAsset(
+            asset_id=self.asset_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            name=self.name,
+            asset_type=InformationAssetType(self.asset_type),
+            logical_uri=self.logical_uri,
+            version=self.version,
+            status=InformationAssetStatus(self.status),
+            metadata=json.loads(self.metadata_document),
+            permissions={
+                key: InformationPermission(value)
+                for key, value in json.loads(self.permissions_document).items()
+            },
+            google_drive_id=self.google_drive_id,
+            geoserver_reference=self.geoserver_reference,
+            postgis_reference=self.postgis_reference,
+            docker_reference=self.docker_reference,
+            checksum_sha256=self.checksum_sha256,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
+
+
+class InformationVersionRecord(Base):
+    """Persistent information asset version row."""
+
+    __tablename__ = "information_versions"
+
+    version_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    asset_id: Mapped[str] = mapped_column(String(80), ForeignKey("information_assets.asset_id"), nullable=False, index=True)
+    version: Mapped[str] = mapped_column(String(80), nullable=False)
+    logical_uri: Mapped[str] = mapped_column(String(1000), nullable=False)
+    checksum_sha256: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    metadata_document: Mapped[str] = mapped_column(Text, nullable=False)
+
+    @classmethod
+    def from_domain(cls, version: InformationVersion) -> "InformationVersionRecord":
+        return cls(
+            version_id=version.version_id,
+            asset_id=version.asset_id,
+            version=version.version,
+            logical_uri=version.logical_uri,
+            checksum_sha256=version.checksum_sha256,
+            metadata_document=json.dumps(version.metadata),
+        )
+
+    def to_domain(self) -> InformationVersion:
+        return InformationVersion(
+            version_id=self.version_id,
+            asset_id=self.asset_id,
+            version=self.version,
+            logical_uri=self.logical_uri,
+            checksum_sha256=self.checksum_sha256,
+            metadata=json.loads(self.metadata_document),
+        )
+
+
+class InformationSnapshotRecord(Base):
+    """Persistent information snapshot row."""
+
+    __tablename__ = "information_snapshots"
+
+    snapshot_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    asset_ids_document: Mapped[str] = mapped_column(Text, nullable=False)
+    logical_uri: Mapped[str] = mapped_column(String(1000), nullable=False)
+    metadata_document: Mapped[str] = mapped_column(Text, nullable=False)
+
+    @classmethod
+    def from_domain(cls, snapshot: InformationSnapshot) -> "InformationSnapshotRecord":
+        return cls(
+            snapshot_id=snapshot.snapshot_id,
+            company_id=snapshot.company_id,
+            project_id=snapshot.project_id,
+            name=snapshot.name,
+            asset_ids_document=json.dumps(snapshot.asset_ids),
+            logical_uri=snapshot.logical_uri,
+            metadata_document=json.dumps(snapshot.metadata),
+        )
+
+    def to_domain(self) -> InformationSnapshot:
+        return InformationSnapshot(
+            snapshot_id=self.snapshot_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            name=self.name,
+            asset_ids=json.loads(self.asset_ids_document),
+            logical_uri=self.logical_uri,
+            metadata=json.loads(self.metadata_document),
+        )
+
+
+class InformationBackupRecord(Base):
+    """Persistent information backup row."""
+
+    __tablename__ = "information_backups"
+
+    backup_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=True, index=True)
+    snapshot_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("information_snapshots.snapshot_id"), nullable=True)
+    logical_uri: Mapped[str] = mapped_column(String(1000), nullable=False)
+    checksum_sha256: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    metadata_document: Mapped[str] = mapped_column(Text, nullable=False)
+
+    @classmethod
+    def from_domain(cls, backup: InformationBackup) -> "InformationBackupRecord":
+        return cls(
+            backup_id=backup.backup_id,
+            company_id=backup.company_id,
+            project_id=backup.project_id,
+            snapshot_id=backup.snapshot_id,
+            logical_uri=backup.logical_uri,
+            checksum_sha256=backup.checksum_sha256,
+            metadata_document=json.dumps(backup.metadata),
+        )
+
+    def to_domain(self) -> InformationBackup:
+        return InformationBackup(
+            backup_id=self.backup_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            snapshot_id=self.snapshot_id,
+            logical_uri=self.logical_uri,
+            checksum_sha256=self.checksum_sha256,
+            metadata=json.loads(self.metadata_document),
         )
 
 
@@ -732,5 +937,103 @@ class SqlAlchemyCompanyLicenseRepository:
                 select(CompanyLicenseRecord)
                 .where(CompanyLicenseRecord.company_id == company_id)
                 .order_by(CompanyLicenseRecord.company_license_id)
+            )
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyInformationAssetRepository:
+    """SQLAlchemy implementation of the Corporate Information Center repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save_asset(self, asset: InformationAsset) -> InformationAsset:
+        """Persist an information asset."""
+
+        with self._sessions.session() as db:
+            record = db.get(InformationAssetRecord, asset.asset_id)
+            if record is None:
+                record = InformationAssetRecord.from_domain(asset)
+                db.add(record)
+            else:
+                record.update_from_domain(asset)
+            db.flush()
+            return record.to_domain()
+
+    def list_assets_by_company(self, company_id: str) -> list[InformationAsset]:
+        """Return assets for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(InformationAssetRecord)
+                .where(InformationAssetRecord.company_id == company_id)
+                .order_by(InformationAssetRecord.asset_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def get_asset(self, asset_id: str) -> InformationAsset | None:
+        """Return one asset when it exists."""
+
+        with self._sessions.session() as db:
+            record = db.get(InformationAssetRecord, asset_id)
+            return record.to_domain() if record is not None else None
+
+    def save_version(self, version: InformationVersion) -> InformationVersion:
+        """Persist an information version."""
+
+        with self._sessions.session() as db:
+            record = InformationVersionRecord.from_domain(version)
+            db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_versions(self, asset_id: str) -> list[InformationVersion]:
+        """Return versions for one asset."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(InformationVersionRecord)
+                .where(InformationVersionRecord.asset_id == asset_id)
+                .order_by(InformationVersionRecord.version_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def save_snapshot(self, snapshot: InformationSnapshot) -> InformationSnapshot:
+        """Persist an information snapshot."""
+
+        with self._sessions.session() as db:
+            record = InformationSnapshotRecord.from_domain(snapshot)
+            db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_snapshots_by_company(self, company_id: str) -> list[InformationSnapshot]:
+        """Return snapshots for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(InformationSnapshotRecord)
+                .where(InformationSnapshotRecord.company_id == company_id)
+                .order_by(InformationSnapshotRecord.snapshot_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def save_backup(self, backup: InformationBackup) -> InformationBackup:
+        """Persist an information backup manifest."""
+
+        with self._sessions.session() as db:
+            record = InformationBackupRecord.from_domain(backup)
+            db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_backups_by_company(self, company_id: str) -> list[InformationBackup]:
+        """Return backup manifests for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(InformationBackupRecord)
+                .where(InformationBackupRecord.company_id == company_id)
+                .order_by(InformationBackupRecord.backup_id)
             )
             return [record.to_domain() for record in records]

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from control_tower import __version__
 from control_tower.application.dashboard_service import DashboardService
 from control_tower.application.enterprise_service import CompanyService, LicensingService, UserService
+from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import (
     ProjectProvisioningEngine,
@@ -25,6 +26,13 @@ from control_tower.application.provisioning_service import (
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.dashboard import CorporateDashboard
 from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
+from control_tower.domain.nas import (
+    InformationAsset,
+    InformationBackup,
+    InformationPermission,
+    InformationSnapshot,
+    InformationVersion,
+)
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningRequest
 from control_tower.infrastructure.database import (
@@ -32,6 +40,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyCompanyLicenseRepository,
     SqlAlchemyCompanyMembershipRepository,
     SqlAlchemyCompanyRepository,
+    SqlAlchemyInformationAssetRepository,
     SqlAlchemyLicensePlanRepository,
     SqlAlchemyPortfolioProjectRepository,
     SqlAlchemyProvisioningRequestRepository,
@@ -57,6 +66,47 @@ class GovernanceStatusPayload(BaseModel):
     status: ProjectStatus
 
 
+class AssetVersionPayload(BaseModel):
+    """API payload to register an information asset version."""
+
+    version: str = Field(min_length=1)
+    logical_uri: str = Field(min_length=6)
+    checksum_sha256: str | None = None
+    metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class AssetMetadataPayload(BaseModel):
+    """API payload to merge information asset metadata."""
+
+    metadata: dict[str, str]
+
+
+class AssetPermissionPayload(BaseModel):
+    """API payload to set one information asset permission."""
+
+    principal: str = Field(min_length=3)
+    permission: InformationPermission
+
+
+class SnapshotPayload(BaseModel):
+    """API payload to create an information snapshot."""
+
+    name: str = Field(min_length=3)
+    asset_ids: list[str] = Field(default_factory=list)
+    project_id: str | None = Field(default=None, min_length=3)
+    metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class BackupPayload(BaseModel):
+    """API payload to register an information backup."""
+
+    logical_uri: str = Field(min_length=6)
+    project_id: str | None = Field(default=None, min_length=3)
+    snapshot_id: str | None = Field(default=None, min_length=3)
+    checksum_sha256: str | None = None
+    metadata: dict[str, str] = Field(default_factory=dict)
+
+
 def create_app(database_url: str | None = None, initialize_schema: bool = True) -> FastAPI:
     """Create the Corporate Control Tower API application."""
 
@@ -79,6 +129,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     membership_repository = SqlAlchemyCompanyMembershipRepository(sessions)
     license_plan_repository = SqlAlchemyLicensePlanRepository(sessions)
     company_license_repository = SqlAlchemyCompanyLicenseRepository(sessions)
+    information_repository = SqlAlchemyInformationAssetRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
     provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)
     companies = CompanyService(company_repository, audit_repository)
@@ -107,6 +158,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         audit_repository,
     )
     dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
+    nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -238,6 +290,133 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             return licensing.list_company_licenses(company_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/nas/assets", response_model=list[InformationAsset])
+    def list_information_assets(company_id: str) -> list[InformationAsset]:
+        """List Corporate Information Center assets for one company."""
+
+        try:
+            return nas.list_assets(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/nas/assets",
+        response_model=InformationAsset,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_information_asset(company_id: str, asset: InformationAsset) -> InformationAsset:
+        """Register a Corporate Information Center asset."""
+
+        if asset.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Asset company_id must match path company_id",
+            )
+        try:
+            return nas.register_asset(asset)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/nas/assets/{asset_id}", response_model=InformationAsset)
+    def get_information_asset(asset_id: str) -> InformationAsset:
+        """Return one Corporate Information Center asset."""
+
+        asset = nas.get_asset(asset_id)
+        if asset is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Information asset not found")
+        return asset
+
+    @app.post("/api/v1/nas/assets/{asset_id}/versions", response_model=InformationVersion)
+    def register_information_version(asset_id: str, payload: AssetVersionPayload) -> InformationVersion:
+        """Register an immutable version for an information asset."""
+
+        try:
+            return nas.register_version(
+                asset_id=asset_id,
+                version=payload.version,
+                logical_uri=payload.logical_uri,
+                checksum_sha256=payload.checksum_sha256,
+                metadata=payload.metadata,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/nas/assets/{asset_id}/versions", response_model=list[InformationVersion])
+    def list_information_versions(asset_id: str) -> list[InformationVersion]:
+        """List versions for an information asset."""
+
+        try:
+            return nas.list_versions(asset_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.patch("/api/v1/nas/assets/{asset_id}/metadata", response_model=InformationAsset)
+    def update_information_metadata(asset_id: str, payload: AssetMetadataPayload) -> InformationAsset:
+        """Merge metadata into an information asset."""
+
+        try:
+            return nas.update_metadata(asset_id, payload.metadata)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.patch("/api/v1/nas/assets/{asset_id}/permissions", response_model=InformationAsset)
+    def set_information_permission(asset_id: str, payload: AssetPermissionPayload) -> InformationAsset:
+        """Set a permission on an information asset."""
+
+        try:
+            return nas.set_permission(asset_id, payload.principal, payload.permission)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/nas/snapshots", response_model=list[InformationSnapshot])
+    def list_information_snapshots(company_id: str) -> list[InformationSnapshot]:
+        """List information snapshots for one company."""
+
+        try:
+            return nas.list_snapshots(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post("/api/v1/companies/{company_id}/nas/snapshots", response_model=InformationSnapshot)
+    def create_information_snapshot(company_id: str, payload: SnapshotPayload) -> InformationSnapshot:
+        """Create an information snapshot manifest."""
+
+        try:
+            return nas.create_snapshot(
+                company_id=company_id,
+                name=payload.name,
+                asset_ids=payload.asset_ids,
+                project_id=payload.project_id,
+                metadata=payload.metadata,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/nas/backups", response_model=list[InformationBackup])
+    def list_information_backups(company_id: str) -> list[InformationBackup]:
+        """List information backup manifests for one company."""
+
+        try:
+            return nas.list_backups(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post("/api/v1/companies/{company_id}/nas/backups", response_model=InformationBackup)
+    def register_information_backup(company_id: str, payload: BackupPayload) -> InformationBackup:
+        """Register an information backup manifest."""
+
+        try:
+            return nas.register_backup(
+                company_id=company_id,
+                logical_uri=payload.logical_uri,
+                project_id=payload.project_id,
+                snapshot_id=payload.snapshot_id,
+                checksum_sha256=payload.checksum_sha256,
+                metadata=payload.metadata,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @app.post(
         "/api/v1/companies/{company_id}/licenses",

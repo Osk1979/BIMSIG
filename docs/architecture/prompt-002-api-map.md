@@ -121,6 +121,20 @@ Implemented first cut:
 - `GET /api/v1/companies/{company_id}/integrations/geoserver/status`
 - `GET /api/v1/companies/{company_id}/integrations/google-drive/status`
 
+### NAS Corporate Information Center
+
+- `GET /api/v1/companies/{company_id}/nas/assets`
+- `POST /api/v1/companies/{company_id}/nas/assets`
+- `GET /api/v1/nas/assets/{asset_id}`
+- `POST /api/v1/nas/assets/{asset_id}/versions`
+- `GET /api/v1/nas/assets/{asset_id}/versions`
+- `PATCH /api/v1/nas/assets/{asset_id}/metadata`
+- `PATCH /api/v1/nas/assets/{asset_id}/permissions`
+- `GET /api/v1/companies/{company_id}/nas/snapshots`
+- `POST /api/v1/companies/{company_id}/nas/snapshots`
+- `GET /api/v1/companies/{company_id}/nas/backups`
+- `POST /api/v1/companies/{company_id}/nas/backups`
+
 ### Executive Dashboard
 
 - `GET /api/v1/companies/{company_id}/dashboard/executive`

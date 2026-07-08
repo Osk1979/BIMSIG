@@ -18,6 +18,7 @@ from control_tower.domain.enterprise import (
     LicensePlan,
     User,
 )
+from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
 
@@ -124,3 +125,34 @@ class CompanyLicenseRepository(Protocol):
 
     def list_by_company(self, company_id: str) -> list[CompanyLicense]:
         """Return license assignments for a company."""
+
+
+class InformationAssetRepository(Protocol):
+    """Persistence port for Corporate Information Center assets."""
+
+    def save_asset(self, asset: InformationAsset) -> InformationAsset:
+        """Persist an information asset."""
+
+    def list_assets_by_company(self, company_id: str) -> list[InformationAsset]:
+        """Return information assets for one company."""
+
+    def get_asset(self, asset_id: str) -> InformationAsset | None:
+        """Return one information asset when it exists."""
+
+    def save_version(self, version: InformationVersion) -> InformationVersion:
+        """Persist an information asset version."""
+
+    def list_versions(self, asset_id: str) -> list[InformationVersion]:
+        """Return versions for one asset."""
+
+    def save_snapshot(self, snapshot: InformationSnapshot) -> InformationSnapshot:
+        """Persist an information snapshot."""
+
+    def list_snapshots_by_company(self, company_id: str) -> list[InformationSnapshot]:
+        """Return snapshots for one company."""
+
+    def save_backup(self, backup: InformationBackup) -> InformationBackup:
+        """Persist an information backup manifest."""
+
+    def list_backups_by_company(self, company_id: str) -> list[InformationBackup]:
+        """Return backup manifests for one company."""
