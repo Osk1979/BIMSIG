@@ -135,13 +135,14 @@ def render_dashboard_html() -> str:
     .metric.critical { border-color: var(--critical); }
     .gis-workbench {
       display: grid;
-      grid-template-columns: minmax(360px, 1.2fr) minmax(280px, .8fr);
+      grid-template-columns: 1fr;
       gap: 16px;
       align-items: stretch;
+      min-width: 0;
     }
     .gis-map-grid {
       display: grid;
-      grid-template-columns: minmax(260px, 400px) minmax(320px, 1fr);
+      grid-template-columns: minmax(240px, 320px) minmax(300px, 1fr);
       gap: 14px;
       align-items: start;
       min-width: 0;
@@ -189,7 +190,7 @@ def render_dashboard_html() -> str:
       font-size: 12px;
     }
     .layer-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-    .kpi-chart-grid { display: grid; gap: 10px; }
+    .kpi-chart-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px; }
     .kpi-chart {
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -219,7 +220,7 @@ def render_dashboard_html() -> str:
       text-align: center;
     }
     .gis-map-surface {
-      min-height: 420px;
+      min-height: 360px;
       position: relative;
       overflow: hidden;
       border: 1px solid var(--line);
@@ -234,7 +235,7 @@ def render_dashboard_html() -> str:
       box-shadow: inset 0 0 70px rgba(65, 209, 154, .09);
     }
     .gis-map-grid .radar {
-      width: min(100%, 400px);
+      width: min(100%, 320px);
       min-height: 0;
     }
     .gis-map-surface::after {
@@ -441,6 +442,12 @@ def render_dashboard_html() -> str:
       gap: 10px;
       min-width: 0;
     }
+    #radarReadouts {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+      min-width: 0;
+    }
     .governance-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     .governance-card {
       background: var(--panel-strong);
@@ -595,6 +602,7 @@ def render_dashboard_html() -> str:
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px;
+      min-width: 0;
     }
     .readout .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
     .readout .value { font-size: 22px; font-weight: 780; margin-top: 6px; }
@@ -615,6 +623,8 @@ def render_dashboard_html() -> str:
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
       .gis-workbench, .gis-toolbar, .gis-map-grid { grid-template-columns: 1fr; }
+      #radarReadouts { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
+      .kpi-chart-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
       .radar { min-height: 380px; width: min(100%, 520px); }
       .governance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
@@ -635,6 +645,7 @@ def render_dashboard_html() -> str:
       .bridge-grid { grid-template-columns: 1fr; }
       .service-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .notification { grid-template-columns: 1fr; }
+      #radarReadouts, .kpi-chart-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
