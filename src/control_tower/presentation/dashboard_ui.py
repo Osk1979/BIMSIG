@@ -141,9 +141,10 @@ def render_dashboard_html() -> str:
     }
     .gis-map-grid {
       display: grid;
-      grid-template-columns: minmax(280px, .92fr) minmax(340px, 1.08fr);
+      grid-template-columns: minmax(260px, 400px) minmax(320px, 1fr);
       gap: 14px;
       align-items: start;
+      min-width: 0;
     }
     .gis-toolbar {
       display: grid;
@@ -218,7 +219,7 @@ def render_dashboard_html() -> str:
       text-align: center;
     }
     .gis-map-surface {
-      min-height: 500px;
+      min-height: 420px;
       position: relative;
       overflow: hidden;
       border: 1px solid var(--line);
@@ -231,6 +232,10 @@ def render_dashboard_html() -> str:
         var(--radar);
       background-size: 42px 42px, 42px 42px, auto, auto, auto;
       box-shadow: inset 0 0 70px rgba(65, 209, 154, .09);
+    }
+    .gis-map-grid .radar {
+      width: min(100%, 400px);
+      min-height: 0;
     }
     .gis-map-surface::after {
       content: "MAPA GIS CORPORATIVO";
@@ -434,6 +439,7 @@ def render_dashboard_html() -> str:
       display: grid;
       align-content: start;
       gap: 10px;
+      min-width: 0;
     }
     .governance-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     .governance-card {
