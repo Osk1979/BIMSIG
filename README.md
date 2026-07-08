@@ -97,3 +97,13 @@ Enterprise architecture documents:
 - `docs/architecture/prompt-002-domain-model.md`
 - `docs/architecture/prompt-002-api-map.md`
 - `docs/backlog/prompt-002-enterprise-build-backlog.md`
+
+## Operational Flow
+
+The governed Corporate Control Tower operating model is documented in:
+
+- `docs/operations/corporate-control-tower-operational-flow.md`
+
+It defines the enterprise path from corporate intake to WEB SIG Factory approval,
+NAS/GIS registration, executive dashboard publication, audit, release, GitHub
+push, and physical USB backup.
