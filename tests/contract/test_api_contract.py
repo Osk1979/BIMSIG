@@ -268,9 +268,11 @@ def test_executive_dashboard_contract(tmp_path) -> None:
 
     assert response.status_code == 200
     assert response.json()["company_id"] == "CRTG"
-    assert {"portfolio", "map_points", "kpis", "risks", "comparisons"} <= set(response.json())
+    assert {"portfolio", "map_points", "kpis", "risks", "comparisons", "portfolio_governance"} <= set(response.json())
+    assert response.json()["portfolio_governance"][0]["project_id"] == "PSZ-2026"
     assert html.status_code == 200
     assert "Dashboard Ejecutivo Corporativo" in html.text
+    assert "Gobierno de Portafolio" in html.text
     assert "data-theme=\"dark\"" in html.text
 
 

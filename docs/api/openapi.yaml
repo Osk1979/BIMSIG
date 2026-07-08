@@ -567,6 +567,13 @@
             "title": "Portfolio",
             "type": "object"
           },
+          "portfolio_governance": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioGovernanceItem"
+            },
+            "title": "Portfolio Governance",
+            "type": "array"
+          },
           "production": {
             "items": {
               "$ref": "#/components/schemas/DashboardMetric"
@@ -1606,6 +1613,97 @@
         ],
         "title": "PermissionScope",
         "type": "string"
+      },
+      "PortfolioGovernanceItem": {
+        "description": "Project-level portfolio governance summary for the executive dashboard.",
+        "properties": {
+          "customer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer"
+          },
+          "gis": {
+            "minLength": 1,
+            "title": "Gis",
+            "type": "string"
+          },
+          "gis_layers": {
+            "minimum": 0.0,
+            "title": "Gis Layers",
+            "type": "integer"
+          },
+          "governance_status": {
+            "minLength": 3,
+            "title": "Governance Status",
+            "type": "string"
+          },
+          "lifecycle_stage": {
+            "minLength": 3,
+            "title": "Lifecycle Stage",
+            "type": "string"
+          },
+          "nas": {
+            "minLength": 1,
+            "title": "Nas",
+            "type": "string"
+          },
+          "nas_assets": {
+            "minimum": 0.0,
+            "title": "Nas Assets",
+            "type": "integer"
+          },
+          "program": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program"
+          },
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "minLength": 3,
+            "title": "Project Name",
+            "type": "string"
+          },
+          "provisioning_requests": {
+            "minimum": 0.0,
+            "title": "Provisioning Requests",
+            "type": "integer"
+          },
+          "websig": {
+            "minLength": 1,
+            "title": "Websig",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "project_name",
+          "lifecycle_stage",
+          "governance_status",
+          "websig",
+          "nas",
+          "gis",
+          "provisioning_requests",
+          "nas_assets",
+          "gis_layers"
+        ],
+        "title": "PortfolioGovernanceItem",
+        "type": "object"
       },
       "PortfolioLifecycleTransition": {
         "description": "Allowed corporate lifecycle transition request.",

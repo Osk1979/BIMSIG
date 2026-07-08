@@ -5,18 +5,20 @@ ADR references:
 - ADR-0015: Tower vs WEB SIG operational boundary.
 - ADR-0016: Enterprise licensing.
 - ADR-0018: Corporate executive dashboard.
+- ADR-0025: Corporate Portfolio Domain.
 """
 
 from control_tower.domain.dashboard import (
     CorporateDashboard,
     CorporateMapPoint,
     DashboardMetric,
+    PortfolioGovernanceItem,
     ProjectComparison,
 )
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 
 from .enterprise_service import CompanyService, LicensingService, UserService
-from .portfolio_service import PortfolioService
+from .portfolio_service import CorporatePortfolioDomainService, PortfolioService
 from .provisioning_service import ProvisioningService
 
 
@@ -30,12 +32,14 @@ class DashboardService:
         licensing: LicensingService,
         portfolio: PortfolioService,
         provisioning: ProvisioningService,
+        corporate_portfolio: CorporatePortfolioDomainService | None = None,
     ) -> None:
         self._companies = companies
         self._users = users
         self._licensing = licensing
         self._portfolio = portfolio
         self._provisioning = provisioning
+        self._corporate_portfolio = corporate_portfolio
 
     def executive_dashboard(self, company_id: str) -> CorporateDashboard:
         """Return the executive dashboard for one company."""
@@ -102,6 +106,7 @@ class DashboardService:
                 self._metric("alerts-provisioning", "Alertas provisioning", str(portfolio.get("provisioning_requested", 0))),
             ],
             comparisons=self._comparisons(projects),
+            portfolio_governance=self._portfolio_governance(company_id, projects),
         )
 
     @staticmethod
@@ -152,6 +157,64 @@ class DashboardService:
                 )
             )
         return comparisons
+
+    def _portfolio_governance(
+        self,
+        company_id: str,
+        projects: list[PortfolioProject],
+    ) -> list[PortfolioGovernanceItem]:
+        """Return dashboard governance rows backed by the Corporate Portfolio Domain."""
+
+        items: list[PortfolioGovernanceItem] = []
+        for project in projects:
+            if self._corporate_portfolio is None:
+                items.append(self._fallback_governance_item(project))
+                continue
+            view = self._corporate_portfolio.project_view(company_id, project.project_id)
+            items.append(
+                PortfolioGovernanceItem(
+                    project_id=view.project.project_id,
+                    project_name=view.project.name,
+                    customer=view.customer.display_name if view.customer is not None else None,
+                    program=view.program.name if view.program is not None else None,
+                    lifecycle_stage=view.project.lifecycle_stage.value,
+                    governance_status=view.project.status.value,
+                    websig=self._availability(
+                        view.integrations.websig_instance_id or view.integrations.websig_url
+                    ),
+                    nas=self._availability(view.integrations.nas_root_uri, view.integrations.nas_assets),
+                    gis=self._availability(view.integrations.gis_binding_id, view.integrations.gis_layers),
+                    provisioning_requests=view.integrations.provisioning_requests,
+                    nas_assets=view.integrations.nas_assets,
+                    gis_layers=view.integrations.gis_layers,
+                )
+            )
+        return items
+
+    @staticmethod
+    def _fallback_governance_item(project: PortfolioProject) -> PortfolioGovernanceItem:
+        return PortfolioGovernanceItem(
+            project_id=project.project_id,
+            project_name=project.name,
+            customer=None,
+            program=None,
+            lifecycle_stage=project.lifecycle_stage.value,
+            governance_status=project.status.value,
+            websig=DashboardService._availability(project.websig_instance_id or project.websig_url),
+            nas=DashboardService._availability(project.nas_root_uri),
+            gis=DashboardService._availability(project.gis_binding_id),
+            provisioning_requests=0,
+            nas_assets=0,
+            gis_layers=0,
+        )
+
+    @staticmethod
+    def _availability(reference: str | None, count: int = 0) -> str:
+        if reference is None and count == 0:
+            return "pendiente"
+        if count > 0:
+            return str(count)
+        return "registrado"
 
     @staticmethod
     def _percent(numerator: int, denominator: int) -> str:

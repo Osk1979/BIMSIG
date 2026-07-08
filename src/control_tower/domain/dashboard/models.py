@@ -5,6 +5,7 @@ ADR references:
 - ADR-0015: Tower vs WEB SIG operational boundary.
 - ADR-0016: Enterprise licensing.
 - ADR-0018: Corporate executive dashboard.
+- ADR-0025: Corporate Portfolio Domain.
 """
 
 from pydantic import BaseModel, Field
@@ -42,6 +43,23 @@ class ProjectComparison(BaseModel):
     risk_score: int = Field(ge=0, le=100)
 
 
+class PortfolioGovernanceItem(BaseModel):
+    """Project-level portfolio governance summary for the executive dashboard."""
+
+    project_id: str = Field(min_length=3)
+    project_name: str = Field(min_length=3)
+    customer: str | None = None
+    program: str | None = None
+    lifecycle_stage: str = Field(min_length=3)
+    governance_status: str = Field(min_length=3)
+    websig: str = Field(min_length=1)
+    nas: str = Field(min_length=1)
+    gis: str = Field(min_length=1)
+    provisioning_requests: int = Field(ge=0)
+    nas_assets: int = Field(ge=0)
+    gis_layers: int = Field(ge=0)
+
+
 class CorporateDashboard(BaseModel):
     """Executive read model for one enterprise company."""
 
@@ -60,3 +78,4 @@ class CorporateDashboard(BaseModel):
     ai: list[DashboardMetric]
     alerts: list[DashboardMetric]
     comparisons: list[ProjectComparison]
+    portfolio_governance: list[PortfolioGovernanceItem] = Field(default_factory=list)

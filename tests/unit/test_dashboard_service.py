@@ -62,3 +62,6 @@ def test_dashboard_service_builds_company_executive_read_model() -> None:
     assert result.users[0].value == "1"
     assert result.licenses[0].value == "1"
     assert result.comparisons[0].name == "Proyecto Suiza"
+    assert result.portfolio_governance[0].project_id == "PSZ-2026"
+    assert result.portfolio_governance[0].lifecycle_stage == "intake"
+    assert result.portfolio_governance[0].websig == "pendiente"

@@ -24,7 +24,8 @@ The dashboard is built inside BIMSIG Enterprise:
 - `GET /api/v1/companies/{company_id}/dashboard/executive` returns the executive read model.
 - `GET /dashboard` serves the responsive dashboard shell.
 - The UI supports dark mode and light mode.
-- The first dashboard uses existing portfolio, users, licenses, and provisioning data to produce executive summaries.
+- The dashboard uses portfolio, users, licenses, provisioning, and Corporate Portfolio Domain data to produce executive summaries.
+- The dashboard exposes `portfolio_governance` so clients can show customers, programs, lifecycle, WEB SIG, NAS, and GIS references without operating WEB SIG.
 
 No separate dashboard application is created.
 

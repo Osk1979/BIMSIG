@@ -206,6 +206,25 @@ def render_dashboard_html() -> str:
       align-content: start;
       gap: 10px;
     }
+    .governance-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .governance-card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 132px;
+    }
+    .governance-card .project { font-weight: 760; margin-bottom: 8px; }
+    .governance-card .meta { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 4px 7px;
+    }
+    .chip.ready { color: var(--accent); border-color: var(--accent); }
     .readout {
       min-height: 72px;
       background: var(--panel-strong);
@@ -231,10 +250,11 @@ def render_dashboard_html() -> str:
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
       .radar { min-height: 380px; width: min(100%, 520px); }
+      .governance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 700px) {
       main { padding: 14px; }
-      .summary, .metric-grid, .cockpit { grid-template-columns: 1fr; }
+      .summary, .metric-grid, .cockpit, .governance-grid { grid-template-columns: 1fr; }
       .topbar { align-items: stretch; flex-direction: column; }
       .toolbar { justify-content: space-between; }
       .toolbar button { flex: 1; min-width: 0; }
@@ -278,6 +298,10 @@ def render_dashboard_html() -> str:
               <div class="radar" id="map"></div>
               <div class="radar-side" id="radarReadouts"></div>
             </div>
+          </section>
+          <section class="section">
+            <h2>Gobierno de Portafolio</h2>
+            <div class="governance-grid" id="portfolioGovernance"></div>
           </section>
           <section class="section">
             <h2>Comparativos entre proyectos</h2>
@@ -331,17 +355,21 @@ def render_dashboard_html() -> str:
       renderSummary();
       renderCockpit();
       renderMap();
+      renderPortfolioGovernance();
       renderPanels();
       renderComparisons();
     }
 
     function renderCockpit() {
       const portfolio = data.portfolio;
+      const governed = data.portfolio_governance || [];
+      const websigReady = governed.filter(item => item.websig !== "pendiente").length;
+      const gisReady = governed.filter(item => item.gis !== "pendiente").length;
       const instruments = [
         ["ALT", `${portfolio.total_projects ?? 0}`, "Portafolio"],
-        ["NAV", `${portfolio.active ?? 0}`, "Proyectos activos"],
-        ["COM", `${data.users[0]?.value ?? "0"}`, "Usuarios"],
-        ["SYS", `${data.alerts[0]?.value ?? "0"}`, "Alertas"]
+        ["LFC", `${activeLifecycleCount(governed)}`, "Lifecycle ejecutivo"],
+        ["WEB", `${websigReady}`, "WEB SIG gobernadas"],
+        ["GIS", `${gisReady}`, "GIS vinculados"]
       ];
       document.querySelector("#cockpit").innerHTML = instruments.map(([code, value, label]) => `
         <article class="instrument">
@@ -353,11 +381,12 @@ def render_dashboard_html() -> str:
 
     function renderSummary() {
       const portfolio = data.portfolio;
+      const governed = data.portfolio_governance || [];
       const cards = [
         ["Portafolio", portfolio.total_projects ?? 0],
-        ["Activos", portfolio.active ?? 0],
-        ["Alertas", data.alerts[0]?.value ?? "0"],
-        ["Licencias", data.licenses[0]?.value ?? "0"]
+        ["Clientes", uniqueCount(governed.map(item => item.customer).filter(Boolean))],
+        ["Programas", uniqueCount(governed.map(item => item.program).filter(Boolean))],
+        ["NAS", governed.filter(item => item.nas !== "pendiente").length]
       ];
       document.querySelector("#summary").innerHTML = cards.map(([label, value]) =>
         `<article class="metric"><div class="label">${label}</div><div class="value">${value}</div></article>`
@@ -387,6 +416,41 @@ def render_dashboard_html() -> str:
       ].map(([label, value]) => `
         <article class="readout"><div class="label">${label}</div><div class="value">${value}</div></article>
       `).join("");
+    }
+
+    function renderPortfolioGovernance() {
+      const target = document.querySelector("#portfolioGovernance");
+      const items = data.portfolio_governance || [];
+      if (!items.length) {
+        target.innerHTML = `<div class="muted">Sin proyectos gobernados.</div>`;
+        return;
+      }
+      target.innerHTML = items.map(item => `
+        <article class="governance-card">
+          <div class="project">${item.project_name}</div>
+          <div class="meta">Cliente: ${item.customer || "pendiente"}</div>
+          <div class="meta">Programa: ${item.program || "pendiente"}</div>
+          <div class="meta">Lifecycle: ${item.lifecycle_stage}</div>
+          <div class="chips">
+            ${chip("WEB SIG", item.websig)}
+            ${chip("NAS", item.nas)}
+            ${chip("GIS", item.gis)}
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function chip(label, value) {
+      const ready = value !== "pendiente";
+      return `<span class="chip ${ready ? "ready" : ""}">${label}: ${value}</span>`;
+    }
+
+    function uniqueCount(values) {
+      return new Set(values).size;
+    }
+
+    function activeLifecycleCount(items) {
+      return items.filter(item => !["closure", "archived"].includes(item.lifecycle_stage)).length;
     }
 
     function renderPanels() {

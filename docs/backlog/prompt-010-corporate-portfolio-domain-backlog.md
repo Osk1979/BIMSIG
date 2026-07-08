@@ -25,6 +25,6 @@ The Tower governs and provisions. It does not operate WEB SIG.
 
 | ID | Item | Status | Reason |
 | --- | --- | --- | --- |
-| P10-101 | Dashboard widgets backed by the new governance view | Planned | Prompt 004 dashboard can consume this in a focused increment |
+| P10-101 | Dashboard widgets backed by the new governance view | Done | Executive dashboard now exposes and renders `portfolio_governance` |
 | P10-102 | Real WEB SIG Factory execution adapter enrichment | Planned | Must remain behind provisioning ports |
 | P10-103 | Google Workspace synchronization job | Planned | ADR-0010 requires idempotent, auditable sync design |

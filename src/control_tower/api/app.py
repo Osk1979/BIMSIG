@@ -238,7 +238,14 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         project_stack_adapters,
         audit_repository,
     )
-    dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
+    dashboard = DashboardService(
+        companies,
+        users,
+        licensing,
+        portfolio,
+        provisioning,
+        corporate_portfolio,
+    )
     nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
     gis = CorporateGisService(gis_repository, companies, portfolio, audit_repository)
     user_security = CorporateUserSecurityService(
