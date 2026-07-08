@@ -246,6 +246,9 @@ def render_dashboard_html() -> str:
     }
     .governance-card .project { font-weight: 760; margin-bottom: 8px; }
     .governance-card .meta { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    details.governance-card summary { cursor: pointer; list-style: none; }
+    details.governance-card summary::-webkit-details-marker { display: none; }
+    details.governance-card[open] { border-color: var(--accent); }
     .portfolio-path {
       display: grid;
       gap: 6px;
@@ -264,11 +267,13 @@ def render_dashboard_html() -> str:
     }
     .chip.ready { color: var(--accent); border-color: var(--accent); }
     .filter-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-    .filter-row input {
+    .filter-row input, .filter-row button {
       min-width: 0;
       font-size: 12px;
       padding: 9px 10px;
+      margin: 0;
     }
+    .filter-row button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
     .map-mode-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
     .mode-pill {
       border: 1px solid var(--line);
@@ -317,6 +322,12 @@ def render_dashboard_html() -> str:
       background: var(--panel-strong);
     }
     .question-card .answer { font-size: 24px; font-weight: 780; margin: 8px 0 4px; }
+    .question-card a {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 720;
+      text-decoration: none;
+    }
     .flow-grid { display: grid; gap: 10px; }
     .flow-card {
       display: grid;
@@ -461,12 +472,12 @@ def render_dashboard_html() -> str:
             <div class="section-kicker">Mapa corporativo GIS - Solo lectura - Corporate Layers publicadas por WEB SIG Enterprise.</div>
             <div class="map-mode-grid" id="gisMapModes"></div>
             <div class="filter-row" id="gisFilters">
-              <input value="Estado" readonly>
-              <input value="Riesgo" readonly>
-              <input value="Calidad" readonly>
-              <input value="Ambiental" readonly>
-              <input value="SSOMA" readonly>
-              <input value="Produccion" readonly>
+              <button data-gis-filter="estado">Estado</button>
+              <button data-gis-filter="riesgo">Riesgo</button>
+              <button data-gis-filter="calidad">Calidad</button>
+              <button data-gis-filter="ambiental">Ambiental</button>
+              <button data-gis-filter="ssoma">SSOMA</button>
+              <button data-gis-filter="produccion">Produccion</button>
             </div>
             <div class="radar-shell">
               <div class="radar" id="map"></div>
@@ -477,12 +488,12 @@ def render_dashboard_html() -> str:
             <h2>Explorador de Portafolio</h2>
             <div class="section-kicker">Empresa / Programa / Proyecto / WEB SIG / Estado / Dashboard.</div>
             <div class="filter-row" id="portfolioFilters">
-              <input value="Empresa" readonly>
-              <input value="Programa" readonly>
-              <input value="Estado" readonly>
-              <input value="Cliente" readonly>
-              <input value="Contrato" readonly>
-              <input value="Responsable / Fecha" readonly>
+              <button data-portfolio-filter="all" class="active">Empresa</button>
+              <button data-portfolio-filter="program">Programa</button>
+              <button data-portfolio-filter="active">Estado</button>
+              <button data-portfolio-filter="customer">Cliente</button>
+              <button data-portfolio-filter="contract">Contrato</button>
+              <button data-portfolio-filter="owner">Responsable / Fecha</button>
             </div>
             <div class="governance-grid" id="portfolioGovernance"></div>
           </section>
@@ -505,7 +516,7 @@ def render_dashboard_html() -> str:
             <div class="section-kicker">Consulta consolidada de capas corporativas; sin edicion ni digitalizacion.</div>
             <div class="metric-grid" id="gisIntelligence"></div>
           </section>
-          <section class="section">
+          <section class="section" id="projectComparisons">
             <h2>Comparativos entre proyectos</h2>
             <table>
               <thead>
@@ -549,6 +560,11 @@ def render_dashboard_html() -> str:
     let currentPanel = "operations";
     let data = null;
     let gisMap = null;
+    let portfolioProjects = [];
+    let wizardSessions = [];
+    let auditEvents = [];
+    let activePortfolioFilter = "all";
+    let activeGisFilter = "estado";
 
     async function loadDashboard() {
       const companyId = document.querySelector("#companyId").value.trim();
@@ -560,9 +576,20 @@ def render_dashboard_html() -> str:
       }
       data = await response.json();
       gisMap = null;
+      portfolioProjects = [];
+      wizardSessions = [];
+      auditEvents = [];
       try {
-        const gisResponse = await fetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`);
+        const [gisResponse, projectsResponse, wizardResponse, auditResponse] = await Promise.all([
+          fetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`),
+          fetch(`/api/v1/companies/${encodedCompany}/projects`),
+          fetch("/api/v1/enterprise-wizard"),
+          fetch("/api/v1/audit/events?limit=12")
+        ]);
         gisMap = gisResponse.ok ? await gisResponse.json() : null;
+        portfolioProjects = projectsResponse.ok ? await projectsResponse.json() : [];
+        wizardSessions = wizardResponse.ok ? await wizardResponse.json() : [];
+        auditEvents = auditResponse.ok ? await auditResponse.json() : [];
       } catch {
         gisMap = null;
       }
@@ -666,6 +693,9 @@ def render_dashboard_html() -> str:
       document.querySelector("#gisMapModes").innerHTML = modes.map((mode, index) => `
         <div class="mode-pill ${index === 0 ? "active" : ""}">${mode}</div>
       `).join("");
+      document.querySelectorAll("[data-gis-filter]").forEach(button => {
+        button.classList.toggle("active", button.dataset.gisFilter === activeGisFilter);
+      });
       if (!data.map_points.length) {
         map.innerHTML = `<div class="muted" style="padding:16px">Sin proyectos georreferenciados.</div>`;
         readouts.innerHTML = "";
@@ -692,16 +722,23 @@ def render_dashboard_html() -> str:
 
     function renderPortfolioGovernance() {
       const target = document.querySelector("#portfolioGovernance");
-      const items = data.portfolio_governance || [];
+      const items = filteredPortfolioItems();
       if (!items.length) {
         target.innerHTML = `<div class="muted">Sin proyectos gobernados.</div>`;
         return;
       }
+      document.querySelectorAll("[data-portfolio-filter]").forEach(button => {
+        button.classList.toggle("active", button.dataset.portfolioFilter === activePortfolioFilter);
+      });
       target.innerHTML = items.map(item => {
         const flow = (data.operational_flow || []).find(flowItem => flowItem.project_id === item.project_id);
+        const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
         return `
-        <article class="governance-card">
-          <div class="project">${item.project_name}</div>
+        <details class="governance-card" open>
+          <summary>
+            <div class="project">${item.project_name}</div>
+            <div class="meta">${data.company_id} / ${item.program || "Programa pendiente"} / ${item.governance_status}</div>
+          </summary>
           <div class="portfolio-path">
             <span><strong>Empresa</strong> ${data.company_id}</span>
             <span><strong>Programa</strong> ${item.program || "pendiente"}</span>
@@ -709,8 +746,9 @@ def render_dashboard_html() -> str:
             <span><strong>WEB SIG Enterprise</strong> ${item.websig}</span>
             <span><strong>Estado</strong> ${item.governance_status}</span>
             <span><strong>Cliente</strong> ${item.customer || "pendiente"}</span>
-            <span><strong>Contrato</strong> ${item.contract || "pendiente"}</span>
-            <span><strong>Responsable</strong> ${item.owner || "pendiente"}</span>
+            <span><strong>Contrato</strong> ${project.contract_id || item.contract || "pendiente"}</span>
+            <span><strong>Responsable</strong> ${project.owner || item.owner || "pendiente"}</span>
+            <span><strong>Fecha</strong> ${project.created_at || project.updated_at || "pendiente"}</span>
             <span><strong>Dashboard</strong> ${flow ? `${flow.readiness_score}%` : "pendiente"}</span>
           </div>
           <div class="chips">
@@ -719,37 +757,97 @@ def render_dashboard_html() -> str:
             ${chip("GIS", item.gis)}
             <span class="chip ready">Solo lectura</span>
           </div>
-        </article>
+        </details>
       `;
       }).join("");
     }
 
+    function filteredPortfolioItems() {
+      const items = data.portfolio_governance || [];
+      if (activePortfolioFilter === "active") {
+        return items.filter(item => item.governance_status === "active" || item.lifecycle_stage === "active");
+      }
+      if (activePortfolioFilter === "program") {
+        return [...items].sort((left, right) => String(left.program || "").localeCompare(String(right.program || "")));
+      }
+      if (activePortfolioFilter === "customer") {
+        return items.filter(item => item.customer);
+      }
+      if (activePortfolioFilter === "contract") {
+        return items.filter(item => {
+          const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
+          return project.contract_id || item.contract;
+        });
+      }
+      if (activePortfolioFilter === "owner") {
+        return items.filter(item => {
+          const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
+          return project.owner || item.owner || project.created_at || project.updated_at;
+        });
+      }
+      return items;
+    }
+
     function renderWizard() {
+      const activeSession = wizardSessions[0];
+      const steps = activeSession ? wizardSessionSteps(activeSession) : derivedWizardSteps();
+      document.querySelector("#wizardSteps").innerHTML = steps.map(([name, ready], index) => `
+        <article class="wizard-step">
+          <div class="number">Paso ${index + 1}</div>
+          <div class="name">${name}</div>
+          <div class="state">${ready}</div>
+        </article>
+      `).join("");
+    }
+
+    function wizardSessionSteps(session) {
+      const saved = Object.fromEntries((session.steps || []).map(step => [step.step, step]));
+      const names = [
+        "Empresa", "Programa", "Proyecto", "Ubicacion", "Especialidades",
+        "Provisionamiento", "GIS", "NAS", "Usuarios", "Activacion"
+      ];
+      return names.map(name => {
+        const key = wizardKey(name);
+        const state = saved[key]?.status === "valid" ? "validado / autosave real" : "reanudable / pendiente";
+        return [name, state];
+      });
+    }
+
+    function wizardKey(name) {
+      const map = {
+        Empresa: "company",
+        Programa: "program",
+        Proyecto: "project",
+        Ubicacion: "location",
+        Especialidades: "specialties",
+        Provisionamiento: "web_sig",
+        GIS: "gis",
+        NAS: "nas",
+        Usuarios: "users",
+        Activacion: "activation"
+      };
+      return map[name];
+    }
+
+    function derivedWizardSteps() {
       const governed = data.portfolio_governance || [];
       const hasProject = governed.length > 0;
       const websigReady = governed.some(item => item.websig !== "pendiente");
       const gisReady = governed.some(item => item.gis !== "pendiente");
       const nasReady = governed.some(item => item.nas !== "pendiente");
       const usersReady = (data.users || []).length > 0;
-      const steps = [
-        ["Empresa", true],
-        ["Programa", governed.some(item => item.program)],
-        ["Proyecto", hasProject],
-        ["Ubicacion", data.map_points.length > 0],
-        ["Especialidades", hasProject],
-        ["Provisionamiento", websigReady],
-        ["GIS", gisReady],
-        ["NAS", nasReady],
-        ["Usuarios", usersReady],
-        ["Activacion", (data.operational_flow || []).some(item => item.readiness_score >= 80)]
+      return [
+        ["Empresa", "validado / dato corporativo"],
+        ["Programa", governed.some(item => item.program) ? "validado / dato real" : "pendiente / reanudable"],
+        ["Proyecto", hasProject ? "validado / dato real" : "pendiente / reanudable"],
+        ["Ubicacion", data.map_points.length > 0 ? "validado / dato real" : "pendiente / reanudable"],
+        ["Especialidades", hasProject ? "validado / dato real" : "pendiente / reanudable"],
+        ["Provisionamiento", websigReady ? "validado / WEB SIG registrada" : "pendiente / reanudable"],
+        ["GIS", gisReady ? "validado / recurso GIS" : "pendiente / reanudable"],
+        ["NAS", nasReady ? "validado / referencia NAS" : "pendiente / reanudable"],
+        ["Usuarios", usersReady ? "validado / usuarios reales" : "pendiente / reanudable"],
+        ["Activacion", (data.operational_flow || []).some(item => item.readiness_score >= 80) ? "validado / activable" : "pendiente / reanudable"]
       ];
-      document.querySelector("#wizardSteps").innerHTML = steps.map(([name, ready], index) => `
-        <article class="wizard-step">
-          <div class="number">Paso ${index + 1}</div>
-          <div class="name">${name}</div>
-          <div class="state">${ready ? "validado / autosave" : "pendiente / reanudable"}</div>
-        </article>
-      `).join("");
     }
 
     function renderOperationalFlow() {
@@ -839,18 +937,18 @@ def render_dashboard_html() -> str:
       const environmental = data.environmental[0]?.value ?? 0;
       const quality = data.quality[1]?.value ?? data.quality[0]?.value ?? 0;
       const questions = [
-        ["Cuantos proyectos existen", portfolio.total_projects ?? 0],
-        ["Cuantos estan activos", portfolio.active_projects ?? 0],
-        ["Mayor riesgo", highestRisk ? highestRisk.name : "sin riesgo"],
-        ["Menor avance", lowerProgress ? lowerProgress.name : "sin avance"],
-        ["Conflictos ambientales", environmental],
-        ["NCR / calidad", quality]
+        ["Cuantos proyectos existen", portfolio.total_projects ?? 0, "#portfolioExplorer"],
+        ["Cuantos estan activos", portfolio.active_projects ?? 0, "#portfolioExplorer"],
+        ["Mayor riesgo", highestRisk ? highestRisk.name : "sin riesgo", "#corporateNotifications"],
+        ["Menor avance", lowerProgress ? lowerProgress.name : "sin avance", "#projectComparisons"],
+        ["Conflictos ambientales", environmental, "#corporateGisDashboard"],
+        ["NCR / calidad", quality, "#panels"]
       ];
-      document.querySelector("#executiveQuestions").innerHTML = questions.map(([question, answer]) => `
+      document.querySelector("#executiveQuestions").innerHTML = questions.map(([question, answer, href]) => `
         <article class="question-card">
           <div class="label">${question}</div>
           <div class="answer">${answer}</div>
-          <div class="muted">Portfolio / GIS / NAS / Provisioning</div>
+          <a href="${href}">Ver detalle accionable</a>
         </article>
       `).join("");
     }
@@ -866,6 +964,13 @@ def render_dashboard_html() -> str:
     }
 
     function recentEvents() {
+      if (auditEvents.length) {
+        return auditEvents.map(event => ({
+          kind: event.action || event.event_type || "Auditoria",
+          message: event.description || event.entity_id || event.actor || "Evento corporativo registrado",
+          time: event.created_at || event.timestamp || "audit"
+        }));
+      }
       const governed = data.portfolio_governance || [];
       const flow = data.operational_flow || [];
       const first = governed[0];
@@ -900,6 +1005,28 @@ def render_dashboard_html() -> str:
 
     function activeLifecycleCount(items) {
       return items.filter(item => !["closure", "archived"].includes(item.lifecycle_stage)).length;
+    }
+
+    async function applyGisFilter(filter) {
+      activeGisFilter = filter;
+      const companyId = document.querySelector("#companyId").value.trim();
+      const params = new URLSearchParams();
+      if (filter === "estado") params.set("estado", "warning");
+      if (filter === "riesgo") params.set("riesgo", "medium");
+      if (filter === "calidad") params.set("calidad", "true");
+      if (filter === "ambiental") params.set("ambiental", "true");
+      if (filter === "ssoma") params.set("ssoma", "true");
+      if (filter === "produccion") params.set("produccion", "true");
+      try {
+        const response = await fetch(`/api/v1/companies/${encodeURIComponent(companyId)}/gis-intelligence/maps/filter?${params}`);
+        if (response.ok) {
+          gisMap = await response.json();
+          renderMap();
+          renderGisIntelligence();
+        }
+      } catch {
+        renderMap();
+      }
     }
 
     function renderPanels() {
@@ -946,6 +1073,17 @@ def render_dashboard_html() -> str:
         document.querySelectorAll("[data-panel]").forEach(item => item.classList.remove("active"));
         button.classList.add("active");
         if (data) renderPanels();
+      });
+    });
+    document.querySelectorAll("[data-portfolio-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        activePortfolioFilter = button.dataset.portfolioFilter;
+        if (data) renderPortfolioGovernance();
+      });
+    });
+    document.querySelectorAll("[data-gis-filter]").forEach(button => {
+      button.addEventListener("click", () => {
+        applyGisFilter(button.dataset.gisFilter);
       });
     });
     loadDashboard();

@@ -345,6 +345,11 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "Corporate Wizard" in html.text
     assert "Executive Dashboard" in html.text
     assert "Corporate Notifications" in html.text
+    assert "/api/v1/audit/events?limit=12" in html.text
+    assert "/api/v1/enterprise-wizard" in html.text
+    assert "data-gis-filter=\"riesgo\"" in html.text
+    assert "data-portfolio-filter=\"contract\"" in html.text
+    assert "Ver detalle accionable" in html.text
     assert "WEB SIG Enterprise" in html.text
     assert "Solo lectura" in html.text
     assert "Flujo Operacional" in html.text

@@ -127,3 +127,12 @@ experience for Corporate Control Tower. The `/dashboard` surface includes:
 
 This experience reuses existing services and API contracts. It does not create
 new domains, modify ADRs, or add WEB SIG operational logic.
+
+CTO-105 connects that experience to existing data flows:
+
+- Portfolio Explorer consumes company projects and dashboard governance data.
+- Corporate Wizard reads resumable Enterprise Wizard sessions.
+- Corporate Notifications uses the audit event stream.
+- Corporate GIS filters call the existing GIS Intelligence map filter endpoint.
+- Executive Dashboard cards link to actionable portfolio, GIS, audit, NAS, and
+  provisioning sections.
