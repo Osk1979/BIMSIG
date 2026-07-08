@@ -80,3 +80,65 @@ def test_corporate_gis_intelligence_builds_spatial_summary() -> None:
     assert {"gis_intelligence.source_registered", "gis_intelligence.layer_registered"} <= {
         event.action for event in audit.events
     }
+
+
+def test_corporate_gis_intelligence_maps_filter_published_layers_only() -> None:
+    companies = CompanyService(FakeCompanyRepository())
+    portfolio = PortfolioService(FakePortfolioProjectRepository())
+    repository = FakeCorporateGisIntelligenceRepository()
+    service = CorporateGisIntelligenceService(repository, companies, portfolio)
+    companies.register(Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"))
+    portfolio.register(
+        PortfolioProject(
+            project_id="PSZ-2026",
+            company_id="CRTG",
+            program_id="PRG-TRANSPORTE",
+            name="Proyecto Suiza",
+            status=ProjectStatus.ACTIVE,
+            lifecycle_stage=ProjectLifecycleStage.EXECUTION,
+        )
+    )
+    service.register_source(
+        CorporateGisSource(
+            source_id="CGIS-SRC-QUALITY",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            program_id="PRG-TRANSPORTE",
+            service_kind=GisServiceKind.WMS,
+            service_url="https://websig.example.com/quality/wms",
+            discipline=GisDiscipline.QUALITY,
+            layer_type=CorporateLayerType.QUALITY,
+            updated_on=date(2026, 7, 8),
+        )
+    )
+    service.register_layer(
+        CorporateLayer(
+            layer_id="CGIS-LYR-QUALITY",
+            source_id="CGIS-SRC-QUALITY",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            program_id="PRG-TRANSPORTE",
+            name="Calidad QA",
+            layer_type=CorporateLayerType.QUALITY,
+            discipline=GisDiscipline.QUALITY,
+            status=CorporateLayerStatus.WARNING,
+            spatial_indicator="quality",
+            indicator_value=64,
+            updated_on=date(2026, 7, 8),
+            region="Lima",
+            risk_level="medium",
+            metadata={"calidad": "observed"},
+        )
+    )
+
+    regional = service.regional_map("CRTG", "Lima")
+    program = service.program_map("CRTG", "PRG-TRANSPORTE")
+    project = service.project_map("CRTG", "PSZ-2026")
+    thematic = service.thematic_map("CRTG", "calidad")
+    filtered = service.filtered_map("CRTG", estado="warning", riesgo="medium", calidad="true")
+
+    assert regional.layers[0].layer_id == "CGIS-LYR-QUALITY"
+    assert program.layers[0].program_id == "PRG-TRANSPORTE"
+    assert project.layers[0].project_id == "PSZ-2026"
+    assert thematic.layers[0].layer_type == CorporateLayerType.QUALITY
+    assert filtered.layers[0].metadata["calidad"] == "observed"

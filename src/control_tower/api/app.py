@@ -694,6 +694,100 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/maps/company",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def company_gis_intelligence_map(company_id: str) -> CorporateGisIntelligenceMap:
+        """Return company-scoped corporate GIS map."""
+
+        try:
+            return gis_intelligence.company_map(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/maps/regional/{region}",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def regional_gis_intelligence_map(company_id: str, region: str) -> CorporateGisIntelligenceMap:
+        """Return regional corporate GIS map."""
+
+        try:
+            return gis_intelligence.regional_map(company_id, region)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/programs/{program_id}/gis-intelligence/maps",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def program_gis_intelligence_map(company_id: str, program_id: str) -> CorporateGisIntelligenceMap:
+        """Return program-scoped corporate GIS map."""
+
+        try:
+            return gis_intelligence.program_map(company_id, program_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/maps",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def project_gis_intelligence_map(company_id: str, project_id: str) -> CorporateGisIntelligenceMap:
+        """Return project-scoped corporate GIS map."""
+
+        try:
+            return gis_intelligence.project_map(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/maps/thematic/{theme}",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def thematic_gis_intelligence_map(company_id: str, theme: str) -> CorporateGisIntelligenceMap:
+        """Return thematic corporate GIS map."""
+
+        try:
+            return gis_intelligence.thematic_map(company_id, theme)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/maps/filter",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def filtered_gis_intelligence_map(
+        company_id: str,
+        estado: str | None = None,
+        riesgo: str | None = None,
+        calidad: str | None = None,
+        ssoma: str | None = None,
+        ambiental: str | None = None,
+        produccion: str | None = None,
+        cronograma: str | None = None,
+        predios: str | None = None,
+        interferencias: str | None = None,
+    ) -> CorporateGisIntelligenceMap:
+        """Return corporate GIS map filtered by business dimensions."""
+
+        try:
+            return gis_intelligence.filtered_map(
+                company_id,
+                estado=estado,
+                riesgo=riesgo,
+                calidad=calidad,
+                ssoma=ssoma,
+                ambiental=ambiental,
+                produccion=produccion,
+                cronograma=cronograma,
+                predios=predios,
+                interferencias=interferencias,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
         "/api/v1/companies/{company_id}/gis-intelligence/projects/filter",
         response_model=list[ProjectSpatialIndicator],
     )

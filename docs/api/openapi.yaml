@@ -4733,6 +4733,46 @@
         "summary": "Register Corporate Layer"
       }
     },
+    "/api/v1/companies/{company_id}/gis-intelligence/maps/company": {
+      "get": {
+        "description": "Return company-scoped corporate GIS map.",
+        "operationId": "company_gis_intelligence_map_api_v1_companies__company_id__gis_intelligence_maps_company_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Company Gis Intelligence Map"
+      }
+    },
     "/api/v1/companies/{company_id}/gis-intelligence/maps/corporate": {
       "get": {
         "description": "Return corporate spatial map references for one company.",
@@ -4771,6 +4811,288 @@
           }
         },
         "summary": "Corporate Gis Intelligence Map"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/maps/filter": {
+      "get": {
+        "description": "Return corporate GIS map filtered by business dimensions.",
+        "operationId": "filtered_gis_intelligence_map_api_v1_companies__company_id__gis_intelligence_maps_filter_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "in": "query",
+            "name": "riesgo",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Riesgo"
+            }
+          },
+          {
+            "in": "query",
+            "name": "calidad",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Calidad"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ssoma",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ssoma"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ambiental",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ambiental"
+            }
+          },
+          {
+            "in": "query",
+            "name": "produccion",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Produccion"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cronograma",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cronograma"
+            }
+          },
+          {
+            "in": "query",
+            "name": "predios",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Predios"
+            }
+          },
+          {
+            "in": "query",
+            "name": "interferencias",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Interferencias"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Filtered Gis Intelligence Map"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/maps/regional/{region}": {
+      "get": {
+        "description": "Return regional corporate GIS map.",
+        "operationId": "regional_gis_intelligence_map_api_v1_companies__company_id__gis_intelligence_maps_regional__region__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "region",
+            "required": true,
+            "schema": {
+              "title": "Region",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Regional Gis Intelligence Map"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/maps/thematic/{theme}": {
+      "get": {
+        "description": "Return thematic corporate GIS map.",
+        "operationId": "thematic_gis_intelligence_map_api_v1_companies__company_id__gis_intelligence_maps_thematic__theme__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "theme",
+            "required": true,
+            "schema": {
+              "title": "Theme",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Thematic Gis Intelligence Map"
       }
     },
     "/api/v1/companies/{company_id}/gis-intelligence/projects/filter": {
@@ -6120,6 +6442,55 @@
         "summary": "Company Portfolio Summary"
       }
     },
+    "/api/v1/companies/{company_id}/programs/{program_id}/gis-intelligence/maps": {
+      "get": {
+        "description": "Return program-scoped corporate GIS map.",
+        "operationId": "program_gis_intelligence_map_api_v1_companies__company_id__programs__program_id__gis_intelligence_maps_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "program_id",
+            "required": true,
+            "schema": {
+              "title": "Program Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Program Gis Intelligence Map"
+      }
+    },
     "/api/v1/companies/{company_id}/projects": {
       "get": {
         "description": "List projects registered for one company.",
@@ -6312,6 +6683,55 @@
           }
         },
         "summary": "Project Corporate Layer Status"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/maps": {
+      "get": {
+        "description": "Return project-scoped corporate GIS map.",
+        "operationId": "project_gis_intelligence_map_api_v1_companies__company_id__projects__project_id__gis_intelligence_maps_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Gis Intelligence Map"
       }
     },
     "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/sources": {

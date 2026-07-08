@@ -26,6 +26,27 @@ from control_tower.domain.corporate_gis_intelligence import (
 class CorporateGisIntelligenceService:
     """Consolidates published WEB SIG GIS references for corporate analysis."""
 
+    THEME_ALIASES = {
+        "estado": None,
+        "riesgo": CorporateLayerType.RISKS,
+        "risk": CorporateLayerType.RISKS,
+        "calidad": CorporateLayerType.QUALITY,
+        "quality": CorporateLayerType.QUALITY,
+        "ssoma": CorporateLayerType.SSOMA,
+        "ambiental": CorporateLayerType.ENVIRONMENTAL,
+        "environmental": CorporateLayerType.ENVIRONMENTAL,
+        "produccion": CorporateLayerType.PRODUCTION,
+        "production": CorporateLayerType.PRODUCTION,
+        "cronograma": CorporateLayerType.SCHEDULE,
+        "schedule": CorporateLayerType.SCHEDULE,
+        "predios": CorporateLayerType.LAND_PARCELS,
+        "land_parcels": CorporateLayerType.LAND_PARCELS,
+        "interferencias": CorporateLayerType.INTERFERENCES,
+        "interferences": CorporateLayerType.INTERFERENCES,
+        "avance": CorporateLayerType.PHYSICAL_PROGRESS,
+        "physical_progress": CorporateLayerType.PHYSICAL_PROGRESS,
+    }
+
     def __init__(
         self,
         repository: CorporateGisIntelligenceRepository,
@@ -86,12 +107,112 @@ class CorporateGisIntelligenceService:
     def corporate_map(self, company_id: str) -> CorporateGisIntelligenceMap:
         """Return corporate spatial map references for one company."""
 
-        return CorporateGisIntelligenceMap(
-            company_id=company_id,
-            sources=self.list_sources(company_id),
-            layers=self.list_layers(company_id),
-            summary=self.summary(company_id),
+        self._require_company(company_id)
+        sources = self._repository.list_sources(company_id)
+        layers = self._repository.list_layers(company_id)
+        return self._map_from(company_id, sources, layers)
+
+    def company_map(self, company_id: str) -> CorporateGisIntelligenceMap:
+        """Return company-scoped corporate layers."""
+
+        return self.corporate_map(company_id)
+
+    def regional_map(self, company_id: str, region: str) -> CorporateGisIntelligenceMap:
+        """Return corporate layers filtered by region."""
+
+        self._require_company(company_id)
+        layers = [
+            layer
+            for layer in self._repository.list_layers(company_id)
+            if (layer.region or "").casefold() == region.casefold()
+        ]
+        return self._map_from(company_id, self._sources_for_layers(company_id, layers), layers)
+
+    def program_map(self, company_id: str, program_id: str) -> CorporateGisIntelligenceMap:
+        """Return corporate layers for one portfolio program."""
+
+        self._require_company(company_id)
+        layers = [
+            layer
+            for layer in self._repository.list_layers(company_id)
+            if layer.program_id == program_id
+        ]
+        sources = [
+            source
+            for source in self._repository.list_sources(company_id)
+            if source.program_id == program_id or source.source_id in {layer.source_id for layer in layers}
+        ]
+        return self._map_from(company_id, sources, layers)
+
+    def project_map(self, company_id: str, project_id: str) -> CorporateGisIntelligenceMap:
+        """Return corporate layers for one project without editing them."""
+
+        self._require_company_project(company_id, project_id)
+        return self._map_from(
+            company_id,
+            self._repository.list_sources(company_id, project_id),
+            self._repository.list_layers(company_id, project_id),
         )
+
+    def thematic_map(self, company_id: str, theme: str) -> CorporateGisIntelligenceMap:
+        """Return corporate layers for one thematic view."""
+
+        self._require_company(company_id)
+        layer_type = self._layer_type_for_theme(theme)
+        layers = self._repository.list_layers(company_id)
+        if layer_type is not None:
+            layers = [layer for layer in layers if layer.layer_type == layer_type]
+        return self._map_from(company_id, self._sources_for_layers(company_id, layers), layers)
+
+    def filtered_map(
+        self,
+        company_id: str,
+        *,
+        estado: str | None = None,
+        riesgo: str | None = None,
+        calidad: str | None = None,
+        ssoma: str | None = None,
+        ambiental: str | None = None,
+        produccion: str | None = None,
+        cronograma: str | None = None,
+        predios: str | None = None,
+        interferencias: str | None = None,
+    ) -> CorporateGisIntelligenceMap:
+        """Return corporate layers matching business filters."""
+
+        self._require_company(company_id)
+        layers = self._repository.list_layers(company_id)
+        if estado:
+            layers = [
+                layer
+                for layer in layers
+                if layer.status.value == estado or layer.metadata.get("estado") == estado
+            ]
+        if riesgo:
+            layers = [
+                layer
+                for layer in layers
+                if layer.risk_level == riesgo
+                or layer.layer_type == CorporateLayerType.RISKS
+                and self._filter_value_matches(layer, riesgo)
+            ]
+        typed_filters = {
+            CorporateLayerType.QUALITY: calidad,
+            CorporateLayerType.SSOMA: ssoma,
+            CorporateLayerType.ENVIRONMENTAL: ambiental,
+            CorporateLayerType.PRODUCTION: produccion,
+            CorporateLayerType.SCHEDULE: cronograma,
+            CorporateLayerType.LAND_PARCELS: predios,
+            CorporateLayerType.INTERFERENCES: interferencias,
+        }
+        for layer_type, value in typed_filters.items():
+            if value:
+                layers = [
+                    layer
+                    for layer in layers
+                    if layer.layer_type == layer_type and self._filter_value_matches(layer, value)
+                ]
+        return self._map_from(company_id, self._sources_for_layers(company_id, layers), layers)
 
     def filter_projects_by_indicator(
         self,
@@ -131,6 +252,27 @@ class CorporateGisIntelligenceService:
         self._require_company(company_id)
         sources = self._repository.list_sources(company_id)
         layers = self._repository.list_layers(company_id)
+        return self._summary_from(company_id, sources, layers)
+
+    def _map_from(
+        self,
+        company_id: str,
+        sources: list[CorporateGisSource],
+        layers: list[CorporateLayer],
+    ) -> CorporateGisIntelligenceMap:
+        return CorporateGisIntelligenceMap(
+            company_id=company_id,
+            sources=sources,
+            layers=layers,
+            summary=self._summary_from(company_id, sources, layers),
+        )
+
+    def _summary_from(
+        self,
+        company_id: str,
+        sources: list[CorporateGisSource],
+        layers: list[CorporateLayer],
+    ) -> CorporateGisSummary:
         active_layers = [
             layer
             for layer in layers
@@ -179,6 +321,40 @@ class CorporateGisIntelligenceService:
             layers_by_type=self._count_by([layer.layer_type.value for layer in layers]),
             layers_by_status=self._count_by([layer.status.value for layer in layers]),
             regions=self._count_by([layer.region or "sin_region" for layer in layers]),
+        )
+
+    def _sources_for_layers(
+        self,
+        company_id: str,
+        layers: list[CorporateLayer],
+    ) -> list[CorporateGisSource]:
+        source_ids = {layer.source_id for layer in layers}
+        return [
+            source
+            for source in self._repository.list_sources(company_id)
+            if source.source_id in source_ids
+        ]
+
+    def _layer_type_for_theme(self, theme: str) -> CorporateLayerType | None:
+        normalized = theme.casefold()
+        if normalized in self.THEME_ALIASES:
+            return self.THEME_ALIASES[normalized]
+        try:
+            return CorporateLayerType(normalized)
+        except ValueError as exc:
+            raise ValueError(f"Unsupported corporate GIS theme: {theme}") from exc
+
+    @staticmethod
+    def _filter_value_matches(layer: CorporateLayer, value: str) -> bool:
+        normalized = value.casefold()
+        if normalized in {"1", "true", "yes", "si", "sí", "all", "todos"}:
+            return True
+        return (
+            layer.status.value == value
+            or layer.risk_level == value
+            or layer.spatial_indicator == value
+            or value in layer.metadata.values()
+            or layer.metadata.get(layer.layer_type.value) == value
         )
 
     def _require_company(self, company_id: str) -> None:

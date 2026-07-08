@@ -542,10 +542,15 @@ def test_corporate_gis_intelligence_contract(tmp_path) -> None:
         json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
     )
     client.post(
+        "/api/v1/companies/CRTG/portfolio/programs",
+        json={"program_id": "PRG-GIS", "company_id": "CRTG", "name": "Programa GIS"},
+    )
+    client.post(
         "/api/v1/companies/CRTG/projects",
         json={
             "project_id": "PSZ-2026",
             "company_id": "CRTG",
+            "program_id": "PRG-GIS",
             "name": "Proyecto Suiza",
             "status": "active",
             "lifecycle_stage": "execution",
@@ -558,6 +563,7 @@ def test_corporate_gis_intelligence_contract(tmp_path) -> None:
             "source_id": "CGIS-SRC-001",
             "company_id": "CRTG",
             "project_id": "PSZ-2026",
+            "program_id": "PRG-GIS",
             "websig_instance_id": "WEB-CRTG-PSZ-2026",
             "service_kind": "wms",
             "service_url": "https://websig.example.com/crtg/psz-2026/wms",
@@ -574,6 +580,7 @@ def test_corporate_gis_intelligence_contract(tmp_path) -> None:
             "source_id": "CGIS-SRC-001",
             "company_id": "CRTG",
             "project_id": "PSZ-2026",
+            "program_id": "PRG-GIS",
             "name": "Avance fisico",
             "layer_type": "physical_progress",
             "discipline": "production",
@@ -584,8 +591,53 @@ def test_corporate_gis_intelligence_contract(tmp_path) -> None:
             "region": "Lima",
         },
     )
+    quality_source = client.post(
+        "/api/v1/companies/CRTG/gis-intelligence/sources",
+        json={
+            "source_id": "CGIS-SRC-QUALITY",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "program_id": "PRG-GIS",
+            "websig_instance_id": "WEB-CRTG-PSZ-2026",
+            "service_kind": "wms",
+            "service_url": "https://websig.example.com/crtg/psz-2026/quality/wms",
+            "discipline": "quality",
+            "layer_type": "quality",
+            "status": "active",
+            "updated_on": "2026-07-08",
+        },
+    )
+    quality_layer = client.post(
+        "/api/v1/companies/CRTG/gis-intelligence/layers",
+        json={
+            "layer_id": "CGIS-LYR-QUALITY",
+            "source_id": "CGIS-SRC-QUALITY",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "program_id": "PRG-GIS",
+            "name": "Calidad QA",
+            "layer_type": "quality",
+            "discipline": "quality",
+            "status": "warning",
+            "spatial_indicator": "quality",
+            "indicator_value": 64,
+            "updated_on": "2026-07-08",
+            "region": "Lima",
+            "risk_level": "medium",
+            "metadata": {"calidad": "observed"},
+        },
+    )
     summary = client.get("/api/v1/companies/CRTG/gis-intelligence/summary")
     corporate_map = client.get("/api/v1/companies/CRTG/gis-intelligence/maps/corporate")
+    company_map = client.get("/api/v1/companies/CRTG/gis-intelligence/maps/company")
+    regional_map = client.get("/api/v1/companies/CRTG/gis-intelligence/maps/regional/Lima")
+    program_map = client.get("/api/v1/companies/CRTG/programs/PRG-GIS/gis-intelligence/maps")
+    project_map = client.get("/api/v1/companies/CRTG/projects/PSZ-2026/gis-intelligence/maps")
+    thematic_map = client.get("/api/v1/companies/CRTG/gis-intelligence/maps/thematic/calidad")
+    business_filter = client.get(
+        "/api/v1/companies/CRTG/gis-intelligence/maps/filter",
+        params={"estado": "warning", "riesgo": "medium", "calidad": "true"},
+    )
     filtered = client.get(
         "/api/v1/companies/CRTG/gis-intelligence/projects/filter",
         params={"indicator": "physical_progress", "minimum_value": 70},
@@ -596,10 +648,18 @@ def test_corporate_gis_intelligence_contract(tmp_path) -> None:
     assert source.json()["service_kind"] == "wms"
     assert layer.status_code == 201
     assert layer.json()["layer_type"] == "physical_progress"
+    assert quality_source.status_code == 201
+    assert quality_layer.status_code == 201
     assert summary.status_code == 200
     assert summary.json()["total_projects_georeferenced"] == 1
     assert summary.json()["aggregated_spatial_progress"] == 78
     assert corporate_map.json()["layers"][0]["layer_id"] == "CGIS-LYR-001"
+    assert company_map.json()["summary"]["projects_with_active_layers"] == 1
+    assert regional_map.json()["summary"]["regions"]["Lima"] == 2
+    assert program_map.json()["layers"][0]["program_id"] == "PRG-GIS"
+    assert project_map.json()["layers"][0]["project_id"] == "PSZ-2026"
+    assert thematic_map.json()["layers"][0]["layer_type"] == "quality"
+    assert business_filter.json()["layers"][0]["layer_id"] == "CGIS-LYR-QUALITY"
     assert filtered.json()[0]["project_id"] == "PSZ-2026"
     assert dashboard.json()["gis_intelligence"]["projects_with_active_layers"] == 1
 
