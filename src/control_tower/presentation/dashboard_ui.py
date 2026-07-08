@@ -71,6 +71,34 @@ def render_dashboard_html() -> str:
     .brand { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
     h1 { font-size: 28px; line-height: 1.1; margin: 0 0 28px; }
     h2 { font-size: 16px; margin: 0 0 14px; }
+    .experience-label {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      margin: -16px 0 22px;
+    }
+    .process-nav { display: grid; gap: 8px; margin: 18px 0; }
+    .process-nav a {
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-decoration: none;
+      font-weight: 650;
+    }
+    .process-nav a:hover { border-color: var(--accent); color: var(--accent); }
+    .experience-header {
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--accent-soft), transparent 52%), var(--panel);
+    }
+    .experience-header h2 { margin-bottom: 6px; }
+    .section-kicker { color: var(--muted); font-size: 12px; margin: -8px 0 14px; }
     label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
     input, button {
       width: 100%;
@@ -216,6 +244,14 @@ def render_dashboard_html() -> str:
     }
     .governance-card .project { font-weight: 760; margin-bottom: 8px; }
     .governance-card .meta { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .portfolio-path {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .portfolio-path strong { color: var(--text); font-weight: 700; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .chip {
       border: 1px solid var(--line);
@@ -302,6 +338,7 @@ def render_dashboard_html() -> str:
       .topbar { align-items: stretch; flex-direction: column; }
       .toolbar { justify-content: space-between; }
       .toolbar button { flex: 1; min-width: 0; }
+      .process-nav { grid-template-columns: 1fr; }
       table { font-size: 12px; }
       th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { display: none; }
       .radar { min-height: 300px; }
@@ -315,12 +352,19 @@ def render_dashboard_html() -> str:
   <div class="shell">
     <aside>
       <div class="brand">BIMSIG Enterprise</div>
-      <h1>Dashboard Ejecutivo Corporativo</h1>
+      <h1>Corporate Control Tower</h1>
+      <div class="experience-label">Corporate Experience</div>
       <label for="companyId">Empresa</label>
       <input id="companyId" value="CRTG" autocomplete="off">
       <button class="primary" id="load">Actualizar</button>
       <button id="theme">Light Mode</button>
-      <p class="muted">Vista integrada a Corporate Control Tower REV12.</p>
+      <nav class="process-nav" aria-label="Corporate Navigation">
+        <a href="#corporateDashboard">Control Ejecutivo</a>
+        <a href="#corporateGisDashboard">GIS Corporativo</a>
+        <a href="#portfolioExplorer">Explorador de Portafolio</a>
+        <a href="#operationalFlowSection">Operacion</a>
+      </nav>
+      <p class="muted">Dashboard Ejecutivo Corporativo de BIMSIG Enterprise REV13.</p>
     </aside>
     <main>
       <div class="topbar">
@@ -329,27 +373,33 @@ def render_dashboard_html() -> str:
           <h1 id="heading">Resumen ejecutivo</h1>
         </div>
         <div class="toolbar">
-          <button data-panel="operations" class="active">Operacion</button>
-          <button data-panel="governance">Gobierno</button>
-          <button data-panel="enterprise">Empresa</button>
+          <button data-panel="operations" class="active">Control Ejecutivo</button>
+          <button data-panel="governance">GIS Corporativo</button>
+          <button data-panel="enterprise">Portafolio</button>
         </div>
       </div>
+      <section class="experience-header" id="corporateDashboard">
+        <h2>Corporate Dashboard</h2>
+        <div class="muted">Estado ejecutivo del portafolio, empresas, programas, proyectos, riesgos y desempeno corporativo.</div>
+      </section>
       <section class="cockpit" id="cockpit"></section>
       <section class="grid summary" id="summary"></section>
       <section class="grid content">
         <div class="stack">
-          <section class="section">
-            <h2>Radar Corporativo</h2>
+          <section class="section" id="corporateGisDashboard">
+            <h2>Corporate GIS Dashboard</h2>
+            <div class="section-kicker">Mapa corporativo GIS - Solo lectura - Corporate Layers publicadas por WEB SIG Enterprise.</div>
             <div class="radar-shell">
               <div class="radar" id="map"></div>
               <div class="radar-side" id="radarReadouts"></div>
             </div>
           </section>
-          <section class="section">
-            <h2>Gobierno de Portafolio</h2>
+          <section class="section" id="portfolioExplorer">
+            <h2>Explorador de Portafolio</h2>
+            <div class="section-kicker">Empresa / Programa / Proyecto / WEB SIG / Estado / Dashboard.</div>
             <div class="governance-grid" id="portfolioGovernance"></div>
           </section>
-          <section class="section">
+          <section class="section" id="operationalFlowSection">
             <h2>Flujo Operacional</h2>
             <div class="flow-grid" id="operationalFlow"></div>
           </section>
@@ -359,7 +409,8 @@ def render_dashboard_html() -> str:
             <div class="actions-list" id="priorityActions"></div>
           </section>
           <section class="section">
-            <h2>GIS Intelligence Corporativo</h2>
+            <h2>Inteligencia Geoespacial Corporativa</h2>
+            <div class="section-kicker">Consulta consolidada de capas corporativas; sin edicion ni digitalizacion.</div>
             <div class="metric-grid" id="gisIntelligence"></div>
           </section>
           <section class="section">
@@ -397,15 +448,24 @@ def render_dashboard_html() -> str:
     };
     let currentPanel = "operations";
     let data = null;
+    let gisMap = null;
 
     async function loadDashboard() {
       const companyId = document.querySelector("#companyId").value.trim();
-      const response = await fetch(`/api/v1/companies/${encodeURIComponent(companyId)}/dashboard/executive`);
+      const encodedCompany = encodeURIComponent(companyId);
+      const response = await fetch(`/api/v1/companies/${encodedCompany}/dashboard/executive`);
       if (!response.ok) {
         document.querySelector("#heading").textContent = "Empresa no encontrada";
         return;
       }
       data = await response.json();
+      gisMap = null;
+      try {
+        const gisResponse = await fetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`);
+        gisMap = gisResponse.ok ? await gisResponse.json() : null;
+      } catch {
+        gisMap = null;
+      }
       render();
     }
 
@@ -444,11 +504,18 @@ def render_dashboard_html() -> str:
     function renderSummary() {
       const portfolio = data.portfolio;
       const governed = data.portfolio_governance || [];
+      const gisSummary = data.gis_intelligence || {};
       const cards = [
-        ["Portafolio", portfolio.total_projects ?? 0],
-        ["Clientes", uniqueCount(governed.map(item => item.customer).filter(Boolean))],
+        ["Estado portafolio", portfolio.active_projects ? "activo" : "intake"],
+        ["Empresas", 1],
         ["Programas", uniqueCount(governed.map(item => item.program).filter(Boolean))],
-        ["NAS", governed.filter(item => item.nas !== "pendiente").length]
+        ["Proyectos", portfolio.total_projects ?? 0],
+        ["Riesgos", data.risks[0]?.value ?? 0],
+        ["Calidad", data.quality[0]?.value ?? "0%"],
+        ["Produccion", data.production[0]?.value ?? "0%"],
+        ["Ambiental", data.environmental[0]?.value ?? 0],
+        ["SSOMA", data.ssoma[0]?.value ?? 0],
+        ["GIS", gisSummary.projects_with_active_layers ?? 0]
       ];
       document.querySelector("#summary").innerHTML = cards.map(([label, value]) =>
         `<article class="metric"><div class="label">${label}</div><div class="value">${value}</div></article>`
@@ -474,6 +541,7 @@ def render_dashboard_html() -> str:
         ["CONTACTOS", data.map_points.length],
         ["COBERTURA", data.kpis[2]?.value ?? "0%"],
         ["RIESGO", data.risks[0]?.value ?? "0"],
+        ["CAPAS", gisMap?.layers?.length ?? 0],
         ["MODO", document.documentElement.dataset.theme.toUpperCase()]
       ].map(([label, value]) => `
         <article class="readout"><div class="label">${label}</div><div class="value">${value}</div></article>
@@ -487,19 +555,28 @@ def render_dashboard_html() -> str:
         target.innerHTML = `<div class="muted">Sin proyectos gobernados.</div>`;
         return;
       }
-      target.innerHTML = items.map(item => `
+      target.innerHTML = items.map(item => {
+        const flow = (data.operational_flow || []).find(flowItem => flowItem.project_id === item.project_id);
+        return `
         <article class="governance-card">
           <div class="project">${item.project_name}</div>
-          <div class="meta">Cliente: ${item.customer || "pendiente"}</div>
-          <div class="meta">Programa: ${item.program || "pendiente"}</div>
-          <div class="meta">Lifecycle: ${item.lifecycle_stage}</div>
+          <div class="portfolio-path">
+            <span><strong>Empresa</strong> ${data.company_id}</span>
+            <span><strong>Programa</strong> ${item.program || "pendiente"}</span>
+            <span><strong>Proyecto</strong> ${item.project_name}</span>
+            <span><strong>WEB SIG Enterprise</strong> ${item.websig}</span>
+            <span><strong>Estado</strong> ${item.governance_status}</span>
+            <span><strong>Dashboard</strong> ${flow ? `${flow.readiness_score}%` : "pendiente"}</span>
+          </div>
           <div class="chips">
             ${chip("WEB SIG", item.websig)}
             ${chip("NAS", item.nas)}
             ${chip("GIS", item.gis)}
+            <span class="chip ready">Solo lectura</span>
           </div>
         </article>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function renderOperationalFlow() {
@@ -545,10 +622,15 @@ def render_dashboard_html() -> str:
         ["Restricciones", summary.projects_with_active_restrictions],
         ["Avance espacial", `${summary.aggregated_spatial_progress}%`]
       ];
-      target.innerHTML = cards.map(([label, value]) => `
+      const layers = (gisMap?.layers || []).slice(0, 6).map(layer => [
+        `Layer ${layer.layer_type}`,
+        `${layer.name} / ${layer.status}`
+      ]);
+      target.innerHTML = [...cards, ...layers].map(([label, value]) => `
         <article class="metric">
           <div class="label">${label}</div>
           <div class="value">${value}</div>
+          <div class="muted">Solo lectura</div>
         </article>
       `).join("");
     }
