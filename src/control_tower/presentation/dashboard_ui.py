@@ -139,6 +139,12 @@ def render_dashboard_html() -> str:
       gap: 16px;
       align-items: stretch;
     }
+    .gis-map-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, .92fr) minmax(340px, 1.08fr);
+      gap: 14px;
+      align-items: start;
+    }
     .gis-toolbar {
       display: grid;
       grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
@@ -162,7 +168,13 @@ def render_dashboard_html() -> str:
       border-radius: 8px;
       padding: 9px;
       background: var(--panel);
+      color: var(--text);
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      margin: 0;
     }
+    .bridge-card.active { border-color: var(--accent); background: var(--accent-soft); }
     .bridge-card .label { color: var(--muted); font-size: 11px; }
     .bridge-card .value { font-size: 18px; font-weight: 780; margin-top: 5px; }
     .bridge-card .target { color: var(--accent); font-size: 11px; margin-top: 4px; }
@@ -204,6 +216,117 @@ def render_dashboard_html() -> str:
       font-size: 12px;
       margin-top: 10px;
       text-align: center;
+    }
+    .gis-map-surface {
+      min-height: 500px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(65, 209, 154, .09) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(65, 209, 154, .09) 1px, transparent 1px),
+        radial-gradient(circle at 28% 34%, rgba(65, 209, 154, .16), transparent 20%),
+        radial-gradient(circle at 70% 66%, rgba(214, 169, 74, .12), transparent 22%),
+        var(--radar);
+      background-size: 42px 42px, 42px 42px, auto, auto, auto;
+      box-shadow: inset 0 0 70px rgba(65, 209, 154, .09);
+    }
+    .gis-map-surface::after {
+      content: "MAPA GIS CORPORATIVO";
+      position: absolute;
+      left: 16px;
+      bottom: 14px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 2px;
+    }
+    .geometry-shape {
+      position: absolute;
+      border: 2px solid rgba(65, 209, 154, .62);
+      background: rgba(65, 209, 154, .12);
+      transform: translate(-50%, -50%) rotate(var(--angle));
+      box-shadow: 0 0 24px rgba(65, 209, 154, .14);
+    }
+    .geometry-shape.line {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(214, 169, 74, .72);
+      border-color: rgba(214, 169, 74, .9);
+    }
+    .geometry-shape.polygon {
+      clip-path: polygon(10% 20%, 72% 8%, 96% 54%, 58% 92%, 14% 70%);
+    }
+    .geometry-shape.selected {
+      border-color: #fff;
+      background: rgba(65, 209, 154, .24);
+      box-shadow: 0 0 32px var(--accent);
+      z-index: 4;
+    }
+    .map-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      display: grid;
+      gap: 4px;
+      justify-items: center;
+      width: auto;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: 0;
+    }
+    .map-marker .pin {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--panel);
+      box-shadow: 0 0 18px var(--accent);
+    }
+    .map-marker.selected .pin { background: #fff; box-shadow: 0 0 24px #fff; }
+    .map-marker span {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 6px;
+      color: var(--text);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .service-slots {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .service-slot {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+      background: var(--panel-strong);
+    }
+    .service-slot.ready { color: var(--accent); border-color: var(--accent); }
+    .project-detail {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel-strong);
+      margin-top: 10px;
+    }
+    .project-detail .name { font-weight: 780; margin-bottom: 8px; }
+    .project-detail .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 7px;
+      margin-top: 7px;
     }
     .cockpit {
       display: grid;
@@ -288,10 +411,13 @@ def render_dashboard_html() -> str:
       border-radius: 50%;
       background: var(--accent);
       border: 2px solid var(--panel);
+      padding: 0;
+      margin: 0;
       transform: translate(-50%, -50%);
       box-shadow: 0 0 18px var(--accent);
       z-index: 2;
     }
+    .point.selected { background: #fff; box-shadow: 0 0 26px #fff; }
     .point span {
       position: absolute;
       left: 16px;
@@ -302,6 +428,7 @@ def render_dashboard_html() -> str:
       border-radius: 6px;
       padding: 4px 6px;
       font-size: 11px;
+      pointer-events: none;
     }
     .radar-side {
       display: grid;
@@ -481,7 +608,7 @@ def render_dashboard_html() -> str:
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
-      .gis-workbench, .gis-toolbar { grid-template-columns: 1fr; }
+      .gis-workbench, .gis-toolbar, .gis-map-grid { grid-template-columns: 1fr; }
       .radar { min-height: 380px; width: min(100%, 520px); }
       .governance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
@@ -500,6 +627,7 @@ def render_dashboard_html() -> str:
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
+      .service-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .notification { grid-template-columns: 1fr; }
     }
   </style>
@@ -559,7 +687,11 @@ def render_dashboard_html() -> str:
             <div class="gis-toolbar">
               <div class="gis-bridge">
                 <h3>Comunicacion KPI -> Mapa</h3>
-                <div class="bridge-grid" id="gisKpiBridge"></div>
+              <div
+                class="bridge-grid"
+                id="gisKpiBridge"
+                data-kpi-filter-options="produccion,riesgo,ambiental,ssoma,calidad,estado"
+              ></div>
               </div>
               <div class="gis-layer-stack">
                 <h3>Capas corporativas publicadas</h3>
@@ -576,9 +708,17 @@ def render_dashboard_html() -> str:
               <button data-gis-filter="produccion">Produccion</button>
             </div>
             <div class="gis-workbench">
-              <div>
-                <div class="radar" id="map"></div>
-                <div class="map-caption">Visor SIG Corporativo: consume capas publicadas; no edita geometria ni captura campo.</div>
+              <div class="gis-map-grid">
+                <div>
+                  <div class="radar" id="projectRadar"></div>
+                  <div class="map-caption">Radar de proyectos: selecciona senales ejecutivas y comunica el foco al mapa GIS.</div>
+                </div>
+                <div>
+                  <div class="gis-map-surface" id="gisMapSurface"></div>
+                  <div class="map-caption">Visor SIG Corporativo / Mapa GIS: recibe geometria publicada desde WEB SIG Enterprise.</div>
+                  <div class="service-slots" id="gisServiceSlots"></div>
+                  <div class="project-detail" id="gisProjectDetail"></div>
+                </div>
               </div>
               <div class="radar-side">
                 <div id="radarReadouts"></div>
@@ -667,6 +807,7 @@ def render_dashboard_html() -> str:
     let auditEvents = [];
     let activePortfolioFilter = "all";
     let activeGisFilter = "estado";
+    let selectedProjectId = null;
 
     async function loadDashboard() {
       const companyId = document.querySelector("#companyId").value.trim();
@@ -789,12 +930,13 @@ def render_dashboard_html() -> str:
     }
 
     function renderMap() {
-      const map = document.querySelector("#map");
+      const map = document.querySelector("#projectRadar");
       const readouts = document.querySelector("#radarReadouts");
       const modes = ["Mapa Nacional", "Mapa Regional", "Empresa", "Programa", "Proyecto"];
       renderGisKpiBridge();
       renderGisLayerLegend();
       renderGisKpiCharts();
+      renderGisServiceSlots();
       document.querySelector("#gisMapModes").innerHTML = modes.map((mode, index) => `
         <div class="mode-pill ${index === 0 ? "active" : ""}">${mode}</div>
       `).join("");
@@ -804,15 +946,26 @@ def render_dashboard_html() -> str:
       if (!data.map_points.length) {
         map.innerHTML = `<div class="muted" style="padding:16px">Sin proyectos georreferenciados.</div>`;
         readouts.innerHTML = "";
+        renderGisMapSurface();
+        renderGisProjectDetail();
         return;
       }
       map.innerHTML = data.map_points.map((point, index) => {
+        const projectId = projectKey(point, index);
+        selectedProjectId = selectedProjectId || projectId;
         const angle = (index * 58 + 230) * Math.PI / 180;
         const radius = 24 + (index * 13) % 30;
         const left = 50 + Math.cos(angle) * radius;
         const top = 50 + Math.sin(angle) * radius;
-        return `<div class="point" style="left:${left}%;top:${top}%"><span>${point.name}</span></div>`;
+        const selected = selectedProjectId === projectId ? " selected" : "";
+        return `<button class="point${selected}" data-project-id="${projectId}" style="left:${left}%;top:${top}%" title="Seleccionar ${point.name}"><span>${point.name}</span></button>`;
       }).join("");
+      document.querySelectorAll("[data-project-id]").forEach(point => {
+        point.addEventListener("click", () => {
+          selectedProjectId = point.dataset.projectId;
+          renderMap();
+        });
+      });
       readouts.innerHTML = [
         ["CONTACTOS", data.map_points.length],
         ["COBERTURA", data.kpis[2]?.value ?? "0%"],
@@ -823,24 +976,107 @@ def render_dashboard_html() -> str:
       ].map(([label, value]) => `
         <article class="readout"><div class="label">${label}</div><div class="value">${value}</div></article>
       `).join("");
+      renderGisMapSurface();
+      renderGisProjectDetail();
+    }
+
+    function renderGisMapSurface() {
+      const surface = document.querySelector("#gisMapSurface");
+      const points = data.map_points || [];
+      if (!points.length) {
+        surface.innerHTML = `<div class="muted" style="padding:16px">Sin geometria corporativa publicada.</div>`;
+        return;
+      }
+      surface.innerHTML = points.map((point, index) => {
+        const projectId = projectKey(point, index);
+        const position = mapPosition(index);
+        const selected = selectedProjectId === projectId ? " selected" : "";
+        const shape = index % 2 === 0 ? "polygon" : "line";
+        const width = 92 + ((index * 17) % 58);
+        const height = shape === "line" ? 9 : 62 + ((index * 19) % 42);
+        return `
+          <div class="geometry-shape ${shape}${selected}" style="left:${position.left}%;top:${position.top}%;width:${width}px;height:${height}px;--angle:${position.angle}deg"></div>
+          <button class="map-marker${selected}" data-project-id="${projectId}" style="left:${position.left}%;top:${position.top}%">
+            <span class="pin"></span>
+            <span>${point.name}</span>
+          </button>
+        `;
+      }).join("");
+      document.querySelectorAll("#gisMapSurface [data-project-id]").forEach(marker => {
+        marker.addEventListener("click", () => {
+          selectedProjectId = marker.dataset.projectId;
+          renderMap();
+        });
+      });
+    }
+
+    function renderGisServiceSlots() {
+      const layers = gisMap?.layers || [];
+      const services = [
+        ["WMS", layers.some(layer => String(layer.service_kind || "").toLowerCase() === "wms")],
+        ["WFS", layers.some(layer => String(layer.service_kind || "").toLowerCase() === "wfs")],
+        ["WMTS", layers.some(layer => String(layer.service_kind || "").toLowerCase() === "wmts")],
+        ["Vector Tiles", layers.some(layer => String(layer.service_kind || "").toLowerCase().includes("tile"))]
+      ];
+      document.querySelector("#gisServiceSlots").innerHTML = services.map(([label, ready]) => `
+        <div class="service-slot ${ready ? "ready" : ""}">${label}<br>${ready ? "publicado" : "slot preparado"}</div>
+      `).join("");
+    }
+
+    function renderGisProjectDetail() {
+      const detail = document.querySelector("#gisProjectDetail");
+      const selected = selectedProject();
+      if (!selected) {
+        detail.innerHTML = `<div class="muted">Selecciona un contacto del radar para ver su detalle GIS.</div>`;
+        return;
+      }
+      const governance = (data.portfolio_governance || []).find(item => item.project_id === selected.project_id || item.project_name === selected.name) || {};
+      const flow = (data.operational_flow || []).find(item => item.project_id === governance.project_id) || {};
+      detail.innerHTML = `
+        <div class="name">${selected.name}</div>
+        <div class="row"><span>Geometria</span><strong>publicada por WEB SIG</strong></div>
+        <div class="row"><span>Estado</span><strong>${governance.governance_status || "observed"}</strong></div>
+        <div class="row"><span>Layer activo</span><strong>${activeGisFilter}</strong></div>
+        <div class="row"><span>Readiness</span><strong>${flow.readiness_score ?? "pendiente"}%</strong></div>
+      `;
+    }
+
+    function selectedProject() {
+      const points = data.map_points || [];
+      return points.find((point, index) => projectKey(point, index) === selectedProjectId) || points[0];
+    }
+
+    function projectKey(point, index) {
+      return point.project_id || point.id || point.name || `project-${index}`;
+    }
+
+    function mapPosition(index) {
+      return {
+        left: 22 + ((index * 29) % 56),
+        top: 24 + ((index * 37) % 52),
+        angle: -18 + ((index * 23) % 42)
+      };
     }
 
     function renderGisKpiBridge() {
       const bridge = [
-        ["Produccion", data.production[0]?.value ?? "0%", "Capa avance"],
-        ["Riesgo", data.risks[0]?.value ?? "0", "Capa riesgos"],
-        ["Ambiental", data.environmental[0]?.value ?? "0", "Capa ambiental"],
-        ["SSOMA", data.ssoma[0]?.value ?? "0", "Capa SSOMA"],
-        ["Calidad", data.quality[0]?.value ?? "0%", "Capa calidad"],
-        ["Cronograma", data.schedule[0]?.value ?? "0", "Capa cronograma"]
+        ["Produccion", data.production[0]?.value ?? "0%", "Capa avance", "produccion"],
+        ["Riesgo", data.risks[0]?.value ?? "0", "Capa riesgos", "riesgo"],
+        ["Ambiental", data.environmental[0]?.value ?? "0", "Capa ambiental", "ambiental"],
+        ["SSOMA", data.ssoma[0]?.value ?? "0", "Capa SSOMA", "ssoma"],
+        ["Calidad", data.quality[0]?.value ?? "0%", "Capa calidad", "calidad"],
+        ["Cronograma", data.schedule[0]?.value ?? "0", "Capa cronograma", "estado"]
       ];
-      document.querySelector("#gisKpiBridge").innerHTML = bridge.map(([label, value, target]) => `
-        <article class="bridge-card">
+      document.querySelector("#gisKpiBridge").innerHTML = bridge.map(([label, value, target, filter]) => `
+        <button class="bridge-card ${activeGisFilter === filter ? "active" : ""}" data-kpi-filter="${filter}">
           <div class="label">${label}</div>
           <div class="value">${value}</div>
           <div class="target">${target}</div>
-        </article>
+        </button>
       `).join("");
+      document.querySelectorAll("[data-kpi-filter]").forEach(card => {
+        card.addEventListener("click", () => applyGisFilter(card.dataset.kpiFilter));
+      });
     }
 
     function renderGisLayerLegend() {

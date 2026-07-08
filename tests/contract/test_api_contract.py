@@ -343,6 +343,11 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "Capas corporativas publicadas" in html.text
     assert "Visor SIG Corporativo" in html.text
     assert "gisKpiCharts" in html.text
+    assert "projectRadar" in html.text
+    assert "gisMapSurface" in html.text
+    assert "gisServiceSlots" in html.text
+    assert "data-kpi-filter-options=\"produccion,riesgo" in html.text
+    assert "publicada por WEB SIG" in html.text
     assert "Mapa Nacional" in html.text
     assert "Mapa Regional" in html.text
     assert "Explorador de Portafolio" in html.text

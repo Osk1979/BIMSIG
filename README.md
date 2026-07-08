@@ -136,3 +136,9 @@ CTO-105 connects that experience to existing data flows:
 - Corporate GIS filters call the existing GIS Intelligence map filter endpoint.
 - Executive Dashboard cards link to actionable portfolio, GIS, audit, NAS, and
   provisioning sections.
+
+CTO-106 adds the visual link between the Project Radar and the Corporate GIS
+map surface. Selecting a project signal in the radar highlights the same project
+geometry on the GIS surface, while KPI cards activate related Corporate Layers.
+The map surface remains read-only and prepared for WMS, WFS, WMTS, and Vector
+Tiles published by WEB SIG Enterprise.
