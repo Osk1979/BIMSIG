@@ -115,8 +115,14 @@ class DashboardService:
             comparisons=self._comparisons(projects),
             portfolio_governance=self._portfolio_governance(company_id, projects),
             operational_flow=self._operational_flow_items(company_id),
+            operating_model=self._operating_model(company_id),
             gis_intelligence=self._gis_intelligence_summary(company_id),
         )
+
+    def _operating_model(self, company_id: str):
+        if self._operational_flow is None:
+            return None
+        return self._operational_flow.company_operating_model(company_id)
 
     def _operational_flow_items(self, company_id: str):
         if self._operational_flow is None:

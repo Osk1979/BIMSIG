@@ -89,6 +89,7 @@ from control_tower.domain.nas import (
     InformationVersion,
 )
 from control_tower.domain.operations import CompanyOperationalFlow
+from control_tower.domain.operations import CorporateOperatingModel
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.portfolio import (
     CorporateCustomer,
@@ -276,6 +277,11 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         portfolio,
         corporate_portfolio,
         provisioning_repository,
+        workflow_repository,
+        wizard_repository,
+        information_repository,
+        gis_repository,
+        audit_repository,
     )
     project_stack_adapters = default_project_stack_adapters(
         nas_root=os.getenv("CONTROL_TOWER_NAS_ROOT"),
@@ -406,6 +412,15 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         try:
             return operational_flow.company_flow(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/operations/model", response_model=CorporateOperatingModel)
+    def company_operating_model(company_id: str) -> CorporateOperatingModel:
+        """Return the Corporate Operating Model for Fase 3 operations."""
+
+        try:
+            return operational_flow.company_operating_model(company_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

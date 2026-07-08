@@ -9,6 +9,9 @@ ADR references:
 
 from control_tower.domain.operations import (
     CompanyOperationalFlow,
+    CorporateOperatingModel,
+    OperatingCapability,
+    OperatingLane,
     OperationalFlowItem,
     OperationalFlowSummary,
     OperationalPhase,
@@ -18,7 +21,14 @@ from control_tower.domain.portfolio import ProjectLifecycleStage
 
 from .enterprise_service import CompanyService
 from .portfolio_service import CorporatePortfolioDomainService, PortfolioService
-from .repositories import ProvisioningRequestRepository
+from .repositories import (
+    AuditEventRepository,
+    CorporateGisRepository,
+    CorporateWorkflowRepository,
+    EnterpriseWizardRepository,
+    InformationAssetRepository,
+    ProvisioningRequestRepository,
+)
 
 
 class OperationalFlowService:
@@ -30,11 +40,21 @@ class OperationalFlowService:
         portfolio: PortfolioService,
         corporate_portfolio: CorporatePortfolioDomainService,
         provisioning_repository: ProvisioningRequestRepository,
+        workflow_repository: CorporateWorkflowRepository | None = None,
+        wizard_repository: EnterpriseWizardRepository | None = None,
+        information_repository: InformationAssetRepository | None = None,
+        gis_repository: CorporateGisRepository | None = None,
+        audit_repository: AuditEventRepository | None = None,
     ) -> None:
         self._companies = companies
         self._portfolio = portfolio
         self._corporate_portfolio = corporate_portfolio
         self._provisioning = provisioning_repository
+        self._workflows = workflow_repository
+        self._wizards = wizard_repository
+        self._information = information_repository
+        self._gis = gis_repository
+        self._audit = audit_repository
 
     def company_flow(self, company_id: str) -> CompanyOperationalFlow:
         """Return operational flow status for all projects in one company."""
@@ -79,6 +99,77 @@ class OperationalFlowService:
             company_id=company_id,
             summary=self._summary(items),
             items=items,
+        )
+
+    def company_operating_model(self, company_id: str) -> CorporateOperatingModel:
+        """Return the Fase 3 operating model backed by existing domains."""
+
+        flow = self.company_flow(company_id)
+        workflows = self._workflows.list_workflows(company_id) if self._workflows else []
+        wizards = self._company_wizards(company_id)
+        assets = self._information.list_assets_by_company(company_id) if self._information else []
+        gis_layers = self._gis.list_layers(company_id) if self._gis else []
+        audits = self._audit.list(limit=100) if self._audit else []
+        requests = self._provisioning.list_by_company(company_id)
+
+        capabilities = [
+            self._capability(
+                "enterprise-wizard",
+                "Enterprise Wizard",
+                len(wizards),
+                "sesiones registradas",
+                "Continuar sesiones draft o activar sesiones ready",
+            ),
+            self._capability(
+                "workflow-engine",
+                "Corporate Workflow Engine",
+                len(workflows),
+                "workflows corporativos",
+                "Avanzar transiciones pendientes con rollback disponible",
+            ),
+            self._capability(
+                "portfolio-governance",
+                "Gobierno de Portafolio",
+                flow.summary.total_projects,
+                "proyectos gobernados",
+                "Completar lifecycle, cliente, programa e integraciones",
+            ),
+            self._capability(
+                "websig-factory",
+                "WEB SIG Factory",
+                len(requests),
+                "solicitudes de provisioning",
+                "Ejecutar dry-run, aprobar y registrar referencias WEB SIG",
+            ),
+            self._capability(
+                "corporate-information-center",
+                "NAS Corporate Information Center",
+                len(assets),
+                "activos documentales",
+                "Registrar metadatos y logical NAS URI por proyecto",
+            ),
+            self._capability(
+                "corporate-gis",
+                "GIS Corporativo",
+                len(gis_layers),
+                "capas GeoServer registradas",
+                "Vincular PostGIS schema, workspace y layers",
+            ),
+            self._capability(
+                "audit-continuity",
+                "Auditoria y Continuidad",
+                len(audits),
+                "eventos recientes",
+                "Mantener cierre GitHub y respaldo fisico diario",
+            ),
+        ]
+        lanes = self._lanes(flow, workflows=len(workflows), wizards=len(wizards), audits=len(audits))
+        return CorporateOperatingModel(
+            company_id=company_id,
+            flow=flow,
+            lanes=lanes,
+            capabilities=capabilities,
+            priority_actions=self._priority_actions(flow, lanes),
         )
 
     def _project_item(
@@ -224,3 +315,109 @@ class OperationalFlowService:
             archived=sum(1 for item in items if item.current_state == OperationalState.ARCHIVED),
             average_readiness=average,
         )
+
+    def _company_wizards(self, company_id: str):
+        if self._wizards is None:
+            return []
+        sessions = self._wizards.list()
+        return [
+            session
+            for session in sessions
+            if session.company_id == company_id
+            or any(
+                step.data.get("company_id") == company_id
+                for step in session.steps
+                if isinstance(step.data, dict)
+            )
+        ]
+
+    @staticmethod
+    def _capability(
+        capability_id: str,
+        name: str,
+        count: int,
+        evidence_label: str,
+        next_action: str,
+    ) -> OperatingCapability:
+        status = "operational" if count > 0 else "watch"
+        return OperatingCapability(
+            capability_id=capability_id,
+            name=name,
+            status=status,
+            evidence=f"{count} {evidence_label}",
+            next_action=next_action,
+        )
+
+    @staticmethod
+    def _lanes(
+        flow: CompanyOperationalFlow,
+        *,
+        workflows: int,
+        wizards: int,
+        audits: int,
+    ) -> list[OperatingLane]:
+        total = max(flow.summary.total_projects, 1)
+        blocked = sum(1 for item in flow.items if item.pending_controls)
+        return [
+            OperatingLane(
+                lane_id="intake",
+                name="Intake corporativo",
+                owner="PMO corporativa",
+                readiness_score=100 if wizards else 40,
+                capabilities=["enterprise-wizard", "portfolio-governance"],
+                active_items=wizards,
+                blocked_items=0 if wizards else 1,
+                next_action="Completar Wizard para nuevos proyectos",
+            ),
+            OperatingLane(
+                lane_id="provisioning",
+                name="Provisioning controlado",
+                owner="WEB SIG Factory",
+                readiness_score=round((flow.summary.observed / total) * 100),
+                capabilities=["websig-factory", "workflow-engine"],
+                active_items=workflows,
+                blocked_items=blocked,
+                next_action="Cerrar referencias WEB SIG, NAS y GIS pendientes",
+            ),
+            OperatingLane(
+                lane_id="governance",
+                name="Gobierno ejecutivo",
+                owner="Control Tower",
+                readiness_score=flow.summary.average_readiness,
+                capabilities=["portfolio-governance", "audit-continuity"],
+                active_items=flow.summary.total_projects,
+                blocked_items=blocked,
+                next_action="Resolver controles pendientes de mayor impacto",
+            ),
+            OperatingLane(
+                lane_id="intelligence",
+                name="Inteligencia corporativa",
+                owner="GIS Intelligence",
+                readiness_score=flow.summary.average_readiness,
+                capabilities=["corporate-gis", "corporate-information-center"],
+                active_items=flow.summary.observed,
+                blocked_items=max(0, flow.summary.total_projects - flow.summary.observed),
+                next_action="Publicar capas, metadatos y KPIs espaciales",
+            ),
+            OperatingLane(
+                lane_id="continuity",
+                name="Continuidad y auditoria",
+                owner="DevSecOps",
+                readiness_score=100 if audits else 50,
+                capabilities=["audit-continuity"],
+                active_items=audits,
+                blocked_items=0 if audits else 1,
+                next_action="Confirmar push remoto y respaldo fisico",
+            ),
+        ]
+
+    @staticmethod
+    def _priority_actions(flow: CompanyOperationalFlow, lanes: list[OperatingLane]) -> list[str]:
+        actions = []
+        for item in flow.items:
+            if item.pending_controls:
+                actions.append(f"{item.project_id}: {item.pending_controls[0]}")
+        for lane in lanes:
+            if lane.blocked_items:
+                actions.append(f"{lane.name}: {lane.next_action}")
+        return actions[:6] or ["Mantener monitoreo operativo, auditoria y respaldo fisico"]

@@ -12,7 +12,7 @@ ADR references:
 from pydantic import BaseModel, Field
 
 from control_tower.domain.corporate_gis_intelligence import CorporateGisSummary
-from control_tower.domain.operations import OperationalFlowItem
+from control_tower.domain.operations import CorporateOperatingModel, OperationalFlowItem
 
 
 class DashboardMetric(BaseModel):
@@ -84,4 +84,5 @@ class CorporateDashboard(BaseModel):
     comparisons: list[ProjectComparison]
     portfolio_governance: list[PortfolioGovernanceItem] = Field(default_factory=list)
     operational_flow: list[OperationalFlowItem] = Field(default_factory=list)
+    operating_model: CorporateOperatingModel | None = None
     gis_intelligence: CorporateGisSummary | None = None

@@ -327,13 +327,16 @@ def test_executive_dashboard_contract(tmp_path) -> None:
         "comparisons",
         "portfolio_governance",
         "operational_flow",
+        "operating_model",
     } <= set(response.json())
     assert response.json()["portfolio_governance"][0]["project_id"] == "PSZ-2026"
     assert response.json()["operational_flow"][0]["project_id"] == "PSZ-2026"
+    assert response.json()["operating_model"]["phase"] == "Fase 3 - funcionamiento operativo"
     assert html.status_code == 200
     assert "Dashboard Ejecutivo Corporativo" in html.text
     assert "Gobierno de Portafolio" in html.text
     assert "Flujo Operacional" in html.text
+    assert "Modelo Operativo Corporativo" in html.text
     assert "data-theme=\"dark\"" in html.text
 
 
@@ -372,6 +375,25 @@ def test_company_operational_flow_contract(tmp_path) -> None:
     assert response.json()["items"][0]["websig_registered"] is True
     assert response.json()["items"][0]["nas_registered"] is True
     assert response.json()["items"][0]["gis_registered"] is True
+
+    model = client.get("/api/v1/companies/CRTG/operations/model")
+
+    assert model.status_code == 200
+    assert model.json()["company_id"] == "CRTG"
+    assert model.json()["flow"]["summary"]["observed"] == 1
+    assert {lane["lane_id"] for lane in model.json()["lanes"]} >= {
+        "intake",
+        "provisioning",
+        "governance",
+        "intelligence",
+        "continuity",
+    }
+    assert {capability["capability_id"] for capability in model.json()["capabilities"]} >= {
+        "enterprise-wizard",
+        "workflow-engine",
+        "portfolio-governance",
+        "websig-factory",
+    }
 
 
 def test_corporate_workflow_engine_contract(tmp_path) -> None:

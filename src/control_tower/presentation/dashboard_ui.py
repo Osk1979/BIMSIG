@@ -249,6 +249,26 @@ def render_dashboard_html() -> str:
       color: var(--accent);
       font-weight: 780;
     }
+    .operating-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .lane-card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 124px;
+    }
+    .lane-card .name { font-weight: 760; }
+    .lane-card .owner { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .lane-card .score { color: var(--accent); font-size: 22px; font-weight: 780; margin-top: 8px; }
+    .actions-list { display: grid; gap: 8px; margin-top: 12px; }
+    .action-item {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
     .readout {
       min-height: 72px;
       background: var(--panel-strong);
@@ -287,6 +307,7 @@ def render_dashboard_html() -> str:
       .radar { min-height: 300px; }
       .radar::after { display: none; }
       .flow-card { grid-template-columns: 1fr; }
+      .operating-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -331,6 +352,11 @@ def render_dashboard_html() -> str:
           <section class="section">
             <h2>Flujo Operacional</h2>
             <div class="flow-grid" id="operationalFlow"></div>
+          </section>
+          <section class="section">
+            <h2>Modelo Operativo Corporativo</h2>
+            <div class="operating-grid" id="operatingModel"></div>
+            <div class="actions-list" id="priorityActions"></div>
           </section>
           <section class="section">
             <h2>GIS Intelligence Corporativo</h2>
@@ -390,6 +416,7 @@ def render_dashboard_html() -> str:
       renderMap();
       renderPortfolioGovernance();
       renderOperationalFlow();
+      renderOperatingModel();
       renderGisIntelligence();
       renderPanels();
       renderComparisons();
@@ -523,6 +550,29 @@ def render_dashboard_html() -> str:
           <div class="label">${label}</div>
           <div class="value">${value}</div>
         </article>
+      `).join("");
+    }
+
+    function renderOperatingModel() {
+      const target = document.querySelector("#operatingModel");
+      const actions = document.querySelector("#priorityActions");
+      const model = data.operating_model;
+      if (!model) {
+        target.innerHTML = `<div class="muted">Sin modelo operativo calculado.</div>`;
+        actions.innerHTML = "";
+        return;
+      }
+      target.innerHTML = model.lanes.map(lane => `
+        <article class="lane-card">
+          <div class="name">${lane.name}</div>
+          <div class="owner">${lane.owner}</div>
+          <div class="score">${lane.readiness_score}%</div>
+          <div class="muted">${lane.active_items} activos / ${lane.blocked_items} bloqueos</div>
+          <div class="chips">${lane.capabilities.map(item => `<span class="chip ready">${item}</span>`).join("")}</div>
+        </article>
+      `).join("");
+      actions.innerHTML = (model.priority_actions || []).map(action => `
+        <div class="action-item">${action}</div>
       `).join("");
     }
 

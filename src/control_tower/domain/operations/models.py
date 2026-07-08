@@ -78,3 +78,40 @@ class CompanyOperationalFlow(BaseModel):
     company_id: str = Field(min_length=3)
     summary: OperationalFlowSummary
     items: list[OperationalFlowItem] = Field(default_factory=list)
+
+
+class OperatingCapability(BaseModel):
+    """Operational capability status derived from existing domains."""
+
+    capability_id: str = Field(min_length=3)
+    name: str = Field(min_length=3)
+    status: str = Field(min_length=3)
+    evidence: str = Field(min_length=1)
+    next_action: str = Field(min_length=3)
+
+
+class OperatingLane(BaseModel):
+    """Business-process lane in the Corporate Operating Model."""
+
+    lane_id: str = Field(min_length=3)
+    name: str = Field(min_length=3)
+    owner: str = Field(min_length=3)
+    readiness_score: int = Field(ge=0, le=100)
+    capabilities: list[str] = Field(default_factory=list)
+    active_items: int = Field(ge=0)
+    blocked_items: int = Field(ge=0)
+    next_action: str = Field(min_length=3)
+
+
+class CorporateOperatingModel(BaseModel):
+    """Company-scoped Corporate Operating Model for Fase 3 operations."""
+
+    company_id: str = Field(min_length=3)
+    phase: str = Field(default="Fase 3 - funcionamiento operativo")
+    operating_principle: str = Field(
+        default="Procesos de negocio y experiencia de usuario sobre dominios estables."
+    )
+    flow: CompanyOperationalFlow
+    lanes: list[OperatingLane] = Field(default_factory=list)
+    capabilities: list[OperatingCapability] = Field(default_factory=list)
+    priority_actions: list[str] = Field(default_factory=list)

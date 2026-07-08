@@ -596,6 +596,16 @@
             "title": "Map Points",
             "type": "array"
           },
+          "operating_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorporateOperatingModel"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "operational_flow": {
             "items": {
               "$ref": "#/components/schemas/OperationalFlowItem"
@@ -1083,6 +1093,56 @@
           "longitude"
         ],
         "title": "CorporateMapPoint",
+        "type": "object"
+      },
+      "CorporateOperatingModel": {
+        "description": "Company-scoped Corporate Operating Model for Fase 3 operations.",
+        "properties": {
+          "capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/OperatingCapability"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "flow": {
+            "$ref": "#/components/schemas/CompanyOperationalFlow"
+          },
+          "lanes": {
+            "items": {
+              "$ref": "#/components/schemas/OperatingLane"
+            },
+            "title": "Lanes",
+            "type": "array"
+          },
+          "operating_principle": {
+            "default": "Procesos de negocio y experiencia de usuario sobre dominios estables.",
+            "title": "Operating Principle",
+            "type": "string"
+          },
+          "phase": {
+            "default": "Fase 3 - funcionamiento operativo",
+            "title": "Phase",
+            "type": "string"
+          },
+          "priority_actions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Priority Actions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "company_id",
+          "flow"
+        ],
+        "title": "CorporateOperatingModel",
         "type": "object"
       },
       "CorporatePortfolioProjectView": {
@@ -2530,6 +2590,104 @@
         ],
         "title": "MembershipStatus",
         "type": "string"
+      },
+      "OperatingCapability": {
+        "description": "Operational capability status derived from existing domains.",
+        "properties": {
+          "capability_id": {
+            "minLength": 3,
+            "title": "Capability Id",
+            "type": "string"
+          },
+          "evidence": {
+            "minLength": 1,
+            "title": "Evidence",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "next_action": {
+            "minLength": 3,
+            "title": "Next Action",
+            "type": "string"
+          },
+          "status": {
+            "minLength": 3,
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "capability_id",
+          "name",
+          "status",
+          "evidence",
+          "next_action"
+        ],
+        "title": "OperatingCapability",
+        "type": "object"
+      },
+      "OperatingLane": {
+        "description": "Business-process lane in the Corporate Operating Model.",
+        "properties": {
+          "active_items": {
+            "minimum": 0.0,
+            "title": "Active Items",
+            "type": "integer"
+          },
+          "blocked_items": {
+            "minimum": 0.0,
+            "title": "Blocked Items",
+            "type": "integer"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Capabilities",
+            "type": "array"
+          },
+          "lane_id": {
+            "minLength": 3,
+            "title": "Lane Id",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "next_action": {
+            "minLength": 3,
+            "title": "Next Action",
+            "type": "string"
+          },
+          "owner": {
+            "minLength": 3,
+            "title": "Owner",
+            "type": "string"
+          },
+          "readiness_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Readiness Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "lane_id",
+          "name",
+          "owner",
+          "readiness_score",
+          "active_items",
+          "blocked_items",
+          "next_action"
+        ],
+        "title": "OperatingLane",
+        "type": "object"
       },
       "OperationalFlowItem": {
         "description": "Operational flow status for one governed project.",
@@ -5692,6 +5850,46 @@
           }
         },
         "summary": "Company Operational Flow"
+      }
+    },
+    "/api/v1/companies/{company_id}/operations/model": {
+      "get": {
+        "description": "Return the Corporate Operating Model for Fase 3 operations.",
+        "operationId": "company_operating_model_api_v1_companies__company_id__operations_model_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateOperatingModel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Company Operating Model"
       }
     },
     "/api/v1/companies/{company_id}/portfolio/customers": {

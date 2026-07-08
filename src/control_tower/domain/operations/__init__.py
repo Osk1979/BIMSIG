@@ -2,6 +2,9 @@
 
 from control_tower.domain.operations.models import (
     CompanyOperationalFlow,
+    CorporateOperatingModel,
+    OperatingCapability,
+    OperatingLane,
     OperationalFlowItem,
     OperationalFlowSummary,
     OperationalPhase,
@@ -10,6 +13,9 @@ from control_tower.domain.operations.models import (
 
 __all__ = [
     "CompanyOperationalFlow",
+    "CorporateOperatingModel",
+    "OperatingCapability",
+    "OperatingLane",
     "OperationalFlowItem",
     "OperationalFlowSummary",
     "OperationalPhase",
