@@ -335,10 +335,16 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert html.status_code == 200
     assert "Dashboard Ejecutivo Corporativo" in html.text
     assert "Corporate Experience" in html.text
+    assert "Corporate Home" in html.text
     assert "Control Ejecutivo" in html.text
     assert "GIS Corporativo" in html.text
     assert "Corporate GIS Dashboard" in html.text
+    assert "Mapa Nacional" in html.text
+    assert "Mapa Regional" in html.text
     assert "Explorador de Portafolio" in html.text
+    assert "Corporate Wizard" in html.text
+    assert "Executive Dashboard" in html.text
+    assert "Corporate Notifications" in html.text
     assert "WEB SIG Enterprise" in html.text
     assert "Solo lectura" in html.text
     assert "Flujo Operacional" in html.text

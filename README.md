@@ -107,3 +107,23 @@ The governed Corporate Control Tower operating model is documented in:
 It defines the enterprise path from corporate intake to WEB SIG Factory approval,
 NAS/GIS registration, executive dashboard publication, audit, release, GitHub
 push, and physical USB backup.
+
+## Corporate Experience Platform
+
+CTO-104 REV03 turns the existing domains into the first Enterprise user
+experience for Corporate Control Tower. The `/dashboard` surface includes:
+
+- Corporate Home for portfolio, GIS, NAS, provisioning, alerts, events, and
+  pending actions.
+- Corporate Navigation by business processes instead of internal domain names.
+- Corporate Portfolio Explorer with company, program, project, WEB SIG, status,
+  and dashboard readiness.
+- Corporate GIS Dashboard consuming only published Corporate Layers in read-only
+  mode.
+- Corporate Wizard visual flow for enterprise project provisioning.
+- Executive Dashboard questions for management review.
+- Corporate Notifications for provisioning, GIS, NAS, status, security, and
+  alert events.
+
+This experience reuses existing services and API contracts. It does not create
+new domains, modify ADRs, or add WEB SIG operational logic.

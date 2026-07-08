@@ -90,6 +90,7 @@ def render_dashboard_html() -> str:
       font-weight: 650;
     }
     .process-nav a:hover { border-color: var(--accent); color: var(--accent); }
+    .process-nav a.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
     .experience-header {
       margin-bottom: 14px;
       padding: 14px 16px;
@@ -126,6 +127,7 @@ def render_dashboard_html() -> str:
       box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 18px 42px rgba(0,0,0,.18);
     }
     .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
     .metric { min-height: 88px; background: var(--panel-strong); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
     .metric .label { color: var(--muted); font-size: 12px; }
     .metric .value { font-size: 24px; font-weight: 760; margin-top: 8px; }
@@ -261,6 +263,60 @@ def render_dashboard_html() -> str:
       padding: 4px 7px;
     }
     .chip.ready { color: var(--accent); border-color: var(--accent); }
+    .filter-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .filter-row input {
+      min-width: 0;
+      font-size: 12px;
+      padding: 9px 10px;
+    }
+    .map-mode-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .mode-pill {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: var(--panel-strong);
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .mode-pill.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+    .wizard-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .wizard-step {
+      min-height: 76px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--panel-strong);
+      display: grid;
+      align-content: space-between;
+    }
+    .wizard-step .number { color: var(--accent); font-weight: 780; font-size: 12px; }
+    .wizard-step .name { font-weight: 720; }
+    .wizard-step .state { color: var(--muted); font-size: 11px; }
+    .notification-list { display: grid; gap: 8px; }
+    .notification {
+      display: grid;
+      grid-template-columns: 118px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--panel-strong);
+      font-size: 13px;
+    }
+    .notification .kind { color: var(--accent); font-weight: 760; text-transform: uppercase; font-size: 11px; }
+    .notification .time { color: var(--muted); font-size: 11px; }
+    .question-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .question-card {
+      min-height: 96px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel-strong);
+    }
+    .question-card .answer { font-size: 24px; font-weight: 780; margin: 8px 0 4px; }
     .flow-grid { display: grid; gap: 10px; }
     .flow-card {
       display: grid;
@@ -326,6 +382,7 @@ def render_dashboard_html() -> str:
       .shell { grid-template-columns: 1fr; }
       aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
@@ -345,6 +402,8 @@ def render_dashboard_html() -> str:
       .radar::after { display: none; }
       .flow-card { grid-template-columns: 1fr; }
       .operating-grid { grid-template-columns: 1fr; }
+      .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
+      .notification { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -359,10 +418,16 @@ def render_dashboard_html() -> str:
       <button class="primary" id="load">Actualizar</button>
       <button id="theme">Light Mode</button>
       <nav class="process-nav" aria-label="Corporate Navigation">
-        <a href="#corporateDashboard">Control Ejecutivo</a>
-        <a href="#corporateGisDashboard">GIS Corporativo</a>
-        <a href="#portfolioExplorer">Explorador de Portafolio</a>
-        <a href="#operationalFlowSection">Operacion</a>
+        <a class="active" href="#corporateHome">Inicio</a>
+        <a href="#portfolioExplorer">Portafolio</a>
+        <a href="#corporateGisDashboard">Mapa Corporativo</a>
+        <a href="#enterpriseWizard">Provisionamiento</a>
+        <a href="#corporateDashboard">Empresas</a>
+        <a href="#panels">Usuarios</a>
+        <a href="#panels">Licencias</a>
+        <a href="#operatingModelSection">Configuracion</a>
+        <a href="#corporateNotifications">Auditoria</a>
+        <a href="#operationalFlowSection">Administracion</a>
       </nav>
       <p class="muted">Dashboard Ejecutivo Corporativo de BIMSIG Enterprise REV13.</p>
     </aside>
@@ -373,13 +438,18 @@ def render_dashboard_html() -> str:
           <h1 id="heading">Resumen ejecutivo</h1>
         </div>
         <div class="toolbar">
-          <button data-panel="operations" class="active">Control Ejecutivo</button>
-          <button data-panel="governance">GIS Corporativo</button>
-          <button data-panel="enterprise">Portafolio</button>
+          <button data-panel="operations" class="active">Inicio</button>
+          <button data-panel="governance">Auditoria</button>
+          <button data-panel="enterprise">Administracion</button>
         </div>
       </div>
+      <section class="experience-header" id="corporateHome">
+        <h2>Corporate Home</h2>
+        <div class="muted">Centro de Gobierno Corporativo para portafolio, GIS, NAS, provisionamiento, alertas y acciones pendientes.</div>
+      </section>
+      <section class="grid home-grid" id="corporateHomeCards"></section>
       <section class="experience-header" id="corporateDashboard">
-        <h2>Corporate Dashboard</h2>
+        <h2>Corporate Dashboard / Control Ejecutivo</h2>
         <div class="muted">Estado ejecutivo del portafolio, empresas, programas, proyectos, riesgos y desempeno corporativo.</div>
       </section>
       <section class="cockpit" id="cockpit"></section>
@@ -387,8 +457,17 @@ def render_dashboard_html() -> str:
       <section class="grid content">
         <div class="stack">
           <section class="section" id="corporateGisDashboard">
-            <h2>Corporate GIS Dashboard</h2>
+            <h2>Corporate GIS Dashboard / GIS Corporativo</h2>
             <div class="section-kicker">Mapa corporativo GIS - Solo lectura - Corporate Layers publicadas por WEB SIG Enterprise.</div>
+            <div class="map-mode-grid" id="gisMapModes"></div>
+            <div class="filter-row" id="gisFilters">
+              <input value="Estado" readonly>
+              <input value="Riesgo" readonly>
+              <input value="Calidad" readonly>
+              <input value="Ambiental" readonly>
+              <input value="SSOMA" readonly>
+              <input value="Produccion" readonly>
+            </div>
             <div class="radar-shell">
               <div class="radar" id="map"></div>
               <div class="radar-side" id="radarReadouts"></div>
@@ -397,13 +476,26 @@ def render_dashboard_html() -> str:
           <section class="section" id="portfolioExplorer">
             <h2>Explorador de Portafolio</h2>
             <div class="section-kicker">Empresa / Programa / Proyecto / WEB SIG / Estado / Dashboard.</div>
+            <div class="filter-row" id="portfolioFilters">
+              <input value="Empresa" readonly>
+              <input value="Programa" readonly>
+              <input value="Estado" readonly>
+              <input value="Cliente" readonly>
+              <input value="Contrato" readonly>
+              <input value="Responsable / Fecha" readonly>
+            </div>
             <div class="governance-grid" id="portfolioGovernance"></div>
+          </section>
+          <section class="section" id="enterpriseWizard">
+            <h2>Corporate Wizard</h2>
+            <div class="section-kicker">Flujo visual del Enterprise Wizard con avance parcial, validacion y progreso por etapa.</div>
+            <div class="wizard-steps" id="wizardSteps"></div>
           </section>
           <section class="section" id="operationalFlowSection">
             <h2>Flujo Operacional</h2>
             <div class="flow-grid" id="operationalFlow"></div>
           </section>
-          <section class="section">
+          <section class="section" id="operatingModelSection">
             <h2>Modelo Operativo Corporativo</h2>
             <div class="operating-grid" id="operatingModel"></div>
             <div class="actions-list" id="priorityActions"></div>
@@ -421,6 +513,14 @@ def render_dashboard_html() -> str:
               </thead>
               <tbody id="comparisons"></tbody>
             </table>
+          </section>
+          <section class="section">
+            <h2>Executive Dashboard</h2>
+            <div class="question-grid" id="executiveQuestions"></div>
+          </section>
+          <section class="section" id="corporateNotifications">
+            <h2>Corporate Notifications</h2>
+            <div class="notification-list" id="notifications"></div>
           </section>
         </div>
         <div class="stack" id="panels"></div>
@@ -471,15 +571,52 @@ def render_dashboard_html() -> str:
 
     function render() {
       document.querySelector("#heading").textContent = `Resumen ejecutivo ${data.company_id}`;
+      renderCorporateHome();
       renderSummary();
       renderCockpit();
       renderMap();
       renderPortfolioGovernance();
+      renderWizard();
       renderOperationalFlow();
       renderOperatingModel();
       renderGisIntelligence();
+      renderExecutiveQuestions();
+      renderNotifications();
       renderPanels();
       renderComparisons();
+    }
+
+    function renderCorporateHome() {
+      const portfolio = data.portfolio;
+      const governed = data.portfolio_governance || [];
+      const flow = data.operational_flow || [];
+      const active = portfolio.active_projects ?? 0;
+      const archived = governed.filter(item => item.lifecycle_stage === "archived").length;
+      const suspended = governed.filter(item => item.governance_status === "suspended").length;
+      const nasReady = governed.filter(item => item.nas !== "pendiente").length;
+      const websigReady = governed.filter(item => item.websig !== "pendiente").length;
+      const blocked = flow.filter(item => item.pending_controls.length > 0).length;
+      const cards = [
+        ["Estado general del portafolio", active ? "activo" : "intake", "Portfolio"],
+        ["Empresas", 1, "Enterprise"],
+        ["Programas", uniqueCount(governed.map(item => item.program).filter(Boolean)), "Portfolio"],
+        ["Proyectos activos", active, "Portfolio"],
+        ["Proyectos suspendidos", suspended, "Governance"],
+        ["Proyectos archivados", archived, "Records"],
+        ["Corporate GIS", data.gis_intelligence?.projects_with_active_layers ?? 0, "GIS"],
+        ["NAS", nasReady, "Information Center"],
+        ["Provisioning", websigReady, "WEB SIG Factory"],
+        ["Alertas", data.alerts[0]?.value ?? 0, "Risk"],
+        ["Eventos recientes", recentEvents().length, "Audit"],
+        ["Acciones pendientes", blocked, "Workflow"]
+      ];
+      document.querySelector("#corporateHomeCards").innerHTML = cards.map(([label, value, context]) => `
+        <article class="metric">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="muted">${context}</div>
+        </article>
+      `).join("");
     }
 
     function renderCockpit() {
@@ -525,6 +662,10 @@ def render_dashboard_html() -> str:
     function renderMap() {
       const map = document.querySelector("#map");
       const readouts = document.querySelector("#radarReadouts");
+      const modes = ["Mapa Nacional", "Mapa Regional", "Empresa", "Programa", "Proyecto"];
+      document.querySelector("#gisMapModes").innerHTML = modes.map((mode, index) => `
+        <div class="mode-pill ${index === 0 ? "active" : ""}">${mode}</div>
+      `).join("");
       if (!data.map_points.length) {
         map.innerHTML = `<div class="muted" style="padding:16px">Sin proyectos georreferenciados.</div>`;
         readouts.innerHTML = "";
@@ -542,6 +683,7 @@ def render_dashboard_html() -> str:
         ["COBERTURA", data.kpis[2]?.value ?? "0%"],
         ["RIESGO", data.risks[0]?.value ?? "0"],
         ["CAPAS", gisMap?.layers?.length ?? 0],
+        ["FILTROS", "9"],
         ["MODO", document.documentElement.dataset.theme.toUpperCase()]
       ].map(([label, value]) => `
         <article class="readout"><div class="label">${label}</div><div class="value">${value}</div></article>
@@ -566,6 +708,9 @@ def render_dashboard_html() -> str:
             <span><strong>Proyecto</strong> ${item.project_name}</span>
             <span><strong>WEB SIG Enterprise</strong> ${item.websig}</span>
             <span><strong>Estado</strong> ${item.governance_status}</span>
+            <span><strong>Cliente</strong> ${item.customer || "pendiente"}</span>
+            <span><strong>Contrato</strong> ${item.contract || "pendiente"}</span>
+            <span><strong>Responsable</strong> ${item.owner || "pendiente"}</span>
             <span><strong>Dashboard</strong> ${flow ? `${flow.readiness_score}%` : "pendiente"}</span>
           </div>
           <div class="chips">
@@ -577,6 +722,34 @@ def render_dashboard_html() -> str:
         </article>
       `;
       }).join("");
+    }
+
+    function renderWizard() {
+      const governed = data.portfolio_governance || [];
+      const hasProject = governed.length > 0;
+      const websigReady = governed.some(item => item.websig !== "pendiente");
+      const gisReady = governed.some(item => item.gis !== "pendiente");
+      const nasReady = governed.some(item => item.nas !== "pendiente");
+      const usersReady = (data.users || []).length > 0;
+      const steps = [
+        ["Empresa", true],
+        ["Programa", governed.some(item => item.program)],
+        ["Proyecto", hasProject],
+        ["Ubicacion", data.map_points.length > 0],
+        ["Especialidades", hasProject],
+        ["Provisionamiento", websigReady],
+        ["GIS", gisReady],
+        ["NAS", nasReady],
+        ["Usuarios", usersReady],
+        ["Activacion", (data.operational_flow || []).some(item => item.readiness_score >= 80)]
+      ];
+      document.querySelector("#wizardSteps").innerHTML = steps.map(([name, ready], index) => `
+        <article class="wizard-step">
+          <div class="number">Paso ${index + 1}</div>
+          <div class="name">${name}</div>
+          <div class="state">${ready ? "validado / autosave" : "pendiente / reanudable"}</div>
+        </article>
+      `).join("");
     }
 
     function renderOperationalFlow() {
@@ -656,6 +829,60 @@ def render_dashboard_html() -> str:
       actions.innerHTML = (model.priority_actions || []).map(action => `
         <div class="action-item">${action}</div>
       `).join("");
+    }
+
+    function renderExecutiveQuestions() {
+      const portfolio = data.portfolio;
+      const comparisons = data.comparisons || [];
+      const highestRisk = [...comparisons].sort((left, right) => right.risk_score - left.risk_score)[0];
+      const lowerProgress = [...comparisons].sort((left, right) => left.production_score - right.production_score)[0];
+      const environmental = data.environmental[0]?.value ?? 0;
+      const quality = data.quality[1]?.value ?? data.quality[0]?.value ?? 0;
+      const questions = [
+        ["Cuantos proyectos existen", portfolio.total_projects ?? 0],
+        ["Cuantos estan activos", portfolio.active_projects ?? 0],
+        ["Mayor riesgo", highestRisk ? highestRisk.name : "sin riesgo"],
+        ["Menor avance", lowerProgress ? lowerProgress.name : "sin avance"],
+        ["Conflictos ambientales", environmental],
+        ["NCR / calidad", quality]
+      ];
+      document.querySelector("#executiveQuestions").innerHTML = questions.map(([question, answer]) => `
+        <article class="question-card">
+          <div class="label">${question}</div>
+          <div class="answer">${answer}</div>
+          <div class="muted">Portfolio / GIS / NAS / Provisioning</div>
+        </article>
+      `).join("");
+    }
+
+    function renderNotifications() {
+      document.querySelector("#notifications").innerHTML = recentEvents().map(event => `
+        <article class="notification">
+          <div class="kind">${event.kind}</div>
+          <div>${event.message}</div>
+          <div class="time">${event.time}</div>
+        </article>
+      `).join("");
+    }
+
+    function recentEvents() {
+      const governed = data.portfolio_governance || [];
+      const flow = data.operational_flow || [];
+      const first = governed[0];
+      const events = [
+        ["Provisioning", first ? `WEB SIG ${first.websig}` : "Sin WEB SIG registrada"],
+        ["GIS", `${data.gis_intelligence?.projects_with_active_layers ?? 0} proyectos con capas activas`],
+        ["NAS", `${governed.filter(item => item.nas !== "pendiente").length} espacios NAS vinculados`],
+        ["Seguridad", `${(data.users || []).length} usuarios en gobierno corporativo`],
+        ["Estado", first ? `${first.project_name} en ${first.governance_status}` : "Sin cambios de estado"],
+        ["Alertas", `${data.alerts[0]?.value ?? 0} alertas corporativas`],
+        ["Acciones", `${flow.filter(item => item.pending_controls.length > 0).length} acciones pendientes`]
+      ];
+      return events.map(([kind, message], index) => ({
+        kind,
+        message,
+        time: `T-${index + 1}`
+      }));
     }
 
     function labelPhase(phase) {
