@@ -30,6 +30,11 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     assert "role_permissions" in inspector.get_table_names()
     assert "auth_identities" in inspector.get_table_names()
     assert "user_history_events" in inspector.get_table_names()
+    assert "gis_postgis_schemas" in inspector.get_table_names()
+    assert "gis_geoserver_workspaces" in inspector.get_table_names()
+    assert "gis_geoserver_datastores" in inspector.get_table_names()
+    assert "gis_geoserver_layers" in inspector.get_table_names()
+    assert "gis_project_bindings" in inspector.get_table_names()
     assert "company_id" in {
         column["name"] for column in inspector.get_columns("portfolio_projects")
     }
@@ -60,4 +65,10 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     }
     assert {"provider", "subject"} <= {
         column["name"] for column in inspector.get_columns("auth_identities")
+    }
+    assert "ix_gis_postgis_schemas_company_id" in {
+        index["name"] for index in inspector.get_indexes("gis_postgis_schemas")
+    }
+    assert "ix_gis_geoserver_layers_project_id" in {
+        index["name"] for index in inspector.get_indexes("gis_geoserver_layers")
     }

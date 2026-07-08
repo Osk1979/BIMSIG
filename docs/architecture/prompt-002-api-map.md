@@ -127,6 +127,21 @@ Implemented first cut:
 - `GET /api/v1/companies/{company_id}/integrations/geoserver/status`
 - `GET /api/v1/companies/{company_id}/integrations/google-drive/status`
 
+Implemented Corporate GIS first cut:
+
+- `GET /api/v1/companies/{company_id}/gis/postgis-schemas`
+- `POST /api/v1/companies/{company_id}/gis/postgis-schemas`
+- `GET /api/v1/companies/{company_id}/gis/geoserver/workspaces`
+- `POST /api/v1/companies/{company_id}/gis/geoserver/workspaces`
+- `GET /api/v1/companies/{company_id}/gis/geoserver/datastores`
+- `POST /api/v1/companies/{company_id}/gis/geoserver/datastores`
+- `GET /api/v1/companies/{company_id}/gis/geoserver/layers`
+- `POST /api/v1/companies/{company_id}/gis/geoserver/layers`
+- `GET /api/v1/companies/{company_id}/projects/{project_id}/gis/resources`
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/gis/binding`
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/gis/validate`
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/gis/mark-validated`
+
 ### NAS Corporate Information Center
 
 - `GET /api/v1/companies/{company_id}/nas/assets`

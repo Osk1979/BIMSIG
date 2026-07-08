@@ -24,6 +24,13 @@ from control_tower.domain.enterprise import (
     UserHistoryEvent,
     UserSpecialty,
 )
+from control_tower.domain.gis import (
+    GeoServerDatastore,
+    GeoServerLayer,
+    GeoServerWorkspace,
+    PostgisSchema,
+    ProjectGisBinding,
+)
 from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
@@ -231,3 +238,46 @@ class InformationAssetRepository(Protocol):
 
     def list_backups_by_company(self, company_id: str) -> list[InformationBackup]:
         """Return backup manifests for one company."""
+
+
+class CorporateGisRepository(Protocol):
+    """Persistence port for corporate GIS administration."""
+
+    def save_postgis_schema(self, schema: PostgisSchema) -> PostgisSchema:
+        """Persist a PostGIS schema reference."""
+
+    def get_postgis_schema(self, schema_id: str) -> PostgisSchema | None:
+        """Return one PostGIS schema reference."""
+
+    def list_postgis_schemas(self, company_id: str, project_id: str | None = None) -> list[PostgisSchema]:
+        """Return PostGIS schemas by company and optional project."""
+
+    def save_workspace(self, workspace: GeoServerWorkspace) -> GeoServerWorkspace:
+        """Persist a GeoServer workspace reference."""
+
+    def get_workspace(self, workspace_id: str) -> GeoServerWorkspace | None:
+        """Return one GeoServer workspace reference."""
+
+    def list_workspaces(self, company_id: str, project_id: str | None = None) -> list[GeoServerWorkspace]:
+        """Return GeoServer workspaces by company and optional project."""
+
+    def save_datastore(self, datastore: GeoServerDatastore) -> GeoServerDatastore:
+        """Persist a GeoServer datastore reference."""
+
+    def get_datastore(self, datastore_id: str) -> GeoServerDatastore | None:
+        """Return one GeoServer datastore reference."""
+
+    def list_datastores(self, company_id: str, project_id: str | None = None) -> list[GeoServerDatastore]:
+        """Return GeoServer datastores by company and optional project."""
+
+    def save_layer(self, layer: GeoServerLayer) -> GeoServerLayer:
+        """Persist a GeoServer layer reference."""
+
+    def list_layers(self, company_id: str, project_id: str | None = None) -> list[GeoServerLayer]:
+        """Return GeoServer layers by company and optional project."""
+
+    def save_binding(self, binding: ProjectGisBinding) -> ProjectGisBinding:
+        """Persist a project GIS binding."""
+
+    def get_binding(self, company_id: str, project_id: str) -> ProjectGisBinding | None:
+        """Return the GIS binding for one project."""

@@ -641,6 +641,273 @@
         "title": "DashboardMetric",
         "type": "object"
       },
+      "GeoServerDatastore": {
+        "description": "Corporate reference to a GeoServer datastore.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "datastore_id": {
+            "examples": [
+              "GDS-001"
+            ],
+            "minLength": 3,
+            "title": "Datastore Id",
+            "type": "string"
+          },
+          "name": {
+            "examples": [
+              "postgis_psz"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "postgis_schema_id": {
+            "examples": [
+              "PGS-001"
+            ],
+            "minLength": 3,
+            "title": "Postgis Schema Id",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GisResourceStatus",
+            "default": "registered"
+          },
+          "workspace_id": {
+            "examples": [
+              "GWS-001"
+            ],
+            "minLength": 3,
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "datastore_id",
+          "company_id",
+          "project_id",
+          "workspace_id",
+          "name",
+          "postgis_schema_id"
+        ],
+        "title": "GeoServerDatastore",
+        "type": "object"
+      },
+      "GeoServerLayer": {
+        "description": "Corporate reference to a GeoServer layer and service URLs.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "datastore_id": {
+            "examples": [
+              "GDS-001"
+            ],
+            "minLength": 3,
+            "title": "Datastore Id",
+            "type": "string"
+          },
+          "layer_id": {
+            "examples": [
+              "GLY-001"
+            ],
+            "minLength": 3,
+            "title": "Layer Id",
+            "type": "string"
+          },
+          "name": {
+            "examples": [
+              "frentes_obra"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GisResourceStatus",
+            "default": "registered"
+          },
+          "title": {
+            "examples": [
+              "Frentes de obra"
+            ],
+            "minLength": 3,
+            "title": "Title",
+            "type": "string"
+          },
+          "wfs_url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wfs Url"
+          },
+          "wms_url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wms Url"
+          },
+          "workspace_id": {
+            "examples": [
+              "GWS-001"
+            ],
+            "minLength": 3,
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "layer_id",
+          "company_id",
+          "project_id",
+          "workspace_id",
+          "datastore_id",
+          "name",
+          "title"
+        ],
+        "title": "GeoServerLayer",
+        "type": "object"
+      },
+      "GeoServerWorkspace": {
+        "description": "Corporate reference to a GeoServer workspace.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "geoserver_url": {
+            "examples": [
+              "https://geoserver.example.com"
+            ],
+            "minLength": 6,
+            "title": "Geoserver Url",
+            "type": "string"
+          },
+          "name": {
+            "examples": [
+              "CRTG_PSZ_2026"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GisResourceStatus",
+            "default": "registered"
+          },
+          "workspace_id": {
+            "examples": [
+              "GWS-001"
+            ],
+            "minLength": 3,
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "company_id",
+          "project_id",
+          "name",
+          "geoserver_url"
+        ],
+        "title": "GeoServerWorkspace",
+        "type": "object"
+      },
+      "GisResourceStatus": {
+        "description": "Corporate GIS registry status.",
+        "enum": [
+          "registered",
+          "validated",
+          "unavailable"
+        ],
+        "title": "GisResourceStatus",
+        "type": "string"
+      },
+      "GisResourceValidation": {
+        "description": "Validation result for one corporate GIS resource.",
+        "properties": {
+          "detail": {
+            "minLength": 3,
+            "title": "Detail",
+            "type": "string"
+          },
+          "resource_id": {
+            "minLength": 3,
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "resource_type": {
+            "minLength": 3,
+            "title": "Resource Type",
+            "type": "string"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "resource_type",
+          "resource_id",
+          "valid",
+          "detail"
+        ],
+        "title": "GisResourceValidation",
+        "type": "object"
+      },
       "GovernanceStatusPayload": {
         "description": "API payload to change project governance status.",
         "properties": {
@@ -1230,6 +1497,64 @@
         "title": "PortfolioProject",
         "type": "object"
       },
+      "PostgisSchema": {
+        "description": "Corporate reference to a project PostGIS schema.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "database_ref": {
+            "examples": [
+              "postgis://CRTG/crtg_psz_2026"
+            ],
+            "minLength": 6,
+            "title": "Database Ref",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "schema_id": {
+            "examples": [
+              "PGS-001"
+            ],
+            "minLength": 3,
+            "title": "Schema Id",
+            "type": "string"
+          },
+          "schema_name": {
+            "examples": [
+              "crtg_psz_2026"
+            ],
+            "minLength": 3,
+            "title": "Schema Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GisResourceStatus",
+            "default": "registered"
+          }
+        },
+        "required": [
+          "schema_id",
+          "company_id",
+          "project_id",
+          "schema_name",
+          "database_ref"
+        ],
+        "title": "PostgisSchema",
+        "type": "object"
+      },
       "ProjectComparison": {
         "description": "Comparable portfolio row between projects.",
         "properties": {
@@ -1283,6 +1608,129 @@
           "risk_score"
         ],
         "title": "ProjectComparison",
+        "type": "object"
+      },
+      "ProjectGisBinding": {
+        "description": "Binding between one project, one PostGIS schema, and one GeoServer workspace.",
+        "properties": {
+          "binding_id": {
+            "examples": [
+              "GBD-001"
+            ],
+            "minLength": 3,
+            "title": "Binding Id",
+            "type": "string"
+          },
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "geoserver_workspace_id": {
+            "examples": [
+              "GWS-001"
+            ],
+            "minLength": 3,
+            "title": "Geoserver Workspace Id",
+            "type": "string"
+          },
+          "postgis_schema_id": {
+            "examples": [
+              "PGS-001"
+            ],
+            "minLength": 3,
+            "title": "Postgis Schema Id",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GisResourceStatus",
+            "default": "registered"
+          }
+        },
+        "required": [
+          "binding_id",
+          "company_id",
+          "project_id",
+          "postgis_schema_id",
+          "geoserver_workspace_id"
+        ],
+        "title": "ProjectGisBinding",
+        "type": "object"
+      },
+      "ProjectGisResources": {
+        "description": "Read model for corporate GIS resources scoped to one project.",
+        "properties": {
+          "binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectGisBinding"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "datastores": {
+            "items": {
+              "$ref": "#/components/schemas/GeoServerDatastore"
+            },
+            "title": "Datastores",
+            "type": "array"
+          },
+          "geoserver_workspace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoServerWorkspace"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "layers": {
+            "items": {
+              "$ref": "#/components/schemas/GeoServerLayer"
+            },
+            "title": "Layers",
+            "type": "array"
+          },
+          "postgis_schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PostgisSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "company_id",
+          "project_id"
+        ],
+        "title": "ProjectGisResources",
         "type": "object"
       },
       "ProjectMembership": {
@@ -2154,6 +2602,374 @@
         "summary": "Executive Dashboard"
       }
     },
+    "/api/v1/companies/{company_id}/gis/geoserver/datastores": {
+      "get": {
+        "description": "List corporate GeoServer datastore references for one company.",
+        "operationId": "list_geoserver_datastores_api_v1_companies__company_id__gis_geoserver_datastores_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GeoServerDatastore"
+                  },
+                  "title": "Response List Geoserver Datastores Api V1 Companies  Company Id  Gis Geoserver Datastores Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Geoserver Datastores"
+      },
+      "post": {
+        "description": "Register a corporate GeoServer datastore reference.",
+        "operationId": "register_geoserver_datastore_api_v1_companies__company_id__gis_geoserver_datastores_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeoServerDatastore"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoServerDatastore"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Geoserver Datastore"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis/geoserver/layers": {
+      "get": {
+        "description": "List corporate GeoServer layer references for one company.",
+        "operationId": "list_geoserver_layers_api_v1_companies__company_id__gis_geoserver_layers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GeoServerLayer"
+                  },
+                  "title": "Response List Geoserver Layers Api V1 Companies  Company Id  Gis Geoserver Layers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Geoserver Layers"
+      },
+      "post": {
+        "description": "Register a corporate GeoServer layer reference.",
+        "operationId": "register_geoserver_layer_api_v1_companies__company_id__gis_geoserver_layers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeoServerLayer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoServerLayer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Geoserver Layer"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis/geoserver/workspaces": {
+      "get": {
+        "description": "List corporate GeoServer workspace references for one company.",
+        "operationId": "list_geoserver_workspaces_api_v1_companies__company_id__gis_geoserver_workspaces_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GeoServerWorkspace"
+                  },
+                  "title": "Response List Geoserver Workspaces Api V1 Companies  Company Id  Gis Geoserver Workspaces Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Geoserver Workspaces"
+      },
+      "post": {
+        "description": "Register a corporate GeoServer workspace reference.",
+        "operationId": "register_geoserver_workspace_api_v1_companies__company_id__gis_geoserver_workspaces_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeoServerWorkspace"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoServerWorkspace"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Geoserver Workspace"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis/postgis-schemas": {
+      "get": {
+        "description": "List corporate PostGIS schema references for one company.",
+        "operationId": "list_postgis_schemas_api_v1_companies__company_id__gis_postgis_schemas_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PostgisSchema"
+                  },
+                  "title": "Response List Postgis Schemas Api V1 Companies  Company Id  Gis Postgis Schemas Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Postgis Schemas"
+      },
+      "post": {
+        "description": "Register a corporate PostGIS schema reference.",
+        "operationId": "register_postgis_schema_api_v1_companies__company_id__gis_postgis_schemas_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostgisSchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostgisSchema"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Postgis Schema"
+      }
+    },
     "/api/v1/companies/{company_id}/licenses": {
       "get": {
         "description": "List licenses assigned to a company.",
@@ -2797,6 +3613,216 @@
           }
         },
         "summary": "Get Company Project"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis/binding": {
+      "post": {
+        "description": "Bind one project to corporate PostGIS and GeoServer references.",
+        "operationId": "bind_project_gis_resources_api_v1_companies__company_id__projects__project_id__gis_binding_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectGisBinding"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectGisBinding"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Bind Project Gis Resources"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis/mark-validated": {
+      "post": {
+        "description": "Mark corporate GIS resources validated after passing basic checks.",
+        "operationId": "mark_project_gis_resources_validated_api_v1_companies__company_id__projects__project_id__gis_mark_validated_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectGisResources"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Project Gis Resources Validated"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis/resources": {
+      "get": {
+        "description": "Return corporate GIS resources scoped to one project.",
+        "operationId": "project_gis_resources_api_v1_companies__company_id__projects__project_id__gis_resources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectGisResources"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Gis Resources"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis/validate": {
+      "post": {
+        "description": "Validate corporate GIS registry consistency for one project.",
+        "operationId": "validate_project_gis_resources_api_v1_companies__company_id__projects__project_id__gis_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GisResourceValidation"
+                  },
+                  "title": "Response Validate Project Gis Resources Api V1 Companies  Company Id  Projects  Project Id  Gis Validate Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Project Gis Resources"
       }
     },
     "/api/v1/companies/{company_id}/projects/{project_id}/governance-status": {

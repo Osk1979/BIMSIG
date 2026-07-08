@@ -15,6 +15,13 @@ from control_tower.domain.enterprise import (
     UserRole,
     UserSpecialty,
 )
+from control_tower.domain.gis import (
+    GeoServerDatastore,
+    GeoServerLayer,
+    GeoServerWorkspace,
+    PostgisSchema,
+    ProjectGisBinding,
+)
 from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
@@ -281,6 +288,75 @@ class FakeInformationAssetRepository:
 
     def list_backups_by_company(self, company_id: str) -> list[InformationBackup]:
         return [backup for backup in self.backups.values() if backup.company_id == company_id]
+
+
+class FakeCorporateGisRepository:
+    def __init__(self) -> None:
+        self.schemas: dict[str, PostgisSchema] = {}
+        self.workspaces: dict[str, GeoServerWorkspace] = {}
+        self.datastores: dict[str, GeoServerDatastore] = {}
+        self.layers: dict[str, GeoServerLayer] = {}
+        self.bindings: dict[str, ProjectGisBinding] = {}
+
+    def save_postgis_schema(self, schema: PostgisSchema) -> PostgisSchema:
+        self.schemas[schema.schema_id] = schema
+        return schema
+
+    def get_postgis_schema(self, schema_id: str) -> PostgisSchema | None:
+        return self.schemas.get(schema_id)
+
+    def list_postgis_schemas(self, company_id: str, project_id: str | None = None) -> list[PostgisSchema]:
+        return [
+            schema
+            for schema in self.schemas.values()
+            if schema.company_id == company_id and (project_id is None or schema.project_id == project_id)
+        ]
+
+    def save_workspace(self, workspace: GeoServerWorkspace) -> GeoServerWorkspace:
+        self.workspaces[workspace.workspace_id] = workspace
+        return workspace
+
+    def get_workspace(self, workspace_id: str) -> GeoServerWorkspace | None:
+        return self.workspaces.get(workspace_id)
+
+    def list_workspaces(self, company_id: str, project_id: str | None = None) -> list[GeoServerWorkspace]:
+        return [
+            workspace
+            for workspace in self.workspaces.values()
+            if workspace.company_id == company_id and (project_id is None or workspace.project_id == project_id)
+        ]
+
+    def save_datastore(self, datastore: GeoServerDatastore) -> GeoServerDatastore:
+        self.datastores[datastore.datastore_id] = datastore
+        return datastore
+
+    def get_datastore(self, datastore_id: str) -> GeoServerDatastore | None:
+        return self.datastores.get(datastore_id)
+
+    def list_datastores(self, company_id: str, project_id: str | None = None) -> list[GeoServerDatastore]:
+        return [
+            datastore
+            for datastore in self.datastores.values()
+            if datastore.company_id == company_id and (project_id is None or datastore.project_id == project_id)
+        ]
+
+    def save_layer(self, layer: GeoServerLayer) -> GeoServerLayer:
+        self.layers[layer.layer_id] = layer
+        return layer
+
+    def list_layers(self, company_id: str, project_id: str | None = None) -> list[GeoServerLayer]:
+        return [
+            layer
+            for layer in self.layers.values()
+            if layer.company_id == company_id and (project_id is None or layer.project_id == project_id)
+        ]
+
+    def save_binding(self, binding: ProjectGisBinding) -> ProjectGisBinding:
+        self.bindings[f"{binding.company_id}:{binding.project_id}"] = binding
+        return binding
+
+    def get_binding(self, company_id: str, project_id: str) -> ProjectGisBinding | None:
+        return self.bindings.get(f"{company_id}:{project_id}")
 
 
 class FakeAuditEventRepository:

@@ -47,6 +47,18 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `POST /api/v1/companies/{company_id}/nas/snapshots`: create an information snapshot.
 - `GET /api/v1/companies/{company_id}/nas/backups`: list information backups.
 - `POST /api/v1/companies/{company_id}/nas/backups`: register an information backup.
+- `GET /api/v1/companies/{company_id}/gis/postgis-schemas`: list PostGIS schema references.
+- `POST /api/v1/companies/{company_id}/gis/postgis-schemas`: register a PostGIS schema reference.
+- `GET /api/v1/companies/{company_id}/gis/geoserver/workspaces`: list GeoServer workspaces.
+- `POST /api/v1/companies/{company_id}/gis/geoserver/workspaces`: register a GeoServer workspace.
+- `GET /api/v1/companies/{company_id}/gis/geoserver/datastores`: list GeoServer datastores.
+- `POST /api/v1/companies/{company_id}/gis/geoserver/datastores`: register a GeoServer datastore.
+- `GET /api/v1/companies/{company_id}/gis/geoserver/layers`: list GeoServer layers.
+- `POST /api/v1/companies/{company_id}/gis/geoserver/layers`: register a GeoServer layer.
+- `GET /api/v1/companies/{company_id}/projects/{project_id}/gis/resources`: get project GIS resources.
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/gis/binding`: bind project GIS infrastructure.
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/gis/validate`: validate project GIS registry consistency.
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/gis/mark-validated`: mark valid registry resources.
 - `GET /api/v1/companies/{company_id}/portfolio/summary`: company-scoped portfolio counts.
 - `GET /api/v1/companies/{company_id}/projects`: list company-scoped projects.
 - `POST /api/v1/companies/{company_id}/projects`: register a project inside a company.
@@ -81,6 +93,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0019 defines the NAS Corporate Information Center.
 - ADR-0020 defines the Corporate User Security System.
 - ADR-0021 defines the DevSecOps operating model.
+- ADR-0023 defines Corporate GIS Administration.
 
 ## Configuration
 

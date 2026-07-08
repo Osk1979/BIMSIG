@@ -7,8 +7,8 @@ ADR references:
 - ADR-0005: Persistence strategy.
 """
 
-import os
 import logging
+import os
 import time
 from uuid import uuid4
 
@@ -24,6 +24,7 @@ from control_tower.application.enterprise_service import (
     LicensingService,
     UserService,
 )
+from control_tower.application.gis_service import CorporateGisService
 from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import (
@@ -47,6 +48,15 @@ from control_tower.domain.enterprise import (
     UserRole,
     UserSpecialty,
 )
+from control_tower.domain.gis import (
+    GeoServerDatastore,
+    GeoServerLayer,
+    GeoServerWorkspace,
+    GisResourceValidation,
+    PostgisSchema,
+    ProjectGisBinding,
+    ProjectGisResources,
+)
 from control_tower.domain.nas import (
     InformationAsset,
     InformationBackup,
@@ -61,6 +71,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyAuthIdentityRepository,
     SqlAlchemyCompanyLicenseRepository,
     SqlAlchemyCompanyMembershipRepository,
+    SqlAlchemyCorporateGisRepository,
     SqlAlchemyCompanyRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyLicensePlanRepository,
@@ -174,6 +185,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     license_plan_repository = SqlAlchemyLicensePlanRepository(sessions)
     company_license_repository = SqlAlchemyCompanyLicenseRepository(sessions)
     information_repository = SqlAlchemyInformationAssetRepository(sessions)
+    gis_repository = SqlAlchemyCorporateGisRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
     provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)
     specialty_repository = SqlAlchemySpecialtyRepository(sessions)
@@ -209,6 +221,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     )
     dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
     nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
+    gis = CorporateGisService(gis_repository, companies, portfolio, audit_repository)
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -670,6 +683,172 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
                 checksum_sha256=payload.checksum_sha256,
                 metadata=payload.metadata,
             )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/gis/postgis-schemas", response_model=list[PostgisSchema])
+    def list_postgis_schemas(company_id: str) -> list[PostgisSchema]:
+        """List corporate PostGIS schema references for one company."""
+
+        try:
+            return gis.list_postgis_schemas(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis/postgis-schemas",
+        response_model=PostgisSchema,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_postgis_schema(company_id: str, schema: PostgisSchema) -> PostgisSchema:
+        """Register a corporate PostGIS schema reference."""
+
+        if schema.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="PostGIS schema company_id must match path company_id",
+            )
+        try:
+            return gis.register_postgis_schema(schema)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/gis/geoserver/workspaces", response_model=list[GeoServerWorkspace])
+    def list_geoserver_workspaces(company_id: str) -> list[GeoServerWorkspace]:
+        """List corporate GeoServer workspace references for one company."""
+
+        try:
+            return gis.list_workspaces(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis/geoserver/workspaces",
+        response_model=GeoServerWorkspace,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_geoserver_workspace(company_id: str, workspace: GeoServerWorkspace) -> GeoServerWorkspace:
+        """Register a corporate GeoServer workspace reference."""
+
+        if workspace.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GeoServer workspace company_id must match path company_id",
+            )
+        try:
+            return gis.register_workspace(workspace)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/gis/geoserver/datastores", response_model=list[GeoServerDatastore])
+    def list_geoserver_datastores(company_id: str) -> list[GeoServerDatastore]:
+        """List corporate GeoServer datastore references for one company."""
+
+        try:
+            return gis.list_datastores(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis/geoserver/datastores",
+        response_model=GeoServerDatastore,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_geoserver_datastore(company_id: str, datastore: GeoServerDatastore) -> GeoServerDatastore:
+        """Register a corporate GeoServer datastore reference."""
+
+        if datastore.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GeoServer datastore company_id must match path company_id",
+            )
+        try:
+            return gis.register_datastore(datastore)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/companies/{company_id}/gis/geoserver/layers", response_model=list[GeoServerLayer])
+    def list_geoserver_layers(company_id: str) -> list[GeoServerLayer]:
+        """List corporate GeoServer layer references for one company."""
+
+        try:
+            return gis.list_layers(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis/geoserver/layers",
+        response_model=GeoServerLayer,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_geoserver_layer(company_id: str, layer: GeoServerLayer) -> GeoServerLayer:
+        """Register a corporate GeoServer layer reference."""
+
+        if layer.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GeoServer layer company_id must match path company_id",
+            )
+        try:
+            return gis.register_layer(layer)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis/resources",
+        response_model=ProjectGisResources,
+    )
+    def project_gis_resources(company_id: str, project_id: str) -> ProjectGisResources:
+        """Return corporate GIS resources scoped to one project."""
+
+        try:
+            return gis.project_resources(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis/binding",
+        response_model=ProjectGisBinding,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def bind_project_gis_resources(
+        company_id: str,
+        project_id: str,
+        binding: ProjectGisBinding,
+    ) -> ProjectGisBinding:
+        """Bind one project to corporate PostGIS and GeoServer references."""
+
+        if binding.company_id != company_id or binding.project_id != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GIS binding scope must match path company_id and project_id",
+            )
+        try:
+            return gis.bind_project_resources(binding)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis/validate",
+        response_model=list[GisResourceValidation],
+    )
+    def validate_project_gis_resources(company_id: str, project_id: str) -> list[GisResourceValidation]:
+        """Validate corporate GIS registry consistency for one project."""
+
+        try:
+            return gis.validate_project_resources(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis/mark-validated",
+        response_model=ProjectGisResources,
+    )
+    def mark_project_gis_resources_validated(company_id: str, project_id: str) -> ProjectGisResources:
+        """Mark corporate GIS resources validated after passing basic checks."""
+
+        try:
+            return gis.mark_validated(company_id, project_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 

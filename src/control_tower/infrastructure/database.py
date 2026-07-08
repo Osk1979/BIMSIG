@@ -38,6 +38,14 @@ from control_tower.domain.enterprise import (
     UserSpecialty,
     UserStatus,
 )
+from control_tower.domain.gis import (
+    GeoServerDatastore,
+    GeoServerLayer,
+    GeoServerWorkspace,
+    GisResourceStatus,
+    PostgisSchema,
+    ProjectGisBinding,
+)
 from control_tower.domain.nas import (
     InformationAsset,
     InformationAssetStatus,
@@ -495,6 +503,191 @@ class PortfolioProjectRecord(Base):
             name=self.name,
             cui=self.cui,
             status=ProjectStatus(self.status),
+        )
+
+
+class PostgisSchemaRecord(Base):
+    """Persistent corporate PostGIS schema reference."""
+
+    __tablename__ = "gis_postgis_schemas"
+
+    schema_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    schema_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    database_ref: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, schema: PostgisSchema) -> "PostgisSchemaRecord":
+        return cls(**schema.model_dump(mode="json"))
+
+    def update_from_domain(self, schema: PostgisSchema) -> None:
+        self.company_id = schema.company_id
+        self.project_id = schema.project_id
+        self.schema_name = schema.schema_name
+        self.database_ref = schema.database_ref
+        self.status = schema.status.value
+
+    def to_domain(self) -> PostgisSchema:
+        return PostgisSchema(
+            schema_id=self.schema_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            schema_name=self.schema_name,
+            database_ref=self.database_ref,
+            status=GisResourceStatus(self.status),
+        )
+
+
+class GeoServerWorkspaceRecord(Base):
+    """Persistent corporate GeoServer workspace reference."""
+
+    __tablename__ = "gis_geoserver_workspaces"
+
+    workspace_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    geoserver_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, workspace: GeoServerWorkspace) -> "GeoServerWorkspaceRecord":
+        return cls(**workspace.model_dump(mode="json"))
+
+    def update_from_domain(self, workspace: GeoServerWorkspace) -> None:
+        self.company_id = workspace.company_id
+        self.project_id = workspace.project_id
+        self.name = workspace.name
+        self.geoserver_url = workspace.geoserver_url
+        self.status = workspace.status.value
+
+    def to_domain(self) -> GeoServerWorkspace:
+        return GeoServerWorkspace(
+            workspace_id=self.workspace_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            name=self.name,
+            geoserver_url=self.geoserver_url,
+            status=GisResourceStatus(self.status),
+        )
+
+
+class GeoServerDatastoreRecord(Base):
+    """Persistent corporate GeoServer datastore reference."""
+
+    __tablename__ = "gis_geoserver_datastores"
+
+    datastore_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    workspace_id: Mapped[str] = mapped_column(String(80), ForeignKey("gis_geoserver_workspaces.workspace_id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    postgis_schema_id: Mapped[str] = mapped_column(String(80), ForeignKey("gis_postgis_schemas.schema_id"), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, datastore: GeoServerDatastore) -> "GeoServerDatastoreRecord":
+        return cls(**datastore.model_dump(mode="json"))
+
+    def update_from_domain(self, datastore: GeoServerDatastore) -> None:
+        self.company_id = datastore.company_id
+        self.project_id = datastore.project_id
+        self.workspace_id = datastore.workspace_id
+        self.name = datastore.name
+        self.postgis_schema_id = datastore.postgis_schema_id
+        self.status = datastore.status.value
+
+    def to_domain(self) -> GeoServerDatastore:
+        return GeoServerDatastore(
+            datastore_id=self.datastore_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            workspace_id=self.workspace_id,
+            name=self.name,
+            postgis_schema_id=self.postgis_schema_id,
+            status=GisResourceStatus(self.status),
+        )
+
+
+class GeoServerLayerRecord(Base):
+    """Persistent corporate GeoServer layer reference."""
+
+    __tablename__ = "gis_geoserver_layers"
+
+    layer_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    workspace_id: Mapped[str] = mapped_column(String(80), ForeignKey("gis_geoserver_workspaces.workspace_id"), nullable=False, index=True)
+    datastore_id: Mapped[str] = mapped_column(String(80), ForeignKey("gis_geoserver_datastores.datastore_id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    wms_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    wfs_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, layer: GeoServerLayer) -> "GeoServerLayerRecord":
+        return cls(**layer.model_dump(mode="json"))
+
+    def update_from_domain(self, layer: GeoServerLayer) -> None:
+        self.company_id = layer.company_id
+        self.project_id = layer.project_id
+        self.workspace_id = layer.workspace_id
+        self.datastore_id = layer.datastore_id
+        self.name = layer.name
+        self.title = layer.title
+        self.wms_url = layer.wms_url
+        self.wfs_url = layer.wfs_url
+        self.status = layer.status.value
+
+    def to_domain(self) -> GeoServerLayer:
+        return GeoServerLayer(
+            layer_id=self.layer_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            workspace_id=self.workspace_id,
+            datastore_id=self.datastore_id,
+            name=self.name,
+            title=self.title,
+            wms_url=self.wms_url,
+            wfs_url=self.wfs_url,
+            status=GisResourceStatus(self.status),
+        )
+
+
+class ProjectGisBindingRecord(Base):
+    """Persistent project GIS infrastructure binding."""
+
+    __tablename__ = "gis_project_bindings"
+
+    binding_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, unique=True, index=True)
+    postgis_schema_id: Mapped[str] = mapped_column(String(80), ForeignKey("gis_postgis_schemas.schema_id"), nullable=False)
+    geoserver_workspace_id: Mapped[str] = mapped_column(String(80), ForeignKey("gis_geoserver_workspaces.workspace_id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, binding: ProjectGisBinding) -> "ProjectGisBindingRecord":
+        return cls(**binding.model_dump(mode="json"))
+
+    def update_from_domain(self, binding: ProjectGisBinding) -> None:
+        self.company_id = binding.company_id
+        self.project_id = binding.project_id
+        self.postgis_schema_id = binding.postgis_schema_id
+        self.geoserver_workspace_id = binding.geoserver_workspace_id
+        self.status = binding.status.value
+
+    def to_domain(self) -> ProjectGisBinding:
+        return ProjectGisBinding(
+            binding_id=self.binding_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            postgis_schema_id=self.postgis_schema_id,
+            geoserver_workspace_id=self.geoserver_workspace_id,
+            status=GisResourceStatus(self.status),
         )
 
 
@@ -1438,3 +1631,156 @@ class SqlAlchemyInformationAssetRepository:
                 .order_by(InformationBackupRecord.backup_id)
             )
             return [record.to_domain() for record in records]
+
+
+class SqlAlchemyCorporateGisRepository:
+    """SQLAlchemy implementation of the corporate GIS repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save_postgis_schema(self, schema: PostgisSchema) -> PostgisSchema:
+        """Persist a PostGIS schema reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(PostgisSchemaRecord, schema.schema_id)
+            if record is None:
+                record = PostgisSchemaRecord.from_domain(schema)
+                db.add(record)
+            else:
+                record.update_from_domain(schema)
+            db.flush()
+            return record.to_domain()
+
+    def get_postgis_schema(self, schema_id: str) -> PostgisSchema | None:
+        """Return one PostGIS schema reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(PostgisSchemaRecord, schema_id)
+            return record.to_domain() if record is not None else None
+
+    def list_postgis_schemas(self, company_id: str, project_id: str | None = None) -> list[PostgisSchema]:
+        """Return PostGIS schemas by company and optional project."""
+
+        with self._sessions.session() as db:
+            statement = select(PostgisSchemaRecord).where(PostgisSchemaRecord.company_id == company_id)
+            if project_id is not None:
+                statement = statement.where(PostgisSchemaRecord.project_id == project_id)
+            records = db.scalars(statement.order_by(PostgisSchemaRecord.schema_id))
+            return [record.to_domain() for record in records]
+
+    def save_workspace(self, workspace: GeoServerWorkspace) -> GeoServerWorkspace:
+        """Persist a GeoServer workspace reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(GeoServerWorkspaceRecord, workspace.workspace_id)
+            if record is None:
+                record = GeoServerWorkspaceRecord.from_domain(workspace)
+                db.add(record)
+            else:
+                record.update_from_domain(workspace)
+            db.flush()
+            return record.to_domain()
+
+    def get_workspace(self, workspace_id: str) -> GeoServerWorkspace | None:
+        """Return one GeoServer workspace reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(GeoServerWorkspaceRecord, workspace_id)
+            return record.to_domain() if record is not None else None
+
+    def list_workspaces(self, company_id: str, project_id: str | None = None) -> list[GeoServerWorkspace]:
+        """Return GeoServer workspaces by company and optional project."""
+
+        with self._sessions.session() as db:
+            statement = select(GeoServerWorkspaceRecord).where(
+                GeoServerWorkspaceRecord.company_id == company_id
+            )
+            if project_id is not None:
+                statement = statement.where(GeoServerWorkspaceRecord.project_id == project_id)
+            records = db.scalars(statement.order_by(GeoServerWorkspaceRecord.workspace_id))
+            return [record.to_domain() for record in records]
+
+    def save_datastore(self, datastore: GeoServerDatastore) -> GeoServerDatastore:
+        """Persist a GeoServer datastore reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(GeoServerDatastoreRecord, datastore.datastore_id)
+            if record is None:
+                record = GeoServerDatastoreRecord.from_domain(datastore)
+                db.add(record)
+            else:
+                record.update_from_domain(datastore)
+            db.flush()
+            return record.to_domain()
+
+    def get_datastore(self, datastore_id: str) -> GeoServerDatastore | None:
+        """Return one GeoServer datastore reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(GeoServerDatastoreRecord, datastore_id)
+            return record.to_domain() if record is not None else None
+
+    def list_datastores(self, company_id: str, project_id: str | None = None) -> list[GeoServerDatastore]:
+        """Return GeoServer datastores by company and optional project."""
+
+        with self._sessions.session() as db:
+            statement = select(GeoServerDatastoreRecord).where(
+                GeoServerDatastoreRecord.company_id == company_id
+            )
+            if project_id is not None:
+                statement = statement.where(GeoServerDatastoreRecord.project_id == project_id)
+            records = db.scalars(statement.order_by(GeoServerDatastoreRecord.datastore_id))
+            return [record.to_domain() for record in records]
+
+    def save_layer(self, layer: GeoServerLayer) -> GeoServerLayer:
+        """Persist a GeoServer layer reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(GeoServerLayerRecord, layer.layer_id)
+            if record is None:
+                record = GeoServerLayerRecord.from_domain(layer)
+                db.add(record)
+            else:
+                record.update_from_domain(layer)
+            db.flush()
+            return record.to_domain()
+
+    def list_layers(self, company_id: str, project_id: str | None = None) -> list[GeoServerLayer]:
+        """Return GeoServer layers by company and optional project."""
+
+        with self._sessions.session() as db:
+            statement = select(GeoServerLayerRecord).where(GeoServerLayerRecord.company_id == company_id)
+            if project_id is not None:
+                statement = statement.where(GeoServerLayerRecord.project_id == project_id)
+            records = db.scalars(statement.order_by(GeoServerLayerRecord.layer_id))
+            return [record.to_domain() for record in records]
+
+    def save_binding(self, binding: ProjectGisBinding) -> ProjectGisBinding:
+        """Persist a project GIS binding."""
+
+        with self._sessions.session() as db:
+            record = db.get(ProjectGisBindingRecord, binding.binding_id)
+            if record is None:
+                existing = db.scalars(
+                    select(ProjectGisBindingRecord)
+                    .where(ProjectGisBindingRecord.company_id == binding.company_id)
+                    .where(ProjectGisBindingRecord.project_id == binding.project_id)
+                ).first()
+                record = existing or ProjectGisBindingRecord.from_domain(binding)
+                if existing is None:
+                    db.add(record)
+            record.update_from_domain(binding)
+            db.flush()
+            return record.to_domain()
+
+    def get_binding(self, company_id: str, project_id: str) -> ProjectGisBinding | None:
+        """Return the GIS binding for one project."""
+
+        with self._sessions.session() as db:
+            record = db.scalars(
+                select(ProjectGisBindingRecord)
+                .where(ProjectGisBindingRecord.company_id == company_id)
+                .where(ProjectGisBindingRecord.project_id == project_id)
+            ).first()
+            return record.to_domain() if record is not None else None
