@@ -7,6 +7,11 @@ from control_tower.domain.corporate_gis_intelligence import (
     GisDiscipline,
     GisServiceKind,
 )
+from control_tower.domain.corporate_workflow import (
+    CorporateWorkflowInstance,
+    CorporateWorkflowStage,
+    CorporateWorkflowTransition,
+)
 from control_tower.domain.portfolio import CorporateCustomer, CorporateProgram, PortfolioProject
 from control_tower.domain.nas import InformationAsset, InformationAssetType, InformationCategory
 from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningResourceType, ProvisioningStep
@@ -15,6 +20,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyCorporateCustomerRepository,
     SqlAlchemyCorporateGisIntelligenceRepository,
     SqlAlchemyCorporateProgramRepository,
+    SqlAlchemyCorporateWorkflowRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyPortfolioProjectRepository,
     SqlAlchemyProvisioningRequestRepository,
@@ -196,3 +202,46 @@ def test_sqlalchemy_corporate_gis_intelligence_repository_persists_sources_layer
     assert repository.list_sources("CRTG")[0].service_kind == GisServiceKind.WMS
     assert repository.list_layers("CRTG")[0].indicator_value == 78
     assert repository.list_layers("CRTG", "PSZ-2026")[0].metadata["unit"] == "percent"
+
+
+def test_sqlalchemy_corporate_workflow_repository_persists_transitions(tmp_path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'corporate_workflow.db'}"
+    engine = create_database_engine(database_url)
+    initialize_database(engine)
+    sessions = SqlAlchemySessionProvider(engine)
+    companies = SqlAlchemyCompanyRepository(sessions)
+    projects = SqlAlchemyPortfolioProjectRepository(sessions)
+    repository = SqlAlchemyCorporateWorkflowRepository(sessions)
+    companies.save(Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"))
+    projects.save(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
+
+    repository.save_workflow(
+        CorporateWorkflowInstance(
+            workflow_id="CWF-001",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            current_stage=CorporateWorkflowStage.CREATE_COMPANY,
+            completed_stages=[CorporateWorkflowStage.CREATE_COMPANY],
+            created_by="portfolio-manager",
+            updated_by="portfolio-manager",
+        )
+    )
+    repository.save_transition(
+        CorporateWorkflowTransition(
+            transition_id="CWFT-001",
+            workflow_id="CWF-001",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            to_stage=CorporateWorkflowStage.CREATE_COMPANY,
+            actor="portfolio-manager",
+            reason="Workflow started",
+        )
+    )
+
+    workflow = repository.get_workflow("CWF-001")
+    transitions = repository.list_transitions("CWF-001")
+
+    assert workflow is not None
+    assert workflow.current_stage == CorporateWorkflowStage.CREATE_COMPANY
+    assert repository.list_workflows("CRTG")[0].workflow_id == "CWF-001"
+    assert transitions[0].to_stage == CorporateWorkflowStage.CREATE_COMPANY

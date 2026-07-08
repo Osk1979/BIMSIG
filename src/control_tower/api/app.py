@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from control_tower import __version__
 from control_tower.application.corporate_gis_intelligence_service import CorporateGisIntelligenceService
+from control_tower.application.corporate_workflow_service import CorporateWorkflowEngine
 from control_tower.application.dashboard_service import DashboardService
 from control_tower.application.enterprise_service import (
     CompanyService,
@@ -41,6 +42,12 @@ from control_tower.domain.corporate_gis_intelligence import (
     CorporateGisSummary,
     CorporateLayer,
     ProjectSpatialIndicator,
+)
+from control_tower.domain.corporate_workflow import (
+    CorporateWorkflowAdvance,
+    CorporateWorkflowInstance,
+    CorporateWorkflowRollback,
+    CorporateWorkflowTransition,
 )
 from control_tower.domain.dashboard import CorporateDashboard
 from control_tower.domain.enterprise import (
@@ -91,6 +98,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyCorporateGisRepository,
     SqlAlchemyCorporateCustomerRepository,
     SqlAlchemyCorporateProgramRepository,
+    SqlAlchemyCorporateWorkflowRepository,
     SqlAlchemyCompanyRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyLicensePlanRepository,
@@ -181,6 +189,16 @@ class SsoAuthenticatePayload(BaseModel):
     subject: str = Field(min_length=3)
 
 
+class StartCorporateWorkflowPayload(BaseModel):
+    """API payload to start an official Corporate Workflow Engine instance."""
+
+    workflow_id: str | None = Field(default=None, min_length=3)
+    project_id: str | None = Field(default=None, min_length=3)
+    program_id: str | None = Field(default=None, min_length=3)
+    actor: str = Field(default="system", min_length=1)
+    reason: str = Field(default="Corporate workflow started", min_length=3)
+
+
 def create_app(database_url: str | None = None, initialize_schema: bool = True) -> FastAPI:
     """Create the Corporate Control Tower API application."""
 
@@ -206,6 +224,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     information_repository = SqlAlchemyInformationAssetRepository(sessions)
     gis_repository = SqlAlchemyCorporateGisRepository(sessions)
     gis_intelligence_repository = SqlAlchemyCorporateGisIntelligenceRepository(sessions)
+    workflow_repository = SqlAlchemyCorporateWorkflowRepository(sessions)
     customer_repository = SqlAlchemyCorporateCustomerRepository(sessions)
     program_repository = SqlAlchemyCorporateProgramRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
@@ -260,6 +279,12 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     gis = CorporateGisService(gis_repository, companies, portfolio, audit_repository)
     gis_intelligence = CorporateGisIntelligenceService(
         gis_intelligence_repository,
+        companies,
+        portfolio,
+        audit_repository,
+    )
+    workflow_engine = CorporateWorkflowEngine(
+        workflow_repository,
         companies,
         portfolio,
         audit_repository,
@@ -356,6 +381,100 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         try:
             return operational_flow.company_flow(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/workflows/corporate/start",
+        response_model=CorporateWorkflowInstance,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def start_corporate_workflow(
+        company_id: str,
+        payload: StartCorporateWorkflowPayload,
+    ) -> CorporateWorkflowInstance:
+        """Start the official auditable corporate workflow."""
+
+        try:
+            return workflow_engine.start_workflow(
+                company_id,
+                workflow_id=payload.workflow_id,
+                project_id=payload.project_id,
+                program_id=payload.program_id,
+                actor=payload.actor,
+                reason=payload.reason,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/workflows/corporate",
+        response_model=list[CorporateWorkflowInstance],
+    )
+    def list_corporate_workflows(company_id: str) -> list[CorporateWorkflowInstance]:
+        """List company-scoped Corporate Workflow Engine instances."""
+
+        try:
+            return workflow_engine.list_workflows(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}",
+        response_model=CorporateWorkflowInstance,
+    )
+    def get_corporate_workflow(company_id: str, workflow_id: str) -> CorporateWorkflowInstance:
+        """Return one Corporate Workflow Engine instance."""
+
+        try:
+            return workflow_engine.get_workflow(company_id, workflow_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}/advance",
+        response_model=CorporateWorkflowInstance,
+    )
+    def advance_corporate_workflow(
+        company_id: str,
+        workflow_id: str,
+        payload: CorporateWorkflowAdvance,
+    ) -> CorporateWorkflowInstance:
+        """Advance one Corporate Workflow Engine instance one official stage."""
+
+        try:
+            return workflow_engine.advance(company_id, workflow_id, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}/rollback",
+        response_model=CorporateWorkflowInstance,
+    )
+    def rollback_corporate_workflow(
+        company_id: str,
+        workflow_id: str,
+        payload: CorporateWorkflowRollback,
+    ) -> CorporateWorkflowInstance:
+        """Rollback one Corporate Workflow Engine instance to the prior stage."""
+
+        try:
+            return workflow_engine.rollback(company_id, workflow_id, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}/transitions",
+        response_model=list[CorporateWorkflowTransition],
+    )
+    def list_corporate_workflow_transitions(
+        company_id: str,
+        workflow_id: str,
+    ) -> list[CorporateWorkflowTransition]:
+        """List auditable transitions for one Corporate Workflow Engine instance."""
+
+        try:
+            return workflow_engine.list_transitions(company_id, workflow_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

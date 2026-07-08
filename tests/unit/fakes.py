@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.corporate_gis_intelligence import CorporateGisSource, CorporateLayer
+from control_tower.domain.corporate_workflow import CorporateWorkflowInstance, CorporateWorkflowTransition
 from control_tower.domain.enterprise import (
     AuthIdentity,
     Company,
@@ -418,6 +419,37 @@ class FakeCorporateGisIntelligenceRepository:
             layer
             for layer in self.layers.values()
             if layer.company_id == company_id and (project_id is None or layer.project_id == project_id)
+        ]
+
+
+class FakeCorporateWorkflowRepository:
+    def __init__(self) -> None:
+        self.workflows: dict[str, CorporateWorkflowInstance] = {}
+        self.transitions: list[CorporateWorkflowTransition] = []
+
+    def save_workflow(self, workflow: CorporateWorkflowInstance) -> CorporateWorkflowInstance:
+        self.workflows[workflow.workflow_id] = workflow
+        return workflow
+
+    def get_workflow(self, workflow_id: str) -> CorporateWorkflowInstance | None:
+        return self.workflows.get(workflow_id)
+
+    def list_workflows(self, company_id: str) -> list[CorporateWorkflowInstance]:
+        return [
+            workflow
+            for workflow in self.workflows.values()
+            if workflow.company_id == company_id
+        ]
+
+    def save_transition(self, transition: CorporateWorkflowTransition) -> CorporateWorkflowTransition:
+        self.transitions.append(transition)
+        return transition
+
+    def list_transitions(self, workflow_id: str) -> list[CorporateWorkflowTransition]:
+        return [
+            transition
+            for transition in self.transitions
+            if transition.workflow_id == workflow_id
         ]
 
 

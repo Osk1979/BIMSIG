@@ -374,6 +374,66 @@ def test_company_operational_flow_contract(tmp_path) -> None:
     assert response.json()["items"][0]["gis_registered"] is True
 
 
+def test_corporate_workflow_engine_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+    )
+
+    started = client.post(
+        "/api/v1/companies/CRTG/workflows/corporate/start",
+        json={
+            "workflow_id": "CWF-CRTG-PSZ-2026",
+            "project_id": "PSZ-2026",
+            "actor": "portfolio-manager",
+            "reason": "Inicio CTO-101",
+        },
+    )
+    advanced = client.post(
+        "/api/v1/companies/CRTG/workflows/corporate/CWF-CRTG-PSZ-2026/advance",
+        json={
+            "to_stage": "create_program",
+            "actor": "portfolio-manager",
+            "reason": "Programa creado",
+        },
+    )
+    rejected_skip = client.post(
+        "/api/v1/companies/CRTG/workflows/corporate/CWF-CRTG-PSZ-2026/advance",
+        json={"to_stage": "provision_websig", "actor": "portfolio-manager"},
+    )
+    rolled_back = client.post(
+        "/api/v1/companies/CRTG/workflows/corporate/CWF-CRTG-PSZ-2026/rollback",
+        json={"actor": "portfolio-manager", "reason": "Rollback controlado de prueba"},
+    )
+    transitions = client.get(
+        "/api/v1/companies/CRTG/workflows/corporate/CWF-CRTG-PSZ-2026/transitions"
+    )
+    audit = client.get("/api/v1/audit/events")
+
+    assert started.status_code == 201
+    assert started.json()["current_stage"] == "create_company"
+    assert advanced.status_code == 200
+    assert advanced.json()["current_stage"] == "create_program"
+    assert rejected_skip.status_code == 400
+    assert "Next allowed workflow stage" in rejected_skip.json()["detail"]
+    assert rolled_back.status_code == 200
+    assert rolled_back.json()["current_stage"] == "create_company"
+    assert transitions.status_code == 200
+    assert transitions.json()[-1]["rollback"] is True
+    assert {
+        event["action"]
+        for event in audit.json()
+    } >= {
+        "corporate_workflow.transitioned",
+        "corporate_workflow.rollback",
+    }
+
+
 def test_corporate_gis_intelligence_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(

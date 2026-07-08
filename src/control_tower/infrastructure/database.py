@@ -26,6 +26,12 @@ from control_tower.domain.corporate_gis_intelligence import (
     GisDiscipline,
     GisServiceKind,
 )
+from control_tower.domain.corporate_workflow import (
+    CorporateWorkflowInstance,
+    CorporateWorkflowStage,
+    CorporateWorkflowStatus,
+    CorporateWorkflowTransition,
+)
 from control_tower.domain.enterprise import (
     AuthIdentity,
     AuthProvider,
@@ -965,6 +971,122 @@ class CorporateLayerRecord(Base):
             region=self.region,
             risk_level=self.risk_level,
             metadata=json.loads(self.metadata_document),
+        )
+
+
+class CorporateWorkflowRecord(Base):
+    """Persistent Corporate Workflow Engine instance."""
+
+    __tablename__ = "corporate_workflows"
+
+    workflow_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=True, index=True)
+    program_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    current_stage: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    completed_stages_document: Mapped[str] = mapped_column(Text, nullable=False)
+    rollback_available: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(160), nullable=False)
+    updated_by: Mapped[str] = mapped_column(String(160), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    @classmethod
+    def from_domain(cls, workflow: CorporateWorkflowInstance) -> "CorporateWorkflowRecord":
+        now = datetime.now(UTC)
+        return cls(
+            workflow_id=workflow.workflow_id,
+            company_id=workflow.company_id,
+            project_id=workflow.project_id,
+            program_id=workflow.program_id,
+            current_stage=workflow.current_stage.value,
+            status=workflow.status.value,
+            completed_stages_document=json.dumps([stage.value for stage in workflow.completed_stages]),
+            rollback_available=workflow.rollback_available,
+            created_by=workflow.created_by,
+            updated_by=workflow.updated_by,
+            created_at=workflow.created_at or now,
+            updated_at=workflow.updated_at or now,
+        )
+
+    def update_from_domain(self, workflow: CorporateWorkflowInstance) -> None:
+        self.company_id = workflow.company_id
+        self.project_id = workflow.project_id
+        self.program_id = workflow.program_id
+        self.current_stage = workflow.current_stage.value
+        self.status = workflow.status.value
+        self.completed_stages_document = json.dumps([stage.value for stage in workflow.completed_stages])
+        self.rollback_available = workflow.rollback_available
+        self.updated_by = workflow.updated_by
+        self.updated_at = datetime.now(UTC)
+
+    def to_domain(self) -> CorporateWorkflowInstance:
+        return CorporateWorkflowInstance(
+            workflow_id=self.workflow_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            program_id=self.program_id,
+            current_stage=CorporateWorkflowStage(self.current_stage),
+            status=CorporateWorkflowStatus(self.status),
+            completed_stages=[
+                CorporateWorkflowStage(stage)
+                for stage in json.loads(self.completed_stages_document)
+            ],
+            rollback_available=self.rollback_available,
+            created_by=self.created_by,
+            updated_by=self.updated_by,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
+
+
+class CorporateWorkflowTransitionRecord(Base):
+    """Persistent auditable Corporate Workflow Engine transition."""
+
+    __tablename__ = "corporate_workflow_transitions"
+
+    transition_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    workflow_id: Mapped[str] = mapped_column(String(80), ForeignKey("corporate_workflows.workflow_id"), nullable=False, index=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=True, index=True)
+    from_stage: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    to_stage: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    actor: Mapped[str] = mapped_column(String(160), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    rollback: Mapped[bool] = mapped_column(Boolean, nullable=False, index=True)
+    rollback_of: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    @classmethod
+    def from_domain(cls, transition: CorporateWorkflowTransition) -> "CorporateWorkflowTransitionRecord":
+        return cls(
+            transition_id=transition.transition_id,
+            workflow_id=transition.workflow_id,
+            company_id=transition.company_id,
+            project_id=transition.project_id,
+            from_stage=transition.from_stage.value if transition.from_stage is not None else None,
+            to_stage=transition.to_stage.value,
+            actor=transition.actor,
+            reason=transition.reason,
+            rollback=transition.rollback,
+            rollback_of=transition.rollback_of,
+            created_at=transition.created_at or datetime.now(UTC),
+        )
+
+    def to_domain(self) -> CorporateWorkflowTransition:
+        return CorporateWorkflowTransition(
+            transition_id=self.transition_id,
+            workflow_id=self.workflow_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            from_stage=CorporateWorkflowStage(self.from_stage) if self.from_stage else None,
+            to_stage=CorporateWorkflowStage(self.to_stage),
+            actor=self.actor,
+            reason=self.reason,
+            rollback=self.rollback,
+            rollback_of=self.rollback_of,
+            created_at=self.created_at,
         )
 
 
@@ -2208,4 +2330,62 @@ class SqlAlchemyCorporateGisIntelligenceRepository:
             if project_id is not None:
                 statement = statement.where(CorporateLayerRecord.project_id == project_id)
             records = db.scalars(statement.order_by(CorporateLayerRecord.layer_id))
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyCorporateWorkflowRepository:
+    """SQLAlchemy implementation of the Corporate Workflow Engine repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save_workflow(self, workflow: CorporateWorkflowInstance) -> CorporateWorkflowInstance:
+        """Persist one workflow instance."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateWorkflowRecord, workflow.workflow_id)
+            if record is None:
+                record = CorporateWorkflowRecord.from_domain(workflow)
+                db.add(record)
+            else:
+                record.update_from_domain(workflow)
+            db.flush()
+            return record.to_domain()
+
+    def get_workflow(self, workflow_id: str) -> CorporateWorkflowInstance | None:
+        """Return one workflow instance."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateWorkflowRecord, workflow_id)
+            return record.to_domain() if record is not None else None
+
+    def list_workflows(self, company_id: str) -> list[CorporateWorkflowInstance]:
+        """Return workflow instances for one company."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(CorporateWorkflowRecord)
+                .where(CorporateWorkflowRecord.company_id == company_id)
+                .order_by(CorporateWorkflowRecord.updated_at.desc())
+            )
+            return [record.to_domain() for record in records]
+
+    def save_transition(self, transition: CorporateWorkflowTransition) -> CorporateWorkflowTransition:
+        """Persist one auditable workflow transition."""
+
+        with self._sessions.session() as db:
+            record = CorporateWorkflowTransitionRecord.from_domain(transition)
+            db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_transitions(self, workflow_id: str) -> list[CorporateWorkflowTransition]:
+        """Return transitions for one workflow."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(CorporateWorkflowTransitionRecord)
+                .where(CorporateWorkflowTransitionRecord.workflow_id == workflow_id)
+                .order_by(CorporateWorkflowTransitionRecord.created_at)
+            )
             return [record.to_domain() for record in records]

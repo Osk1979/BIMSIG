@@ -12,6 +12,7 @@ from typing import Protocol
 
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.corporate_gis_intelligence import CorporateGisSource, CorporateLayer
+from control_tower.domain.corporate_workflow import CorporateWorkflowInstance, CorporateWorkflowTransition
 from control_tower.domain.enterprise import (
     AuthIdentity,
     Company,
@@ -328,3 +329,22 @@ class CorporateGisIntelligenceRepository(Protocol):
 
     def list_layers(self, company_id: str, project_id: str | None = None) -> list[CorporateLayer]:
         """Return corporate layers by company and optional project."""
+
+
+class CorporateWorkflowRepository(Protocol):
+    """Persistence port for Corporate Workflow Engine state."""
+
+    def save_workflow(self, workflow: CorporateWorkflowInstance) -> CorporateWorkflowInstance:
+        """Persist a workflow instance."""
+
+    def get_workflow(self, workflow_id: str) -> CorporateWorkflowInstance | None:
+        """Return one workflow instance."""
+
+    def list_workflows(self, company_id: str) -> list[CorporateWorkflowInstance]:
+        """Return workflow instances for one company."""
+
+    def save_transition(self, transition: CorporateWorkflowTransition) -> CorporateWorkflowTransition:
+        """Persist a workflow transition."""
+
+    def list_transitions(self, workflow_id: str) -> list[CorporateWorkflowTransition]:
+        """Return transitions for one workflow."""

@@ -1177,6 +1177,288 @@
         "title": "CorporateProgram",
         "type": "object"
       },
+      "CorporateWorkflowAdvance": {
+        "description": "API payload to advance one corporate workflow.",
+        "properties": {
+          "actor": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "reason": {
+            "default": "Corporate workflow transition",
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "to_stage": {
+            "$ref": "#/components/schemas/CorporateWorkflowStage"
+          }
+        },
+        "required": [
+          "to_stage"
+        ],
+        "title": "CorporateWorkflowAdvance",
+        "type": "object"
+      },
+      "CorporateWorkflowInstance": {
+        "description": "Company-scoped corporate workflow state.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "completed_stages": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateWorkflowStage"
+            },
+            "title": "Completed Stages",
+            "type": "array"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "created_by": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Created By",
+            "type": "string"
+          },
+          "current_stage": {
+            "$ref": "#/components/schemas/CorporateWorkflowStage"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "PSZ-2026"
+            ],
+            "title": "Project Id"
+          },
+          "rollback_available": {
+            "default": true,
+            "title": "Rollback Available",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CorporateWorkflowStatus",
+            "default": "active"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "updated_by": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Updated By",
+            "type": "string"
+          },
+          "workflow_id": {
+            "examples": [
+              "CWF-001"
+            ],
+            "minLength": 3,
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workflow_id",
+          "company_id",
+          "current_stage"
+        ],
+        "title": "CorporateWorkflowInstance",
+        "type": "object"
+      },
+      "CorporateWorkflowRollback": {
+        "description": "API payload to perform controlled rollback.",
+        "properties": {
+          "actor": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "reason": {
+            "default": "Controlled rollback",
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "CorporateWorkflowRollback",
+        "type": "object"
+      },
+      "CorporateWorkflowStage": {
+        "description": "Official corporate workflow stages governed by the Tower.",
+        "enum": [
+          "create_company",
+          "create_program",
+          "create_project",
+          "provision_websig",
+          "create_nas",
+          "create_postgis",
+          "register_geoserver",
+          "create_dashboard",
+          "assign_users",
+          "assign_specialties",
+          "activate_project",
+          "operation",
+          "closure",
+          "archive"
+        ],
+        "title": "CorporateWorkflowStage",
+        "type": "string"
+      },
+      "CorporateWorkflowStatus": {
+        "description": "Lifecycle status for a corporate workflow instance.",
+        "enum": [
+          "active",
+          "completed",
+          "rolled_back"
+        ],
+        "title": "CorporateWorkflowStatus",
+        "type": "string"
+      },
+      "CorporateWorkflowTransition": {
+        "description": "Auditable transition inside one corporate workflow.",
+        "properties": {
+          "actor": {
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "from_stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorporateWorkflowStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "reason": {
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "rollback": {
+            "default": false,
+            "title": "Rollback",
+            "type": "boolean"
+          },
+          "rollback_of": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollback Of"
+          },
+          "to_stage": {
+            "$ref": "#/components/schemas/CorporateWorkflowStage"
+          },
+          "transition_id": {
+            "examples": [
+              "CWFT-001"
+            ],
+            "minLength": 3,
+            "title": "Transition Id",
+            "type": "string"
+          },
+          "workflow_id": {
+            "minLength": 3,
+            "title": "Workflow Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "transition_id",
+          "workflow_id",
+          "company_id",
+          "to_stage",
+          "actor",
+          "reason"
+        ],
+        "title": "CorporateWorkflowTransition",
+        "type": "object"
+      },
       "CustomerStatus": {
         "description": "Lifecycle status for a corporate customer record.",
         "enum": [
@@ -3366,6 +3648,61 @@
           "subject"
         ],
         "title": "SsoAuthenticatePayload",
+        "type": "object"
+      },
+      "StartCorporateWorkflowPayload": {
+        "description": "API payload to start an official Corporate Workflow Engine instance.",
+        "properties": {
+          "actor": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "reason": {
+            "default": "Corporate workflow started",
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          }
+        },
+        "title": "StartCorporateWorkflowPayload",
         "type": "object"
       },
       "User": {
@@ -6365,6 +6702,320 @@
           }
         },
         "summary": "Execute Websig Factory"
+      }
+    },
+    "/api/v1/companies/{company_id}/workflows/corporate": {
+      "get": {
+        "description": "List company-scoped Corporate Workflow Engine instances.",
+        "operationId": "list_corporate_workflows_api_v1_companies__company_id__workflows_corporate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateWorkflowInstance"
+                  },
+                  "title": "Response List Corporate Workflows Api V1 Companies  Company Id  Workflows Corporate Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Corporate Workflows"
+      }
+    },
+    "/api/v1/companies/{company_id}/workflows/corporate/start": {
+      "post": {
+        "description": "Start the official auditable corporate workflow.",
+        "operationId": "start_corporate_workflow_api_v1_companies__company_id__workflows_corporate_start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartCorporateWorkflowPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateWorkflowInstance"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Corporate Workflow"
+      }
+    },
+    "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}": {
+      "get": {
+        "description": "Return one Corporate Workflow Engine instance.",
+        "operationId": "get_corporate_workflow_api_v1_companies__company_id__workflows_corporate__workflow_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workflow_id",
+            "required": true,
+            "schema": {
+              "title": "Workflow Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateWorkflowInstance"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Corporate Workflow"
+      }
+    },
+    "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}/advance": {
+      "post": {
+        "description": "Advance one Corporate Workflow Engine instance one official stage.",
+        "operationId": "advance_corporate_workflow_api_v1_companies__company_id__workflows_corporate__workflow_id__advance_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workflow_id",
+            "required": true,
+            "schema": {
+              "title": "Workflow Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateWorkflowAdvance"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateWorkflowInstance"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Advance Corporate Workflow"
+      }
+    },
+    "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}/rollback": {
+      "post": {
+        "description": "Rollback one Corporate Workflow Engine instance to the prior stage.",
+        "operationId": "rollback_corporate_workflow_api_v1_companies__company_id__workflows_corporate__workflow_id__rollback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workflow_id",
+            "required": true,
+            "schema": {
+              "title": "Workflow Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateWorkflowRollback"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateWorkflowInstance"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rollback Corporate Workflow"
+      }
+    },
+    "/api/v1/companies/{company_id}/workflows/corporate/{workflow_id}/transitions": {
+      "get": {
+        "description": "List auditable transitions for one Corporate Workflow Engine instance.",
+        "operationId": "list_corporate_workflow_transitions_api_v1_companies__company_id__workflows_corporate__workflow_id__transitions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workflow_id",
+            "required": true,
+            "schema": {
+              "title": "Workflow Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateWorkflowTransition"
+                  },
+                  "title": "Response List Corporate Workflow Transitions Api V1 Companies  Company Id  Workflows Corporate  Workflow Id  Transitions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Corporate Workflow Transitions"
       }
     },
     "/api/v1/license-plans": {
