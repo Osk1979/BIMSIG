@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from control_tower.domain.audit import AuditEvent
-from control_tower.domain.enterprise import Company, CompanyMembership, User
+from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
 
@@ -49,6 +49,37 @@ class FakeMembershipRepository:
             membership
             for membership in self.memberships.values()
             if membership.company_id == company_id
+        ]
+
+
+class FakeLicensePlanRepository:
+    def __init__(self) -> None:
+        self.plans: dict[str, LicensePlan] = {}
+
+    def save(self, plan: LicensePlan) -> LicensePlan:
+        self.plans[plan.plan_id] = plan
+        return plan
+
+    def list(self) -> list[LicensePlan]:
+        return list(self.plans.values())
+
+    def get(self, plan_id: str) -> LicensePlan | None:
+        return self.plans.get(plan_id)
+
+
+class FakeCompanyLicenseRepository:
+    def __init__(self) -> None:
+        self.licenses: dict[str, CompanyLicense] = {}
+
+    def save(self, license_assignment: CompanyLicense) -> CompanyLicense:
+        self.licenses[license_assignment.company_license_id] = license_assignment
+        return license_assignment
+
+    def list_by_company(self, company_id: str) -> list[CompanyLicense]:
+        return [
+            license_assignment
+            for license_assignment in self.licenses.values()
+            if license_assignment.company_id == company_id
         ]
 
 

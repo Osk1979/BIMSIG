@@ -252,6 +252,28 @@ def test_enterprise_company_user_membership_and_license_contract(tmp_path) -> No
     }
 
 
+def test_executive_dashboard_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+    )
+
+    response = client.get("/api/v1/companies/CRTG/dashboard/executive")
+    html = client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert response.json()["company_id"] == "CRTG"
+    assert {"portfolio", "map_points", "kpis", "risks", "comparisons"} <= set(response.json())
+    assert html.status_code == 200
+    assert "Dashboard Ejecutivo Corporativo" in html.text
+    assert "data-theme=\"dark\"" in html.text
+
+
 def test_project_registration_persists_across_app_instances(tmp_path) -> None:
     database_url = sqlite_url(tmp_path)
     first_client = TestClient(create_app(database_url=database_url))

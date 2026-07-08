@@ -127,6 +127,11 @@ Implemented first cut:
 - `GET /api/v1/companies/{company_id}/dashboard/portfolio`
 - `GET /api/v1/companies/{company_id}/dashboard/integrations`
 
+Implemented first cut:
+
+- `GET /dashboard`
+- `GET /api/v1/companies/{company_id}/dashboard/executive`
+
 ### AI
 
 - `POST /api/v1/companies/{company_id}/ai/portfolio-summary`

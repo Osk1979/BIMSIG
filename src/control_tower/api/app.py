@@ -10,9 +10,11 @@ ADR references:
 import os
 
 from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from control_tower import __version__
+from control_tower.application.dashboard_service import DashboardService
 from control_tower.application.enterprise_service import CompanyService, LicensingService, UserService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import (
@@ -21,6 +23,7 @@ from control_tower.application.provisioning_service import (
     ProvisioningService,
 )
 from control_tower.domain.audit import AuditEvent
+from control_tower.domain.dashboard import CorporateDashboard
 from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningRequest
@@ -39,6 +42,7 @@ from control_tower.infrastructure.database import (
     initialize_database,
 )
 from control_tower.infrastructure.adapters.provisioning import default_project_stack_adapters
+from control_tower.presentation.dashboard_ui import render_dashboard_html
 
 
 class ProvisionWebSigPayload(BaseModel):
@@ -102,6 +106,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         project_stack_adapters,
         audit_repository,
     )
+    dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -134,6 +139,21 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         if not companies.exists(company_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
         return portfolio.summary_for_company(company_id)
+
+    @app.get("/dashboard", response_class=HTMLResponse)
+    def dashboard_ui() -> HTMLResponse:
+        """Return the integrated corporate executive dashboard UI."""
+
+        return HTMLResponse(render_dashboard_html())
+
+    @app.get("/api/v1/companies/{company_id}/dashboard/executive", response_model=CorporateDashboard)
+    def executive_dashboard(company_id: str) -> CorporateDashboard:
+        """Return the company-scoped executive dashboard read model."""
+
+        try:
+            return dashboard.executive_dashboard(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.get("/api/v1/companies", response_model=list[Company])
     def list_companies() -> list[Company]:

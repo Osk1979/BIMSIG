@@ -245,6 +245,207 @@
         "title": "CompanyStatus",
         "type": "string"
       },
+      "CorporateDashboard": {
+        "description": "Executive read model for one enterprise company.",
+        "properties": {
+          "ai": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Ai",
+            "type": "array"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "comparisons": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectComparison"
+            },
+            "title": "Comparisons",
+            "type": "array"
+          },
+          "environmental": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Environmental",
+            "type": "array"
+          },
+          "kpis": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Kpis",
+            "type": "array"
+          },
+          "licenses": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Licenses",
+            "type": "array"
+          },
+          "map_points": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateMapPoint"
+            },
+            "title": "Map Points",
+            "type": "array"
+          },
+          "portfolio": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Portfolio",
+            "type": "object"
+          },
+          "production": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Production",
+            "type": "array"
+          },
+          "quality": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Quality",
+            "type": "array"
+          },
+          "risks": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Risks",
+            "type": "array"
+          },
+          "schedule": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Schedule",
+            "type": "array"
+          },
+          "ssoma": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Ssoma",
+            "type": "array"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Users",
+            "type": "array"
+          }
+        },
+        "required": [
+          "company_id",
+          "portfolio",
+          "map_points",
+          "kpis",
+          "risks",
+          "production",
+          "schedule",
+          "environmental",
+          "ssoma",
+          "quality",
+          "users",
+          "licenses",
+          "ai",
+          "alerts",
+          "comparisons"
+        ],
+        "title": "CorporateDashboard",
+        "type": "object"
+      },
+      "CorporateMapPoint": {
+        "description": "Portfolio map point used by the corporate dashboard.",
+        "properties": {
+          "latitude": {
+            "title": "Latitude",
+            "type": "number"
+          },
+          "longitude": {
+            "title": "Longitude",
+            "type": "number"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "status": {
+            "minLength": 3,
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "name",
+          "status",
+          "latitude",
+          "longitude"
+        ],
+        "title": "CorporateMapPoint",
+        "type": "object"
+      },
+      "DashboardMetric": {
+        "description": "Single executive dashboard metric.",
+        "properties": {
+          "label": {
+            "minLength": 3,
+            "title": "Label",
+            "type": "string"
+          },
+          "metric_id": {
+            "minLength": 3,
+            "title": "Metric Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "nominal",
+            "title": "Status",
+            "type": "string"
+          },
+          "trend": {
+            "default": "stable",
+            "title": "Trend",
+            "type": "string"
+          },
+          "value": {
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metric_id",
+          "label",
+          "value"
+        ],
+        "title": "DashboardMetric",
+        "type": "object"
+      },
       "GovernanceStatusPayload": {
         "description": "API payload to change project governance status.",
         "properties": {
@@ -402,6 +603,61 @@
           "name"
         ],
         "title": "PortfolioProject",
+        "type": "object"
+      },
+      "ProjectComparison": {
+        "description": "Comparable portfolio row between projects.",
+        "properties": {
+          "governance_status": {
+            "minLength": 3,
+            "title": "Governance Status",
+            "type": "string"
+          },
+          "kpi_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Kpi Score",
+            "type": "integer"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "production_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Production Score",
+            "type": "integer"
+          },
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "risk_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Risk Score",
+            "type": "integer"
+          },
+          "schedule_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Schedule Score",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id",
+          "name",
+          "governance_status",
+          "kpi_score",
+          "production_score",
+          "schedule_score",
+          "risk_score"
+        ],
+        "title": "ProjectComparison",
         "type": "object"
       },
       "ProjectProvisioningSpec": {
@@ -902,6 +1158,46 @@
           }
         },
         "summary": "Get Company"
+      }
+    },
+    "/api/v1/companies/{company_id}/dashboard/executive": {
+      "get": {
+        "description": "Return the company-scoped executive dashboard read model.",
+        "operationId": "executive_dashboard_api_v1_companies__company_id__dashboard_executive_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateDashboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Executive Dashboard"
       }
     },
     "/api/v1/companies/{company_id}/licenses": {
@@ -1900,6 +2196,25 @@
           }
         },
         "summary": "Register User"
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "description": "Return the integrated corporate executive dashboard UI.",
+        "operationId": "dashboard_ui_dashboard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Dashboard Ui"
       }
     },
     "/health": {

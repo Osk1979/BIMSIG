@@ -19,6 +19,8 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `POST /api/v1/license-plans`: create a license plan.
 - `GET /api/v1/companies/{company_id}/licenses`: list company licenses.
 - `POST /api/v1/companies/{company_id}/licenses`: assign a license plan to company.
+- `GET /dashboard`: integrated corporate executive dashboard UI.
+- `GET /api/v1/companies/{company_id}/dashboard/executive`: company-scoped executive dashboard read model.
 - `GET /api/v1/companies/{company_id}/portfolio/summary`: company-scoped portfolio counts.
 - `GET /api/v1/companies/{company_id}/projects`: list company-scoped projects.
 - `POST /api/v1/companies/{company_id}/projects`: register a project inside a company.
@@ -49,6 +51,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0016 defines enterprise licensing.
 - ADR-0013 defines the first durable portfolio/provisioning schema.
 - ADR-0017 defines the integrated Project Provisioning Engine.
+- ADR-0018 defines the Corporate Executive Dashboard.
 
 ## Configuration
 
