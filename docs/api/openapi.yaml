@@ -1248,6 +1248,30 @@
         "title": "CorporatePortfolioProjectView",
         "type": "object"
       },
+      "CorporatePrintReport": {
+        "description": "Print-ready corporate report response.",
+        "properties": {
+          "html": {
+            "minLength": 20,
+            "title": "Html",
+            "type": "string"
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/ReportManifest"
+          },
+          "print_css": {
+            "default": "",
+            "title": "Print Css",
+            "type": "string"
+          }
+        },
+        "required": [
+          "manifest",
+          "html"
+        ],
+        "title": "CorporatePrintReport",
+        "type": "object"
+      },
       "CorporateProgram": {
         "description": "Program that groups multiple projects for corporate governance.",
         "properties": {
@@ -4079,6 +4103,224 @@
           "failed"
         ],
         "title": "ProvisioningStepStatus",
+        "type": "string"
+      },
+      "ReportFormat": {
+        "description": "Supported print/export formats.",
+        "enum": [
+          "html_print",
+          "pdf"
+        ],
+        "title": "ReportFormat",
+        "type": "string"
+      },
+      "ReportManifest": {
+        "description": "Traceable manifest for a corporate report emission.",
+        "properties": {
+          "checksum_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Checksum Sha256",
+            "type": "string"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Data Sources",
+            "type": "array"
+          },
+          "filters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Filters",
+            "type": "object"
+          },
+          "nas_logical_uri": {
+            "minLength": 6,
+            "title": "Nas Logical Uri",
+            "type": "string"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/ReportFormat"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "report_id": {
+            "examples": [
+              "RPT-CRTG-20260708-001"
+            ],
+            "minLength": 3,
+            "title": "Report Id",
+            "type": "string"
+          },
+          "requested_by": {
+            "minLength": 1,
+            "title": "Requested By",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ReportScope"
+          },
+          "status": {
+            "default": "issued",
+            "title": "Status",
+            "type": "string"
+          },
+          "template": {
+            "$ref": "#/components/schemas/ReportTemplate"
+          },
+          "title": {
+            "minLength": 3,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "report_id",
+          "company_id",
+          "template",
+          "scope",
+          "title",
+          "output_format",
+          "requested_by",
+          "nas_logical_uri",
+          "checksum_sha256",
+          "created_at"
+        ],
+        "title": "ReportManifest",
+        "type": "object"
+      },
+      "ReportRequest": {
+        "description": "Request to prepare or issue a corporate report.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "filters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Filters",
+            "type": "object"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/ReportFormat",
+            "default": "html_print"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "PRG-TRANSPORTE-2026"
+            ],
+            "title": "Program Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "PSZ-2026"
+            ],
+            "title": "Project Id"
+          },
+          "register_nas_reference": {
+            "default": true,
+            "title": "Register Nas Reference",
+            "type": "boolean"
+          },
+          "requested_by": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Requested By",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ReportScope",
+            "default": "company"
+          },
+          "template": {
+            "$ref": "#/components/schemas/ReportTemplate",
+            "default": "executive_portfolio"
+          }
+        },
+        "required": [
+          "company_id"
+        ],
+        "title": "ReportRequest",
+        "type": "object"
+      },
+      "ReportScope": {
+        "description": "Governed report scope.",
+        "enum": [
+          "company",
+          "program",
+          "project",
+          "portfolio"
+        ],
+        "title": "ReportScope",
+        "type": "string"
+      },
+      "ReportTemplate": {
+        "description": "Official Corporate Control Tower report templates.",
+        "enum": [
+          "executive_portfolio",
+          "company_status",
+          "project_governance",
+          "gis_corporate",
+          "audit_summary"
+        ],
+        "title": "ReportTemplate",
         "type": "string"
       },
       "RolePermission": {
@@ -8962,6 +9204,146 @@
           }
         },
         "summary": "Provision Websig"
+      }
+    },
+    "/api/v1/reports/issue": {
+      "post": {
+        "description": "Issue an auditable corporate report manifest and print document.",
+        "operationId": "issue_report_api_v1_reports_issue_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporatePrintReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Issue Report"
+      }
+    },
+    "/api/v1/reports/issue/html": {
+      "post": {
+        "description": "Issue a corporate report and return the print-ready HTML document.",
+        "operationId": "issue_report_html_api_v1_reports_issue_html_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Issue Report Html"
+      }
+    },
+    "/api/v1/reports/preview": {
+      "post": {
+        "description": "Prepare a print-ready corporate report without recording emission.",
+        "operationId": "preview_report_api_v1_reports_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporatePrintReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Report"
+      }
+    },
+    "/api/v1/reports/templates": {
+      "get": {
+        "description": "List official Corporate Control Tower report templates.",
+        "operationId": "report_templates_api_v1_reports_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReportTemplate"
+                  },
+                  "title": "Response Report Templates Api V1 Reports Templates Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Report Templates"
       }
     },
     "/api/v1/roles/{role}/permissions": {

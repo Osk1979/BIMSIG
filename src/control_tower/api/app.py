@@ -36,6 +36,7 @@ from control_tower.application.provisioning_service import (
     ProjectProvisioningSpec,
     ProvisioningService,
 )
+from control_tower.application.reporting_service import CorporateReportingService
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.corporate_gis_intelligence import (
     CorporateGisIntelligenceMap,
@@ -98,6 +99,7 @@ from control_tower.domain.portfolio import (
     PortfolioLifecycleTransition,
 )
 from control_tower.domain.provisioning import ProvisioningRequest
+from control_tower.domain.reports import CorporatePrintReport, ReportRequest, ReportTemplate
 from control_tower.infrastructure.database import (
     SqlAlchemyAuditEventRepository,
     SqlAlchemyAuthIdentityRepository,
@@ -322,6 +324,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         operational_flow,
         gis_intelligence,
     )
+    reporting = CorporateReportingService(dashboard, audit_repository)
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -849,6 +852,40 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             return dashboard.executive_dashboard(company_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/reports/templates", response_model=list[ReportTemplate])
+    def report_templates() -> list[ReportTemplate]:
+        """List official Corporate Control Tower report templates."""
+
+        return list(ReportTemplate)
+
+    @app.post("/api/v1/reports/preview", response_model=CorporatePrintReport)
+    def preview_report(payload: ReportRequest) -> CorporatePrintReport:
+        """Prepare a print-ready corporate report without recording emission."""
+
+        try:
+            return reporting.preview(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post("/api/v1/reports/issue", response_model=CorporatePrintReport)
+    def issue_report(payload: ReportRequest) -> CorporatePrintReport:
+        """Issue an auditable corporate report manifest and print document."""
+
+        try:
+            return reporting.issue(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post("/api/v1/reports/issue/html", response_class=HTMLResponse)
+    def issue_report_html(payload: ReportRequest) -> HTMLResponse:
+        """Issue a corporate report and return the print-ready HTML document."""
+
+        try:
+            report = reporting.issue(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        return HTMLResponse(report.html)
 
     @app.get("/api/v1/companies", response_model=list[Company])
     def list_companies() -> list[Company]:

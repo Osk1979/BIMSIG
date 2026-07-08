@@ -154,3 +154,8 @@ and Portfolio Domain. The Wizard location step captures country, region,
 province, district, corporate coordinates, source, and validation status; Wizard
 activation persists those values into the portfolio project so the Peru map can
 prefer official corporate data over inferred coordinates.
+
+CTO-107 introduces the Corporate Reporting & Print Engine. It exposes report
+templates, preview, issued report manifests, print-ready HTML output, checksum
+traceability, NAS logical references, and audit events for formal corporate
+report issuance.

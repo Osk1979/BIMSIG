@@ -369,6 +369,51 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "data-theme=\"dark\"" in html.text
 
 
+def test_corporate_reporting_print_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "name": "Proyecto Suiza",
+            "country": "PE",
+            "region": "Lima",
+            "province": "Lima",
+            "district": "Miraflores",
+            "latitude": -12.1211,
+            "longitude": -77.0305,
+            "location_source": "portfolio_domain",
+            "location_validation_status": "validated",
+        },
+    )
+
+    templates = client.get("/api/v1/reports/templates")
+    preview = client.post("/api/v1/reports/preview", json={"company_id": "CRTG", "requested_by": "cto"})
+    issued = client.post("/api/v1/reports/issue", json={"company_id": "CRTG", "requested_by": "cto"})
+    html = client.post("/api/v1/reports/issue/html", json={"company_id": "CRTG", "requested_by": "cto"})
+    events = client.get("/api/v1/audit/events?limit=20")
+
+    assert templates.status_code == 200
+    assert "executive_portfolio" in templates.json()
+    assert preview.status_code == 200
+    assert preview.json()["manifest"]["status"] == "preview"
+    assert issued.status_code == 200
+    assert issued.json()["manifest"]["status"] == "issued"
+    assert issued.json()["manifest"]["nas_logical_uri"].startswith("nas://CRTG/reports/")
+    assert len(issued.json()["manifest"]["checksum_sha256"]) == 64
+    assert "Proyecto Suiza" in issued.json()["html"]
+    assert "Miraflores" in issued.json()["html"]
+    assert html.status_code == 200
+    assert "text/html" in html.headers["content-type"]
+    assert "Reporte Executive Portfolio" in html.text
+    assert "corporate_report.issued" in {event["action"] for event in events.json()}
+
+
 def test_company_operational_flow_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     payload = {
