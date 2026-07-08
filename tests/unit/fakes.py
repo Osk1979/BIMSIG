@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from control_tower.domain.audit import AuditEvent
+from control_tower.domain.corporate_gis_intelligence import CorporateGisSource, CorporateLayer
 from control_tower.domain.enterprise import (
     AuthIdentity,
     Company,
@@ -387,6 +388,37 @@ class FakeCorporateGisRepository:
 
     def get_binding(self, company_id: str, project_id: str) -> ProjectGisBinding | None:
         return self.bindings.get(f"{company_id}:{project_id}")
+
+
+class FakeCorporateGisIntelligenceRepository:
+    def __init__(self) -> None:
+        self.sources: dict[str, CorporateGisSource] = {}
+        self.layers: dict[str, CorporateLayer] = {}
+
+    def save_source(self, source: CorporateGisSource) -> CorporateGisSource:
+        self.sources[source.source_id] = source
+        return source
+
+    def get_source(self, source_id: str) -> CorporateGisSource | None:
+        return self.sources.get(source_id)
+
+    def list_sources(self, company_id: str, project_id: str | None = None) -> list[CorporateGisSource]:
+        return [
+            source
+            for source in self.sources.values()
+            if source.company_id == company_id and (project_id is None or source.project_id == project_id)
+        ]
+
+    def save_layer(self, layer: CorporateLayer) -> CorporateLayer:
+        self.layers[layer.layer_id] = layer
+        return layer
+
+    def list_layers(self, company_id: str, project_id: str | None = None) -> list[CorporateLayer]:
+        return [
+            layer
+            for layer in self.layers.values()
+            if layer.company_id == company_id and (project_id is None or layer.project_id == project_id)
+        ]
 
 
 class FakeAuditEventRepository:

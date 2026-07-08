@@ -17,6 +17,15 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from control_tower.domain.audit import AuditEvent
+from control_tower.domain.corporate_gis_intelligence import (
+    CorporateGisSource,
+    CorporateGisSourceStatus,
+    CorporateLayer,
+    CorporateLayerStatus,
+    CorporateLayerType,
+    GisDiscipline,
+    GisServiceKind,
+)
 from control_tower.domain.enterprise import (
     AuthIdentity,
     AuthProvider,
@@ -814,6 +823,148 @@ class ProjectGisBindingRecord(Base):
             postgis_schema_id=self.postgis_schema_id,
             geoserver_workspace_id=self.geoserver_workspace_id,
             status=GisResourceStatus(self.status),
+        )
+
+
+class CorporateGisSourceRecord(Base):
+    """Persistent Corporate GIS Intelligence source reference."""
+
+    __tablename__ = "corporate_gis_sources"
+
+    source_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    program_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    websig_instance_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    service_kind: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    service_url: Mapped[str] = mapped_column(String(1000), nullable=False)
+    discipline: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    layer_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    updated_on: Mapped[date] = mapped_column(Date, nullable=False)
+    metadata_document: Mapped[str] = mapped_column(Text, nullable=False)
+
+    @classmethod
+    def from_domain(cls, source: CorporateGisSource) -> "CorporateGisSourceRecord":
+        return cls(
+            source_id=source.source_id,
+            company_id=source.company_id,
+            project_id=source.project_id,
+            program_id=source.program_id,
+            websig_instance_id=source.websig_instance_id,
+            service_kind=source.service_kind.value,
+            service_url=source.service_url,
+            discipline=source.discipline.value,
+            layer_type=source.layer_type.value,
+            status=source.status.value,
+            updated_on=source.updated_on,
+            metadata_document=json.dumps(source.metadata),
+        )
+
+    def update_from_domain(self, source: CorporateGisSource) -> None:
+        self.company_id = source.company_id
+        self.project_id = source.project_id
+        self.program_id = source.program_id
+        self.websig_instance_id = source.websig_instance_id
+        self.service_kind = source.service_kind.value
+        self.service_url = source.service_url
+        self.discipline = source.discipline.value
+        self.layer_type = source.layer_type.value
+        self.status = source.status.value
+        self.updated_on = source.updated_on
+        self.metadata_document = json.dumps(source.metadata)
+
+    def to_domain(self) -> CorporateGisSource:
+        return CorporateGisSource(
+            source_id=self.source_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            program_id=self.program_id,
+            websig_instance_id=self.websig_instance_id,
+            service_kind=GisServiceKind(self.service_kind),
+            service_url=self.service_url,
+            discipline=GisDiscipline(self.discipline),
+            layer_type=CorporateLayerType(self.layer_type),
+            status=CorporateGisSourceStatus(self.status),
+            updated_on=self.updated_on,
+            metadata=json.loads(self.metadata_document),
+        )
+
+
+class CorporateLayerRecord(Base):
+    """Persistent Corporate GIS Intelligence layer reference."""
+
+    __tablename__ = "corporate_gis_layers"
+
+    layer_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    source_id: Mapped[str] = mapped_column(String(80), ForeignKey("corporate_gis_sources.source_id"), nullable=False, index=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    program_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    layer_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    discipline: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    spatial_indicator: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    indicator_value: Mapped[str] = mapped_column(String(80), nullable=False)
+    updated_on: Mapped[date] = mapped_column(Date, nullable=False)
+    region: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    risk_level: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    metadata_document: Mapped[str] = mapped_column(Text, nullable=False)
+
+    @classmethod
+    def from_domain(cls, layer: CorporateLayer) -> "CorporateLayerRecord":
+        return cls(
+            layer_id=layer.layer_id,
+            source_id=layer.source_id,
+            company_id=layer.company_id,
+            project_id=layer.project_id,
+            program_id=layer.program_id,
+            name=layer.name,
+            layer_type=layer.layer_type.value,
+            discipline=layer.discipline.value,
+            status=layer.status.value,
+            spatial_indicator=layer.spatial_indicator,
+            indicator_value=str(layer.indicator_value),
+            updated_on=layer.updated_on,
+            region=layer.region,
+            risk_level=layer.risk_level,
+            metadata_document=json.dumps(layer.metadata),
+        )
+
+    def update_from_domain(self, layer: CorporateLayer) -> None:
+        self.source_id = layer.source_id
+        self.company_id = layer.company_id
+        self.project_id = layer.project_id
+        self.program_id = layer.program_id
+        self.name = layer.name
+        self.layer_type = layer.layer_type.value
+        self.discipline = layer.discipline.value
+        self.status = layer.status.value
+        self.spatial_indicator = layer.spatial_indicator
+        self.indicator_value = str(layer.indicator_value)
+        self.updated_on = layer.updated_on
+        self.region = layer.region
+        self.risk_level = layer.risk_level
+        self.metadata_document = json.dumps(layer.metadata)
+
+    def to_domain(self) -> CorporateLayer:
+        return CorporateLayer(
+            layer_id=self.layer_id,
+            source_id=self.source_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            program_id=self.program_id,
+            name=self.name,
+            layer_type=CorporateLayerType(self.layer_type),
+            discipline=GisDiscipline(self.discipline),
+            status=CorporateLayerStatus(self.status),
+            spatial_indicator=self.spatial_indicator,
+            indicator_value=float(self.indicator_value),
+            updated_on=self.updated_on,
+            region=self.region,
+            risk_level=self.risk_level,
+            metadata=json.loads(self.metadata_document),
         )
 
 
@@ -1994,3 +2145,67 @@ class SqlAlchemyCorporateGisRepository:
                 .where(ProjectGisBindingRecord.project_id == project_id)
             ).first()
             return record.to_domain() if record is not None else None
+
+
+class SqlAlchemyCorporateGisIntelligenceRepository:
+    """SQLAlchemy implementation of the Corporate GIS Intelligence repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save_source(self, source: CorporateGisSource) -> CorporateGisSource:
+        """Persist a published WEB SIG GIS source reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateGisSourceRecord, source.source_id)
+            if record is None:
+                record = CorporateGisSourceRecord.from_domain(source)
+                db.add(record)
+            else:
+                record.update_from_domain(source)
+            db.flush()
+            return record.to_domain()
+
+    def get_source(self, source_id: str) -> CorporateGisSource | None:
+        """Return one Corporate GIS Intelligence source."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateGisSourceRecord, source_id)
+            return record.to_domain() if record is not None else None
+
+    def list_sources(self, company_id: str, project_id: str | None = None) -> list[CorporateGisSource]:
+        """Return sources by company and optional project."""
+
+        with self._sessions.session() as db:
+            statement = select(CorporateGisSourceRecord).where(
+                CorporateGisSourceRecord.company_id == company_id
+            )
+            if project_id is not None:
+                statement = statement.where(CorporateGisSourceRecord.project_id == project_id)
+            records = db.scalars(statement.order_by(CorporateGisSourceRecord.source_id))
+            return [record.to_domain() for record in records]
+
+    def save_layer(self, layer: CorporateLayer) -> CorporateLayer:
+        """Persist a corporate layer reference."""
+
+        with self._sessions.session() as db:
+            record = db.get(CorporateLayerRecord, layer.layer_id)
+            if record is None:
+                record = CorporateLayerRecord.from_domain(layer)
+                db.add(record)
+            else:
+                record.update_from_domain(layer)
+            db.flush()
+            return record.to_domain()
+
+    def list_layers(self, company_id: str, project_id: str | None = None) -> list[CorporateLayer]:
+        """Return layers by company and optional project."""
+
+        with self._sessions.session() as db:
+            statement = select(CorporateLayerRecord).where(
+                CorporateLayerRecord.company_id == company_id
+            )
+            if project_id is not None:
+                statement = statement.where(CorporateLayerRecord.project_id == project_id)
+            records = db.scalars(statement.order_by(CorporateLayerRecord.layer_id))
+            return [record.to_domain() for record in records]

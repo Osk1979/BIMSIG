@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from control_tower import __version__
+from control_tower.application.corporate_gis_intelligence_service import CorporateGisIntelligenceService
 from control_tower.application.dashboard_service import DashboardService
 from control_tower.application.enterprise_service import (
     CompanyService,
@@ -34,6 +35,13 @@ from control_tower.application.provisioning_service import (
     ProvisioningService,
 )
 from control_tower.domain.audit import AuditEvent
+from control_tower.domain.corporate_gis_intelligence import (
+    CorporateGisIntelligenceMap,
+    CorporateGisSource,
+    CorporateGisSummary,
+    CorporateLayer,
+    ProjectSpatialIndicator,
+)
 from control_tower.domain.dashboard import CorporateDashboard
 from control_tower.domain.enterprise import (
     AuthIdentity,
@@ -79,6 +87,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyAuthIdentityRepository,
     SqlAlchemyCompanyLicenseRepository,
     SqlAlchemyCompanyMembershipRepository,
+    SqlAlchemyCorporateGisIntelligenceRepository,
     SqlAlchemyCorporateGisRepository,
     SqlAlchemyCorporateCustomerRepository,
     SqlAlchemyCorporateProgramRepository,
@@ -196,6 +205,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     company_license_repository = SqlAlchemyCompanyLicenseRepository(sessions)
     information_repository = SqlAlchemyInformationAssetRepository(sessions)
     gis_repository = SqlAlchemyCorporateGisRepository(sessions)
+    gis_intelligence_repository = SqlAlchemyCorporateGisIntelligenceRepository(sessions)
     customer_repository = SqlAlchemyCorporateCustomerRepository(sessions)
     program_repository = SqlAlchemyCorporateProgramRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
@@ -246,6 +256,14 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         project_stack_adapters,
         audit_repository,
     )
+    nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
+    gis = CorporateGisService(gis_repository, companies, portfolio, audit_repository)
+    gis_intelligence = CorporateGisIntelligenceService(
+        gis_intelligence_repository,
+        companies,
+        portfolio,
+        audit_repository,
+    )
     dashboard = DashboardService(
         companies,
         users,
@@ -254,9 +272,8 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         provisioning,
         corporate_portfolio,
         operational_flow,
+        gis_intelligence,
     )
-    nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
-    gis = CorporateGisService(gis_repository, companies, portfolio, audit_repository)
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -339,6 +356,142 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         try:
             return operational_flow.company_flow(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/sources",
+        response_model=list[CorporateGisSource],
+    )
+    def list_corporate_gis_sources(company_id: str) -> list[CorporateGisSource]:
+        """List WEB SIG GIS sources consolidated by Corporate GIS Intelligence."""
+
+        try:
+            return gis_intelligence.list_sources(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis-intelligence/sources",
+        response_model=CorporateGisSource,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_corporate_gis_source(
+        company_id: str,
+        source: CorporateGisSource,
+    ) -> CorporateGisSource:
+        """Register one published project WEB SIG GIS source."""
+
+        if source.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GIS source company_id must match path company_id",
+            )
+        try:
+            return gis_intelligence.register_source(source)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/sources",
+        response_model=list[CorporateGisSource],
+    )
+    def list_project_corporate_gis_sources(
+        company_id: str,
+        project_id: str,
+    ) -> list[CorporateGisSource]:
+        """List WEB SIG GIS sources for one project."""
+
+        try:
+            return gis_intelligence.list_sources(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/layers",
+        response_model=list[CorporateLayer],
+    )
+    def list_corporate_layers(company_id: str) -> list[CorporateLayer]:
+        """List corporate GIS intelligence layers for one company."""
+
+        try:
+            return gis_intelligence.list_layers(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis-intelligence/layers",
+        response_model=CorporateLayer,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_corporate_layer(company_id: str, layer: CorporateLayer) -> CorporateLayer:
+        """Register one corporate GIS intelligence layer."""
+
+        if layer.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Corporate layer company_id must match path company_id",
+            )
+        try:
+            return gis_intelligence.register_layer(layer)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/layers/status",
+        response_model=list[CorporateLayer],
+    )
+    def project_corporate_layer_status(company_id: str, project_id: str) -> list[CorporateLayer]:
+        """Return corporate layer status for one project."""
+
+        try:
+            return gis_intelligence.layer_status(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/maps/corporate",
+        response_model=CorporateGisIntelligenceMap,
+    )
+    def corporate_gis_intelligence_map(company_id: str) -> CorporateGisIntelligenceMap:
+        """Return corporate spatial map references for one company."""
+
+        try:
+            return gis_intelligence.corporate_map(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/projects/filter",
+        response_model=list[ProjectSpatialIndicator],
+    )
+    def filter_projects_by_spatial_indicator(
+        company_id: str,
+        indicator: str,
+        minimum_value: float = 0,
+        risk_level: str | None = None,
+    ) -> list[ProjectSpatialIndicator]:
+        """Filter projects by corporate spatial indicator."""
+
+        try:
+            return gis_intelligence.filter_projects_by_indicator(
+                company_id,
+                indicator,
+                minimum_value,
+                risk_level,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/summary",
+        response_model=CorporateGisSummary,
+    )
+    def corporate_gis_intelligence_summary(company_id: str) -> CorporateGisSummary:
+        """Return portfolio-level spatial intelligence summary."""
+
+        try:
+            return gis_intelligence.summary(company_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

@@ -18,6 +18,7 @@ from control_tower.domain.dashboard import (
 )
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 
+from .corporate_gis_intelligence_service import CorporateGisIntelligenceService
 from .enterprise_service import CompanyService, LicensingService, UserService
 from .operational_flow_service import OperationalFlowService
 from .portfolio_service import CorporatePortfolioDomainService, PortfolioService
@@ -36,6 +37,7 @@ class DashboardService:
         provisioning: ProvisioningService,
         corporate_portfolio: CorporatePortfolioDomainService | None = None,
         operational_flow: OperationalFlowService | None = None,
+        gis_intelligence: CorporateGisIntelligenceService | None = None,
     ) -> None:
         self._companies = companies
         self._users = users
@@ -44,6 +46,7 @@ class DashboardService:
         self._provisioning = provisioning
         self._corporate_portfolio = corporate_portfolio
         self._operational_flow = operational_flow
+        self._gis_intelligence = gis_intelligence
 
     def executive_dashboard(self, company_id: str) -> CorporateDashboard:
         """Return the executive dashboard for one company."""
@@ -112,12 +115,18 @@ class DashboardService:
             comparisons=self._comparisons(projects),
             portfolio_governance=self._portfolio_governance(company_id, projects),
             operational_flow=self._operational_flow_items(company_id),
+            gis_intelligence=self._gis_intelligence_summary(company_id),
         )
 
     def _operational_flow_items(self, company_id: str):
         if self._operational_flow is None:
             return []
         return self._operational_flow.company_flow(company_id).items
+
+    def _gis_intelligence_summary(self, company_id: str):
+        if self._gis_intelligence is None:
+            return None
+        return self._gis_intelligence.summary(company_id)
 
     @staticmethod
     def _metric(

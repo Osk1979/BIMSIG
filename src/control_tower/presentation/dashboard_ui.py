@@ -333,6 +333,10 @@ def render_dashboard_html() -> str:
             <div class="flow-grid" id="operationalFlow"></div>
           </section>
           <section class="section">
+            <h2>GIS Intelligence Corporativo</h2>
+            <div class="metric-grid" id="gisIntelligence"></div>
+          </section>
+          <section class="section">
             <h2>Comparativos entre proyectos</h2>
             <table>
               <thead>
@@ -386,6 +390,7 @@ def render_dashboard_html() -> str:
       renderMap();
       renderPortfolioGovernance();
       renderOperationalFlow();
+      renderGisIntelligence();
       renderPanels();
       renderComparisons();
     }
@@ -496,6 +501,29 @@ def render_dashboard_html() -> str:
           </article>
         `;
       }).join("");
+    }
+
+    function renderGisIntelligence() {
+      const target = document.querySelector("#gisIntelligence");
+      const summary = data.gis_intelligence;
+      if (!summary) {
+        target.innerHTML = `<div class="muted">Sin inteligencia GIS corporativa.</div>`;
+        return;
+      }
+      const cards = [
+        ["Proyectos GIS", summary.total_projects_georeferenced],
+        ["Capas activas", summary.projects_with_active_layers],
+        ["Riesgos espaciales", summary.projects_with_spatial_risks],
+        ["Alertas ambientales", summary.projects_with_environmental_alerts],
+        ["Restricciones", summary.projects_with_active_restrictions],
+        ["Avance espacial", `${summary.aggregated_spatial_progress}%`]
+      ];
+      target.innerHTML = cards.map(([label, value]) => `
+        <article class="metric">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+        </article>
+      `).join("");
     }
 
     function labelPhase(phase) {

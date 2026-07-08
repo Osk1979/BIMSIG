@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from control_tower.domain.audit import AuditEvent
+from control_tower.domain.corporate_gis_intelligence import CorporateGisSource, CorporateLayer
 from control_tower.domain.enterprise import (
     AuthIdentity,
     Company,
@@ -308,3 +309,22 @@ class CorporateGisRepository(Protocol):
 
     def get_binding(self, company_id: str, project_id: str) -> ProjectGisBinding | None:
         """Return the GIS binding for one project."""
+
+
+class CorporateGisIntelligenceRepository(Protocol):
+    """Persistence port for Corporate GIS Intelligence references."""
+
+    def save_source(self, source: CorporateGisSource) -> CorporateGisSource:
+        """Persist a published WEB SIG GIS source reference."""
+
+    def get_source(self, source_id: str) -> CorporateGisSource | None:
+        """Return one GIS source reference."""
+
+    def list_sources(self, company_id: str, project_id: str | None = None) -> list[CorporateGisSource]:
+        """Return GIS sources by company and optional project."""
+
+    def save_layer(self, layer: CorporateLayer) -> CorporateLayer:
+        """Persist a corporate GIS intelligence layer."""
+
+    def list_layers(self, company_id: str, project_id: str | None = None) -> list[CorporateLayer]:
+        """Return corporate layers by company and optional project."""

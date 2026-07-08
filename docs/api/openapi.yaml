@@ -565,6 +565,16 @@
             "title": "Environmental",
             "type": "array"
           },
+          "gis_intelligence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CorporateGisSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "kpis": {
             "items": {
               "$ref": "#/components/schemas/DashboardMetric"
@@ -669,6 +679,374 @@
         ],
         "title": "CorporateDashboard",
         "type": "object"
+      },
+      "CorporateGisIntelligenceMap": {
+        "description": "Corporate spatial map assembled from project WEB SIG publications.",
+        "properties": {
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "layers": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateLayer"
+            },
+            "title": "Layers",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateGisSource"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CorporateGisSummary"
+          }
+        },
+        "required": [
+          "company_id",
+          "summary"
+        ],
+        "title": "CorporateGisIntelligenceMap",
+        "type": "object"
+      },
+      "CorporateGisSource": {
+        "description": "Published GIS source consumed by Corporate GIS Intelligence.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "discipline": {
+            "$ref": "#/components/schemas/GisDiscipline"
+          },
+          "layer_type": {
+            "$ref": "#/components/schemas/CorporateLayerType"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program Id"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "service_kind": {
+            "$ref": "#/components/schemas/GisServiceKind"
+          },
+          "service_url": {
+            "examples": [
+              "https://websig.example.com/wms"
+            ],
+            "minLength": 6,
+            "title": "Service Url",
+            "type": "string"
+          },
+          "source_id": {
+            "examples": [
+              "CGIS-SRC-001"
+            ],
+            "minLength": 3,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CorporateGisSourceStatus",
+            "default": "registered"
+          },
+          "updated_on": {
+            "format": "date",
+            "title": "Updated On",
+            "type": "string"
+          },
+          "websig_instance_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Websig Instance Id"
+          }
+        },
+        "required": [
+          "source_id",
+          "company_id",
+          "project_id",
+          "service_kind",
+          "service_url",
+          "discipline",
+          "layer_type",
+          "updated_on"
+        ],
+        "title": "CorporateGisSource",
+        "type": "object"
+      },
+      "CorporateGisSourceStatus": {
+        "description": "Lifecycle status for a published project GIS source.",
+        "enum": [
+          "registered",
+          "active",
+          "degraded",
+          "unavailable",
+          "archived"
+        ],
+        "title": "CorporateGisSourceStatus",
+        "type": "string"
+      },
+      "CorporateGisSummary": {
+        "description": "Portfolio-level spatial intelligence summary.",
+        "properties": {
+          "aggregated_spatial_progress": {
+            "minimum": 0.0,
+            "title": "Aggregated Spatial Progress",
+            "type": "number"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "layers_by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Layers By Status",
+            "type": "object"
+          },
+          "layers_by_type": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Layers By Type",
+            "type": "object"
+          },
+          "projects_with_active_layers": {
+            "minimum": 0.0,
+            "title": "Projects With Active Layers",
+            "type": "integer"
+          },
+          "projects_with_active_restrictions": {
+            "minimum": 0.0,
+            "title": "Projects With Active Restrictions",
+            "type": "integer"
+          },
+          "projects_with_environmental_alerts": {
+            "minimum": 0.0,
+            "title": "Projects With Environmental Alerts",
+            "type": "integer"
+          },
+          "projects_with_spatial_risks": {
+            "minimum": 0.0,
+            "title": "Projects With Spatial Risks",
+            "type": "integer"
+          },
+          "regions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Regions",
+            "type": "object"
+          },
+          "total_projects_georeferenced": {
+            "minimum": 0.0,
+            "title": "Total Projects Georeferenced",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "company_id",
+          "total_projects_georeferenced",
+          "projects_with_active_layers",
+          "projects_with_spatial_risks",
+          "projects_with_environmental_alerts",
+          "projects_with_active_restrictions",
+          "aggregated_spatial_progress"
+        ],
+        "title": "CorporateGisSummary",
+        "type": "object"
+      },
+      "CorporateLayer": {
+        "description": "Corporate layer read model backed by a published WEB SIG GIS source.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "discipline": {
+            "$ref": "#/components/schemas/GisDiscipline"
+          },
+          "indicator_value": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Indicator Value",
+            "type": "number"
+          },
+          "layer_id": {
+            "examples": [
+              "CGIS-LYR-001"
+            ],
+            "minLength": 3,
+            "title": "Layer Id",
+            "type": "string"
+          },
+          "layer_type": {
+            "$ref": "#/components/schemas/CorporateLayerType"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "name": {
+            "examples": [
+              "Avance fisico"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "program_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Program Id"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "risk_level": {
+            "default": "none",
+            "minLength": 3,
+            "title": "Risk Level",
+            "type": "string"
+          },
+          "source_id": {
+            "examples": [
+              "CGIS-SRC-001"
+            ],
+            "minLength": 3,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "spatial_indicator": {
+            "examples": [
+              "physical_progress"
+            ],
+            "minLength": 3,
+            "title": "Spatial Indicator",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CorporateLayerStatus",
+            "default": "available"
+          },
+          "updated_on": {
+            "format": "date",
+            "title": "Updated On",
+            "type": "string"
+          }
+        },
+        "required": [
+          "layer_id",
+          "source_id",
+          "company_id",
+          "project_id",
+          "name",
+          "layer_type",
+          "discipline",
+          "spatial_indicator",
+          "updated_on"
+        ],
+        "title": "CorporateLayer",
+        "type": "object"
+      },
+      "CorporateLayerStatus": {
+        "description": "Operational status for a corporate layer reference.",
+        "enum": [
+          "available",
+          "warning",
+          "critical",
+          "disabled"
+        ],
+        "title": "CorporateLayerStatus",
+        "type": "string"
+      },
+      "CorporateLayerType": {
+        "description": "Corporate layer categories consolidated by the Tower.",
+        "enum": [
+          "physical_progress",
+          "schedule",
+          "risks",
+          "quality",
+          "ssoma",
+          "environmental",
+          "production",
+          "land_parcels",
+          "restrictions",
+          "interferences",
+          "spatial_kpis"
+        ],
+        "title": "CorporateLayerType",
+        "type": "string"
       },
       "CorporateMapPoint": {
         "description": "Portfolio map point used by the corporate dashboard.",
@@ -1070,6 +1448,22 @@
         "title": "GeoServerWorkspace",
         "type": "object"
       },
+      "GisDiscipline": {
+        "description": "Corporate discipline used to classify GIS intelligence.",
+        "enum": [
+          "bim",
+          "gis",
+          "pmo",
+          "quality",
+          "ssoma",
+          "environmental",
+          "production",
+          "land",
+          "risk"
+        ],
+        "title": "GisDiscipline",
+        "type": "string"
+      },
       "GisResourceStatus": {
         "description": "Corporate GIS registry status.",
         "enum": [
@@ -1111,6 +1505,18 @@
         ],
         "title": "GisResourceValidation",
         "type": "object"
+      },
+      "GisServiceKind": {
+        "description": "GIS services published by project WEB SIG instances.",
+        "enum": [
+          "wms",
+          "wfs",
+          "wmts",
+          "vector_tiles",
+          "gis_api"
+        ],
+        "title": "GisServiceKind",
+        "type": "string"
       },
       "GovernanceStatusPayload": {
         "description": "API payload to change project governance status.",
@@ -2585,6 +2991,57 @@
         "title": "ProjectProvisioningSpec",
         "type": "object"
       },
+      "ProjectSpatialIndicator": {
+        "description": "Project-level spatial indicator used by executive filters.",
+        "properties": {
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "indicator": {
+            "minLength": 3,
+            "title": "Indicator",
+            "type": "string"
+          },
+          "layer_id": {
+            "minLength": 3,
+            "title": "Layer Id",
+            "type": "string"
+          },
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "minLength": 3,
+            "title": "Project Name",
+            "type": "string"
+          },
+          "risk_level": {
+            "minLength": 3,
+            "title": "Risk Level",
+            "type": "string"
+          },
+          "value": {
+            "minimum": 0.0,
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "company_id",
+          "project_id",
+          "project_name",
+          "indicator",
+          "value",
+          "risk_level",
+          "layer_id"
+        ],
+        "title": "ProjectSpatialIndicator",
+        "type": "object"
+      },
       "ProjectStatus": {
         "description": "Governance status for a portfolio project.",
         "enum": [
@@ -3441,6 +3898,349 @@
           }
         },
         "summary": "Executive Dashboard"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/layers": {
+      "get": {
+        "description": "List corporate GIS intelligence layers for one company.",
+        "operationId": "list_corporate_layers_api_v1_companies__company_id__gis_intelligence_layers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateLayer"
+                  },
+                  "title": "Response List Corporate Layers Api V1 Companies  Company Id  Gis Intelligence Layers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Corporate Layers"
+      },
+      "post": {
+        "description": "Register one corporate GIS intelligence layer.",
+        "operationId": "register_corporate_layer_api_v1_companies__company_id__gis_intelligence_layers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateLayer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateLayer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Corporate Layer"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/maps/corporate": {
+      "get": {
+        "description": "Return corporate spatial map references for one company.",
+        "operationId": "corporate_gis_intelligence_map_api_v1_companies__company_id__gis_intelligence_maps_corporate_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisIntelligenceMap"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Corporate Gis Intelligence Map"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/projects/filter": {
+      "get": {
+        "description": "Filter projects by corporate spatial indicator.",
+        "operationId": "filter_projects_by_spatial_indicator_api_v1_companies__company_id__gis_intelligence_projects_filter_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "indicator",
+            "required": true,
+            "schema": {
+              "title": "Indicator",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "minimum_value",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Minimum Value",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "risk_level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Risk Level"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectSpatialIndicator"
+                  },
+                  "title": "Response Filter Projects By Spatial Indicator Api V1 Companies  Company Id  Gis Intelligence Projects Filter Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Filter Projects By Spatial Indicator"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/sources": {
+      "get": {
+        "description": "List WEB SIG GIS sources consolidated by Corporate GIS Intelligence.",
+        "operationId": "list_corporate_gis_sources_api_v1_companies__company_id__gis_intelligence_sources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateGisSource"
+                  },
+                  "title": "Response List Corporate Gis Sources Api V1 Companies  Company Id  Gis Intelligence Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Corporate Gis Sources"
+      },
+      "post": {
+        "description": "Register one published project WEB SIG GIS source.",
+        "operationId": "register_corporate_gis_source_api_v1_companies__company_id__gis_intelligence_sources_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateGisSource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisSource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Corporate Gis Source"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/summary": {
+      "get": {
+        "description": "Return portfolio-level spatial intelligence summary.",
+        "operationId": "corporate_gis_intelligence_summary_api_v1_companies__company_id__gis_intelligence_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Corporate Gis Intelligence Summary"
       }
     },
     "/api/v1/companies/{company_id}/gis/geoserver/datastores": {
@@ -4678,6 +5478,112 @@
           }
         },
         "summary": "Get Company Project"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/layers/status": {
+      "get": {
+        "description": "Return corporate layer status for one project.",
+        "operationId": "project_corporate_layer_status_api_v1_companies__company_id__projects__project_id__gis_intelligence_layers_status_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateLayer"
+                  },
+                  "title": "Response Project Corporate Layer Status Api V1 Companies  Company Id  Projects  Project Id  Gis Intelligence Layers Status Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Corporate Layer Status"
+      }
+    },
+    "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/sources": {
+      "get": {
+        "description": "List WEB SIG GIS sources for one project.",
+        "operationId": "list_project_corporate_gis_sources_api_v1_companies__company_id__projects__project_id__gis_intelligence_sources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateGisSource"
+                  },
+                  "title": "Response List Project Corporate Gis Sources Api V1 Companies  Company Id  Projects  Project Id  Gis Intelligence Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Project Corporate Gis Sources"
       }
     },
     "/api/v1/companies/{company_id}/projects/{project_id}/gis/binding": {

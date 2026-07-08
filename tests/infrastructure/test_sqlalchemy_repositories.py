@@ -1,9 +1,19 @@
+from datetime import date
+
+from control_tower.domain.corporate_gis_intelligence import (
+    CorporateGisSource,
+    CorporateLayer,
+    CorporateLayerType,
+    GisDiscipline,
+    GisServiceKind,
+)
 from control_tower.domain.portfolio import CorporateCustomer, CorporateProgram, PortfolioProject
 from control_tower.domain.nas import InformationAsset, InformationAssetType, InformationCategory
 from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningResourceType, ProvisioningStep
 from control_tower.infrastructure.database import (
     SqlAlchemyCompanyRepository,
     SqlAlchemyCorporateCustomerRepository,
+    SqlAlchemyCorporateGisIntelligenceRepository,
     SqlAlchemyCorporateProgramRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyPortfolioProjectRepository,
@@ -140,3 +150,49 @@ def test_sqlalchemy_information_asset_repository_persists_registry(tmp_path) -> 
     assert asset.category == InformationCategory.BIM
     assert repository.list_assets_by_company("CRTG")[0].metadata["discipline"] == "bim"
     assert repository.get_asset("NAS-001").permissions["role:portfolio_manager"] == "admin"
+
+
+def test_sqlalchemy_corporate_gis_intelligence_repository_persists_sources_layers(tmp_path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'gis_intelligence.db'}"
+    engine = create_database_engine(database_url)
+    initialize_database(engine)
+    sessions = SqlAlchemySessionProvider(engine)
+    companies = SqlAlchemyCompanyRepository(sessions)
+    projects = SqlAlchemyPortfolioProjectRepository(sessions)
+    repository = SqlAlchemyCorporateGisIntelligenceRepository(sessions)
+    companies.save(Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"))
+    projects.save(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
+
+    repository.save_source(
+        CorporateGisSource(
+            source_id="CGIS-SRC-001",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            service_kind=GisServiceKind.WMS,
+            service_url="https://websig.example.com/wms",
+            discipline=GisDiscipline.PRODUCTION,
+            layer_type=CorporateLayerType.PHYSICAL_PROGRESS,
+            updated_on=date(2026, 7, 8),
+            metadata={"source": "websig"},
+        )
+    )
+    repository.save_layer(
+        CorporateLayer(
+            layer_id="CGIS-LYR-001",
+            source_id="CGIS-SRC-001",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            name="Avance fisico",
+            layer_type=CorporateLayerType.PHYSICAL_PROGRESS,
+            discipline=GisDiscipline.PRODUCTION,
+            spatial_indicator="physical_progress",
+            indicator_value=78,
+            updated_on=date(2026, 7, 8),
+            metadata={"unit": "percent"},
+        )
+    )
+
+    assert repository.get_source("CGIS-SRC-001").metadata["source"] == "websig"
+    assert repository.list_sources("CRTG")[0].service_kind == GisServiceKind.WMS
+    assert repository.list_layers("CRTG")[0].indicator_value == 78
+    assert repository.list_layers("CRTG", "PSZ-2026")[0].metadata["unit"] == "percent"

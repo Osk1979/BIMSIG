@@ -374,6 +374,75 @@ def test_company_operational_flow_contract(tmp_path) -> None:
     assert response.json()["items"][0]["gis_registered"] is True
 
 
+def test_corporate_gis_intelligence_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "name": "Proyecto Suiza",
+            "status": "active",
+            "lifecycle_stage": "execution",
+            "websig_instance_id": "WEB-CRTG-PSZ-2026",
+        },
+    )
+    source = client.post(
+        "/api/v1/companies/CRTG/gis-intelligence/sources",
+        json={
+            "source_id": "CGIS-SRC-001",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "websig_instance_id": "WEB-CRTG-PSZ-2026",
+            "service_kind": "wms",
+            "service_url": "https://websig.example.com/crtg/psz-2026/wms",
+            "discipline": "production",
+            "layer_type": "physical_progress",
+            "status": "active",
+            "updated_on": "2026-07-08",
+        },
+    )
+    layer = client.post(
+        "/api/v1/companies/CRTG/gis-intelligence/layers",
+        json={
+            "layer_id": "CGIS-LYR-001",
+            "source_id": "CGIS-SRC-001",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "name": "Avance fisico",
+            "layer_type": "physical_progress",
+            "discipline": "production",
+            "status": "available",
+            "spatial_indicator": "physical_progress",
+            "indicator_value": 78,
+            "updated_on": "2026-07-08",
+            "region": "Lima",
+        },
+    )
+    summary = client.get("/api/v1/companies/CRTG/gis-intelligence/summary")
+    corporate_map = client.get("/api/v1/companies/CRTG/gis-intelligence/maps/corporate")
+    filtered = client.get(
+        "/api/v1/companies/CRTG/gis-intelligence/projects/filter",
+        params={"indicator": "physical_progress", "minimum_value": 70},
+    )
+    dashboard = client.get("/api/v1/companies/CRTG/dashboard/executive")
+
+    assert source.status_code == 201
+    assert source.json()["service_kind"] == "wms"
+    assert layer.status_code == 201
+    assert layer.json()["layer_type"] == "physical_progress"
+    assert summary.status_code == 200
+    assert summary.json()["total_projects_georeferenced"] == 1
+    assert summary.json()["aggregated_spatial_progress"] == 78
+    assert corporate_map.json()["layers"][0]["layer_id"] == "CGIS-LYR-001"
+    assert filtered.json()[0]["project_id"] == "PSZ-2026"
+    assert dashboard.json()["gis_intelligence"]["projects_with_active_layers"] == 1
+
+
 def test_nas_information_center_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(
