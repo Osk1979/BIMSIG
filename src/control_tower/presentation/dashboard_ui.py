@@ -238,6 +238,115 @@ def render_dashboard_html() -> str:
       width: min(100%, 320px);
       min-height: 0;
     }
+    .peru-admin-map {
+      display: grid;
+      grid-template-columns: minmax(300px, .8fr) minmax(320px, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+      min-width: 0;
+    }
+    .peru-map-surface {
+      min-height: 430px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(90deg, rgba(65, 209, 154, .07) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(65, 209, 154, .07) 1px, transparent 1px),
+        radial-gradient(circle at 48% 52%, rgba(65, 209, 154, .13), transparent 28%),
+        var(--radar);
+      background-size: 44px 44px, 44px 44px, auto, auto;
+    }
+    .peru-outline {
+      position: absolute;
+      inset: 28px 34px 34px 34px;
+      width: calc(100% - 68px);
+      height: calc(100% - 62px);
+      opacity: .88;
+    }
+    .peru-outline path {
+      fill: rgba(65, 209, 154, .13);
+      stroke: rgba(65, 209, 154, .58);
+      stroke-width: 2;
+    }
+    .peru-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border: 0;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .peru-marker .pin {
+      display: block;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 18px var(--accent);
+    }
+    .peru-marker.selected .pin {
+      background: var(--warn);
+      border-color: #fff;
+      box-shadow: 0 0 22px var(--warn);
+    }
+    .peru-marker span {
+      display: inline-block;
+      margin-top: 5px;
+      background: rgba(3, 8, 10, .84);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .peru-admin-panel {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .admin-region-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .admin-chip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      color: var(--text);
+      padding: 10px;
+      text-align: left;
+      cursor: pointer;
+      margin: 0;
+    }
+    .admin-chip.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .admin-chip .label { color: var(--muted); font-size: 11px; }
+    .admin-chip .value { font-weight: 780; margin-top: 4px; }
+    .admin-detail {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      padding: 14px;
+    }
+    .admin-detail .name { font-size: 18px; font-weight: 780; margin-bottom: 10px; }
+    .admin-detail .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding: 9px 0;
+      color: var(--muted);
+    }
+    .admin-detail strong { color: var(--text); text-align: right; }
     .gis-map-surface::after {
       content: "MAPA GIS CORPORATIVO";
       position: absolute;
@@ -622,7 +731,7 @@ def render_dashboard_html() -> str:
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
-      .gis-workbench, .gis-toolbar, .gis-map-grid { grid-template-columns: 1fr; }
+      .gis-workbench, .gis-toolbar, .gis-map-grid, .peru-admin-map { grid-template-columns: 1fr; }
       #radarReadouts { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
       .kpi-chart-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
       .radar { min-height: 380px; width: min(100%, 520px); }
@@ -646,6 +755,7 @@ def render_dashboard_html() -> str:
       .service-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .notification { grid-template-columns: 1fr; }
       #radarReadouts, .kpi-chart-grid { grid-template-columns: 1fr; }
+      .admin-region-list { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -742,6 +852,21 @@ def render_dashboard_html() -> str:
                 <div class="kpi-chart-grid" id="gisKpiCharts"></div>
               </div>
             </div>
+            <section class="peru-admin-map" aria-label="Mapa Administrativo Peru">
+              <div>
+                <h3>Mapa Administrativo Peru</h3>
+                <div class="section-kicker">Region / provincia / distrito de proyectos gobernados.</div>
+                <div class="peru-map-surface" id="peruAdministrativeMap"></div>
+              </div>
+              <div class="peru-admin-panel">
+                <div>
+                  <h3>Ubicacion corporativa</h3>
+                  <div class="section-kicker">Selecciona region o proyecto para sincronizar con radar y mapa GIS.</div>
+                </div>
+                <div class="admin-region-list" id="peruRegionList"></div>
+                <div class="admin-detail" id="peruAdminDetail"></div>
+              </div>
+            </section>
           </section>
           <section class="section" id="portfolioExplorer">
             <h2>Explorador de Portafolio</h2>
@@ -824,6 +949,7 @@ def render_dashboard_html() -> str:
     let auditEvents = [];
     let activePortfolioFilter = "all";
     let activeGisFilter = "estado";
+    let activePeruRegion = "all";
     let selectedProjectId = null;
 
     async function loadDashboard() {
@@ -965,6 +1091,7 @@ def render_dashboard_html() -> str:
         readouts.innerHTML = "";
         renderGisMapSurface();
         renderGisProjectDetail();
+        renderPeruAdministrativeMap();
         return;
       }
       map.innerHTML = data.map_points.map((point, index) => {
@@ -995,6 +1122,7 @@ def render_dashboard_html() -> str:
       `).join("");
       renderGisMapSurface();
       renderGisProjectDetail();
+      renderPeruAdministrativeMap();
     }
 
     function renderGisMapSurface() {
@@ -1058,6 +1186,79 @@ def render_dashboard_html() -> str:
       `;
     }
 
+    function renderPeruAdministrativeMap() {
+      const surface = document.querySelector("#peruAdministrativeMap");
+      const regionList = document.querySelector("#peruRegionList");
+      const detail = document.querySelector("#peruAdminDetail");
+      const points = data.map_points || [];
+      if (!points.length) {
+        surface.innerHTML = `<div class="muted" style="padding:16px">Sin ubicaciones administrativas registradas.</div>`;
+        regionList.innerHTML = "";
+        detail.innerHTML = `<div class="muted">La ubicacion se completa desde el Wizard o desde capas corporativas publicadas.</div>`;
+        return;
+      }
+      const locations = points.map((point, index) => ({
+        point,
+        index,
+        projectId: projectKey(point, index),
+        admin: administrativeLocation(point, index),
+        position: peruMapPosition(point)
+      }));
+      const visible = activePeruRegion === "all"
+        ? locations
+        : locations.filter(item => item.admin.region === activePeruRegion);
+      surface.innerHTML = `
+        <svg class="peru-outline" viewBox="0 0 220 360" role="img" aria-label="Silueta referencial de Peru">
+          <path d="M112 8 L139 34 L129 65 L154 92 L145 128 L166 162 L154 204 L176 238 L145 278 L128 340 L96 352 L77 318 L62 286 L74 242 L48 206 L60 166 L42 126 L59 91 L78 58 L84 24 Z"></path>
+        </svg>
+        ${visible.map(item => `
+          <button
+            class="peru-marker ${item.projectId === selectedProjectId ? "selected" : ""}"
+            data-project-id="${item.projectId}"
+            style="left:${item.position.left}%; top:${item.position.top}%"
+            title="${item.point.name} / ${item.admin.region}"
+          >
+            <span class="pin"></span>
+            <span>${item.point.name}</span>
+          </button>
+        `).join("")}
+      `;
+      const regions = regionCounts(locations);
+      regionList.innerHTML = [
+        ["all", "Todo Peru", locations.length],
+        ...regions.map(item => [item.region, item.region, item.count])
+      ].map(([key, label, count]) => `
+        <button class="admin-chip ${activePeruRegion === key ? "active" : ""}" data-peru-region="${key}">
+          <div class="label">Region</div>
+          <div class="value">${label}</div>
+          <div class="label">${count} proyecto${count === 1 ? "" : "s"}</div>
+        </button>
+      `).join("");
+      document.querySelectorAll("[data-peru-region]").forEach(chip => {
+        chip.addEventListener("click", () => {
+          activePeruRegion = chip.dataset.peruRegion;
+          renderPeruAdministrativeMap();
+        });
+      });
+      document.querySelectorAll("#peruAdministrativeMap [data-project-id]").forEach(marker => {
+        marker.addEventListener("click", () => {
+          selectedProjectId = marker.dataset.projectId;
+          renderMap();
+        });
+      });
+      const selected = selectedProject();
+      const selectedIndex = Math.max(0, points.findIndex((point, index) => projectKey(point, index) === selectedProjectId));
+      const admin = administrativeLocation(selected, selectedIndex);
+      detail.innerHTML = `
+        <div class="name">${selected.name}</div>
+        <div class="row"><span>Pais</span><strong>Peru</strong></div>
+        <div class="row"><span>Region</span><strong>${admin.region}</strong></div>
+        <div class="row"><span>Provincia</span><strong>${admin.province}</strong></div>
+        <div class="row"><span>Distrito</span><strong>${admin.district}</strong></div>
+        <div class="row"><span>Fuente</span><strong>${admin.source}</strong></div>
+      `;
+    }
+
     function selectedProject() {
       const points = data.map_points || [];
       return points.find((point, index) => projectKey(point, index) === selectedProjectId) || points[0];
@@ -1073,6 +1274,63 @@ def render_dashboard_html() -> str:
         top: 24 + ((index * 37) % 52),
         angle: -18 + ((index * 23) % 42)
       };
+    }
+
+    function administrativeLocation(point, index) {
+      if (point.region || point.province || point.district) {
+        return {
+          region: point.region || "Region por registrar",
+          province: point.province || "Provincia por registrar",
+          district: point.district || "Distrito por registrar",
+          source: "dato corporativo"
+        };
+      }
+      const inferred = inferPeruAdminFromCoordinates(point.latitude, point.longitude, index);
+      return { ...inferred, source: "estimado desde coordenadas corporativas" };
+    }
+
+    function inferPeruAdminFromCoordinates(latitude, longitude, index) {
+      if (latitude <= -16 && longitude <= -70) {
+        return { region: "Arequipa", province: "Arequipa", district: "Distrito por registrar" };
+      }
+      if (latitude <= -13.5 && longitude <= -75) {
+        return { region: "Ica", province: "Ica", district: "Distrito por registrar" };
+      }
+      if (latitude <= -12.8 && longitude > -74.5) {
+        return { region: "Cusco", province: "Cusco", district: "Distrito por registrar" };
+      }
+      if (latitude >= -10.2 && longitude <= -76.5) {
+        return { region: "Ancash", province: "Huaraz", district: "Distrito por registrar" };
+      }
+      if (latitude >= -8 && longitude <= -78) {
+        return { region: "Cajamarca", province: "Cajamarca", district: "Distrito por registrar" };
+      }
+      return {
+        region: index % 2 === 0 ? "Lima" : "Lima Provincias",
+        province: index % 2 === 0 ? "Lima" : "Huaral",
+        district: "Distrito por registrar"
+      };
+    }
+
+    function peruMapPosition(point) {
+      const latitude = Number(point.latitude ?? -12.0464);
+      const longitude = Number(point.longitude ?? -77.0428);
+      const left = ((longitude + 82) / 13) * 100;
+      const top = ((latitude + 1) / -18) * 100;
+      return {
+        left: Math.max(18, Math.min(82, left)),
+        top: Math.max(8, Math.min(92, top))
+      };
+    }
+
+    function regionCounts(locations) {
+      const counts = new Map();
+      locations.forEach(item => {
+        counts.set(item.admin.region, (counts.get(item.admin.region) || 0) + 1);
+      });
+      return [...counts.entries()]
+        .map(([region, count]) => ({ region, count }))
+        .sort((left, right) => left.region.localeCompare(right.region));
     }
 
     function renderGisKpiBridge() {

@@ -142,3 +142,9 @@ map surface. Selecting a project signal in the radar highlights the same project
 geometry on the GIS surface, while KPI cards activate related Corporate Layers.
 The map surface remains read-only and prepared for WMS, WFS, WMTS, and Vector
 Tiles published by WEB SIG Enterprise.
+
+The Corporate GIS experience also includes a separate Peru administrative map
+for executive location review. It shows projects by region, province, and
+district using existing corporate map points and GIS intelligence references,
+and synchronizes project selection with the radar and GIS map without editing
+geometries.

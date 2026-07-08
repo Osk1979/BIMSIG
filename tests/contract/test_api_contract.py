@@ -346,6 +346,9 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "projectRadar" in html.text
     assert "gisMapSurface" in html.text
     assert "gisServiceSlots" in html.text
+    assert "Mapa Administrativo Peru" in html.text
+    assert "peruAdministrativeMap" in html.text
+    assert "peruRegionList" in html.text
     assert "data-kpi-filter-options=\"produccion,riesgo" in html.text
     assert "publicada por WEB SIG" in html.text
     assert "Mapa Nacional" in html.text
