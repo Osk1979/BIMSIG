@@ -302,8 +302,8 @@ def render_dashboard_html() -> str:
     .notification-list { display: grid; gap: 8px; }
     .notification {
       display: grid;
-      grid-template-columns: 118px 1fr auto;
-      gap: 10px;
+      grid-template-columns: minmax(150px, .38fr) minmax(0, 1fr) minmax(150px, auto);
+      gap: 14px;
       align-items: center;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -311,8 +311,20 @@ def render_dashboard_html() -> str:
       background: var(--panel-strong);
       font-size: 13px;
     }
-    .notification .kind { color: var(--accent); font-weight: 760; text-transform: uppercase; font-size: 11px; }
-    .notification .time { color: var(--muted); font-size: 11px; }
+    .notification .kind {
+      color: var(--accent);
+      font-weight: 760;
+      text-transform: uppercase;
+      font-size: 11px;
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+    }
+    .notification .message {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+    }
+    .notification .time { color: var(--muted); font-size: 11px; text-align: right; white-space: nowrap; }
     .question-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .question-card {
       min-height: 96px;
@@ -957,7 +969,7 @@ def render_dashboard_html() -> str:
       document.querySelector("#notifications").innerHTML = recentEvents().map(event => `
         <article class="notification">
           <div class="kind">${event.kind}</div>
-          <div>${event.message}</div>
+          <div class="message">${event.message}</div>
           <div class="time">${event.time}</div>
         </article>
       `).join("");
