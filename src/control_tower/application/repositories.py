@@ -12,11 +12,17 @@ from typing import Protocol
 
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.enterprise import (
+    AuthIdentity,
     Company,
     CompanyLicense,
     CompanyMembership,
     LicensePlan,
+    ProjectMembership,
+    RolePermission,
+    Specialty,
     User,
+    UserHistoryEvent,
+    UserSpecialty,
 )
 from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
@@ -125,6 +131,75 @@ class CompanyLicenseRepository(Protocol):
 
     def list_by_company(self, company_id: str) -> list[CompanyLicense]:
         """Return license assignments for a company."""
+
+
+class SpecialtyRepository(Protocol):
+    """Persistence port for corporate specialties."""
+
+    def save(self, specialty: Specialty) -> Specialty:
+        """Persist a specialty."""
+
+    def list(self) -> list[Specialty]:
+        """Return all specialties."""
+
+    def get(self, specialty_id: str) -> Specialty | None:
+        """Return one specialty when it exists."""
+
+
+class UserSpecialtyRepository(Protocol):
+    """Persistence port for user specialty assignments."""
+
+    def save(self, assignment: UserSpecialty) -> UserSpecialty:
+        """Persist a user specialty assignment."""
+
+    def list_by_user(self, user_id: str) -> list[UserSpecialty]:
+        """Return specialties assigned to one user."""
+
+
+class ProjectMembershipRepository(Protocol):
+    """Persistence port for project memberships."""
+
+    def save(self, membership: ProjectMembership) -> ProjectMembership:
+        """Persist a project membership."""
+
+    def list_by_project(self, company_id: str, project_id: str) -> list[ProjectMembership]:
+        """Return project memberships."""
+
+    def list_by_user(self, user_id: str) -> list[ProjectMembership]:
+        """Return project memberships for one user."""
+
+
+class RolePermissionRepository(Protocol):
+    """Persistence port for role permissions."""
+
+    def save(self, permission: RolePermission) -> RolePermission:
+        """Persist a role permission."""
+
+    def list_by_role(self, role: str) -> list[RolePermission]:
+        """Return permissions for one role."""
+
+
+class AuthIdentityRepository(Protocol):
+    """Persistence port for authentication and SSO identities."""
+
+    def save(self, identity: AuthIdentity) -> AuthIdentity:
+        """Persist an authentication identity."""
+
+    def list_by_user(self, user_id: str) -> list[AuthIdentity]:
+        """Return identities for one user."""
+
+    def get_by_provider_subject(self, provider: str, subject: str) -> AuthIdentity | None:
+        """Return one identity for provider and subject."""
+
+
+class UserHistoryRepository(Protocol):
+    """Persistence port for user security history."""
+
+    def save(self, event: UserHistoryEvent) -> UserHistoryEvent:
+        """Persist a user history event."""
+
+    def list_by_user(self, user_id: str) -> list[UserHistoryEvent]:
+        """Return history events for one user."""
 
 
 class InformationAssetRepository(Protocol):

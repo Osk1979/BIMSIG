@@ -18,6 +18,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sess
 
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.enterprise import (
+    AuthIdentity,
+    AuthProvider,
     Company,
     CompanyLicense,
     CompanyMembership,
@@ -25,8 +27,15 @@ from control_tower.domain.enterprise import (
     LicensePlan,
     LicenseStatus,
     MembershipStatus,
+    PermissionAction,
+    PermissionScope,
+    ProjectMembership,
+    RolePermission,
+    Specialty,
     User,
+    UserHistoryEvent,
     UserRole,
+    UserSpecialty,
     UserStatus,
 )
 from control_tower.domain.nas import (
@@ -173,6 +182,189 @@ class CompanyMembershipRecord(Base):
             user_id=self.user_id,
             role=UserRole(self.role),
             status=MembershipStatus(self.status),
+        )
+
+
+class SpecialtyRecord(Base):
+    """Persistent corporate specialty row."""
+
+    __tablename__ = "specialties"
+
+    specialty_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+
+    @classmethod
+    def from_domain(cls, specialty: Specialty) -> "SpecialtyRecord":
+        return cls(**specialty.model_dump())
+
+    def update_from_domain(self, specialty: Specialty) -> None:
+        self.name = specialty.name
+        self.description = specialty.description
+
+    def to_domain(self) -> Specialty:
+        return Specialty(
+            specialty_id=self.specialty_id,
+            name=self.name,
+            description=self.description,
+        )
+
+
+class UserSpecialtyRecord(Base):
+    """Persistent user specialty assignment row."""
+
+    __tablename__ = "user_specialties"
+
+    user_specialty_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(80), ForeignKey("users.user_id"), nullable=False, index=True)
+    specialty_id: Mapped[str] = mapped_column(String(80), ForeignKey("specialties.specialty_id"), nullable=False, index=True)
+
+    @classmethod
+    def from_domain(cls, assignment: UserSpecialty) -> "UserSpecialtyRecord":
+        return cls(**assignment.model_dump())
+
+    def to_domain(self) -> UserSpecialty:
+        return UserSpecialty(
+            user_specialty_id=self.user_specialty_id,
+            user_id=self.user_id,
+            specialty_id=self.specialty_id,
+        )
+
+
+class ProjectMembershipRecord(Base):
+    """Persistent project membership row."""
+
+    __tablename__ = "project_memberships"
+
+    project_membership_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(String(80), ForeignKey("portfolio_projects.project_id"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(80), ForeignKey("users.user_id"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, membership: ProjectMembership) -> "ProjectMembershipRecord":
+        return cls(
+            project_membership_id=membership.project_membership_id,
+            company_id=membership.company_id,
+            project_id=membership.project_id,
+            user_id=membership.user_id,
+            role=membership.role.value,
+            status=membership.status.value,
+        )
+
+    def update_from_domain(self, membership: ProjectMembership) -> None:
+        self.company_id = membership.company_id
+        self.project_id = membership.project_id
+        self.user_id = membership.user_id
+        self.role = membership.role.value
+        self.status = membership.status.value
+
+    def to_domain(self) -> ProjectMembership:
+        return ProjectMembership(
+            project_membership_id=self.project_membership_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            user_id=self.user_id,
+            role=UserRole(self.role),
+            status=MembershipStatus(self.status),
+        )
+
+
+class RolePermissionRecord(Base):
+    """Persistent role permission row."""
+
+    __tablename__ = "role_permissions"
+
+    role_permission_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    role: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    scope: Mapped[str] = mapped_column(String(80), nullable=False)
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, permission: RolePermission) -> "RolePermissionRecord":
+        return cls(
+            role_permission_id=permission.role_permission_id,
+            role=permission.role.value,
+            scope=permission.scope.value,
+            action=permission.action.value,
+        )
+
+    def to_domain(self) -> RolePermission:
+        return RolePermission(
+            role_permission_id=self.role_permission_id,
+            role=UserRole(self.role),
+            scope=PermissionScope(self.scope),
+            action=PermissionAction(self.action),
+        )
+
+
+class AuthIdentityRecord(Base):
+    """Persistent authentication identity row."""
+
+    __tablename__ = "auth_identities"
+
+    identity_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(80), ForeignKey("users.user_id"), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    @classmethod
+    def from_domain(cls, identity: AuthIdentity) -> "AuthIdentityRecord":
+        return cls(
+            identity_id=identity.identity_id,
+            user_id=identity.user_id,
+            provider=identity.provider.value,
+            subject=identity.subject,
+            email=identity.email,
+            status=identity.status.value,
+        )
+
+    def update_from_domain(self, identity: AuthIdentity) -> None:
+        self.user_id = identity.user_id
+        self.provider = identity.provider.value
+        self.subject = identity.subject
+        self.email = identity.email
+        self.status = identity.status.value
+
+    def to_domain(self) -> AuthIdentity:
+        return AuthIdentity(
+            identity_id=self.identity_id,
+            user_id=self.user_id,
+            provider=AuthProvider(self.provider),
+            subject=self.subject,
+            email=self.email,
+            status=UserStatus(self.status),
+        )
+
+
+class UserHistoryEventRecord(Base):
+    """Persistent user security history row."""
+
+    __tablename__ = "user_history_events"
+
+    history_id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(80), ForeignKey("users.user_id"), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    detail: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    company_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+
+    @classmethod
+    def from_domain(cls, event: UserHistoryEvent) -> "UserHistoryEventRecord":
+        return cls(**event.model_dump())
+
+    def to_domain(self) -> UserHistoryEvent:
+        return UserHistoryEvent(
+            history_id=self.history_id,
+            user_id=self.user_id,
+            action=self.action,
+            detail=self.detail,
+            company_id=self.company_id,
+            project_id=self.project_id,
         )
 
 
@@ -848,6 +1040,210 @@ class SqlAlchemyUserRepository:
         with self._sessions.session() as db:
             record = db.get(UserRecord, user_id)
             return record.to_domain() if record is not None else None
+
+
+class SqlAlchemySpecialtyRepository:
+    """SQLAlchemy implementation of the specialty repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, specialty: Specialty) -> Specialty:
+        """Persist a specialty."""
+
+        with self._sessions.session() as db:
+            record = db.get(SpecialtyRecord, specialty.specialty_id)
+            if record is None:
+                record = SpecialtyRecord.from_domain(specialty)
+                db.add(record)
+            else:
+                record.update_from_domain(specialty)
+            db.flush()
+            return record.to_domain()
+
+    def list(self) -> list[Specialty]:
+        """Return specialties."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(select(SpecialtyRecord).order_by(SpecialtyRecord.specialty_id))
+            return [record.to_domain() for record in records]
+
+    def get(self, specialty_id: str) -> Specialty | None:
+        """Return one specialty."""
+
+        with self._sessions.session() as db:
+            record = db.get(SpecialtyRecord, specialty_id)
+            return record.to_domain() if record is not None else None
+
+
+class SqlAlchemyUserSpecialtyRepository:
+    """SQLAlchemy implementation of the user specialty repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, assignment: UserSpecialty) -> UserSpecialty:
+        """Persist a user specialty assignment."""
+
+        with self._sessions.session() as db:
+            record = db.get(UserSpecialtyRecord, assignment.user_specialty_id)
+            if record is None:
+                record = UserSpecialtyRecord.from_domain(assignment)
+                db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_user(self, user_id: str) -> list[UserSpecialty]:
+        """Return user specialty assignments."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(UserSpecialtyRecord)
+                .where(UserSpecialtyRecord.user_id == user_id)
+                .order_by(UserSpecialtyRecord.user_specialty_id)
+            )
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyProjectMembershipRepository:
+    """SQLAlchemy implementation of the project membership repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, membership: ProjectMembership) -> ProjectMembership:
+        """Persist a project membership."""
+
+        with self._sessions.session() as db:
+            record = db.get(ProjectMembershipRecord, membership.project_membership_id)
+            if record is None:
+                record = ProjectMembershipRecord.from_domain(membership)
+                db.add(record)
+            else:
+                record.update_from_domain(membership)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_project(self, company_id: str, project_id: str) -> list[ProjectMembership]:
+        """Return memberships for one project."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(ProjectMembershipRecord)
+                .where(ProjectMembershipRecord.company_id == company_id)
+                .where(ProjectMembershipRecord.project_id == project_id)
+                .order_by(ProjectMembershipRecord.project_membership_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def list_by_user(self, user_id: str) -> list[ProjectMembership]:
+        """Return project memberships for one user."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(ProjectMembershipRecord)
+                .where(ProjectMembershipRecord.user_id == user_id)
+                .order_by(ProjectMembershipRecord.project_membership_id)
+            )
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyRolePermissionRepository:
+    """SQLAlchemy implementation of the role permission repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, permission: RolePermission) -> RolePermission:
+        """Persist a role permission."""
+
+        with self._sessions.session() as db:
+            record = db.get(RolePermissionRecord, permission.role_permission_id)
+            if record is None:
+                record = RolePermissionRecord.from_domain(permission)
+                db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_role(self, role: str) -> list[RolePermission]:
+        """Return permissions for one role."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(RolePermissionRecord)
+                .where(RolePermissionRecord.role == role)
+                .order_by(RolePermissionRecord.role_permission_id)
+            )
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyAuthIdentityRepository:
+    """SQLAlchemy implementation of the authentication identity repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, identity: AuthIdentity) -> AuthIdentity:
+        """Persist an authentication identity."""
+
+        with self._sessions.session() as db:
+            record = db.get(AuthIdentityRecord, identity.identity_id)
+            if record is None:
+                record = AuthIdentityRecord.from_domain(identity)
+                db.add(record)
+            else:
+                record.update_from_domain(identity)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_user(self, user_id: str) -> list[AuthIdentity]:
+        """Return identities for one user."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(AuthIdentityRecord)
+                .where(AuthIdentityRecord.user_id == user_id)
+                .order_by(AuthIdentityRecord.identity_id)
+            )
+            return [record.to_domain() for record in records]
+
+    def get_by_provider_subject(self, provider: str, subject: str) -> AuthIdentity | None:
+        """Return identity for provider and subject."""
+
+        with self._sessions.session() as db:
+            record = db.scalars(
+                select(AuthIdentityRecord)
+                .where(AuthIdentityRecord.provider == provider)
+                .where(AuthIdentityRecord.subject == subject)
+            ).first()
+            return record.to_domain() if record is not None else None
+
+
+class SqlAlchemyUserHistoryRepository:
+    """SQLAlchemy implementation of the user history repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, event: UserHistoryEvent) -> UserHistoryEvent:
+        """Persist a user history event."""
+
+        with self._sessions.session() as db:
+            record = UserHistoryEventRecord.from_domain(event)
+            db.add(record)
+            db.flush()
+            return record.to_domain()
+
+    def list_by_user(self, user_id: str) -> list[UserHistoryEvent]:
+        """Return history for one user."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(UserHistoryEventRecord)
+                .where(UserHistoryEventRecord.user_id == user_id)
+                .order_by(UserHistoryEventRecord.history_id)
+            )
+            return [record.to_domain() for record in records]
 
 
 class SqlAlchemyCompanyMembershipRepository:

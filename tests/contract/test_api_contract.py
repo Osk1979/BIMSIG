@@ -373,3 +373,86 @@ def test_project_registration_persists_across_app_instances(tmp_path) -> None:
             "status": "registered",
         }
     ]
+
+
+def test_corporate_user_security_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/users",
+        json={"user_id": "USR-001", "email": "admin@example.com", "display_name": "Admin"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+    )
+
+    specialty = client.post(
+        "/api/v1/specialties",
+        json={"specialty_id": "SPEC-BIM", "name": "BIM Management"},
+    )
+    user_specialty = client.post(
+        "/api/v1/users/USR-001/specialties",
+        json={
+            "user_specialty_id": "USPEC-001",
+            "user_id": "USR-001",
+            "specialty_id": "SPEC-BIM",
+        },
+    )
+    project_membership = client.post(
+        "/api/v1/companies/CRTG/projects/PSZ-2026/memberships",
+        json={
+            "project_membership_id": "PMEM-001",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "user_id": "USR-001",
+            "role": "project_operator",
+        },
+    )
+    role_permission = client.post(
+        "/api/v1/roles/project_operator/permissions",
+        json={
+            "role_permission_id": "PERM-001",
+            "role": "project_operator",
+            "scope": "nas",
+            "action": "write",
+        },
+    )
+    identity = client.post(
+        "/api/v1/users/USR-001/auth-identities",
+        json={
+            "identity_id": "IDP-001",
+            "user_id": "USR-001",
+            "provider": "oidc",
+            "subject": "aad|001",
+            "email": "admin@example.com",
+        },
+    )
+    resolved = client.post(
+        "/api/v1/auth/sso/resolve",
+        json={"provider": "oidc", "subject": "aad|001"},
+    )
+    history = client.get("/api/v1/users/USR-001/history")
+
+    assert specialty.status_code == 201
+    assert user_specialty.status_code == 201
+    assert project_membership.status_code == 201
+    assert role_permission.status_code == 201
+    assert identity.status_code == 201
+    assert resolved.status_code == 200
+    assert resolved.json()["user_id"] == "USR-001"
+    assert client.get("/api/v1/specialties").json()[0]["specialty_id"] == "SPEC-BIM"
+    assert client.get("/api/v1/users/USR-001/specialties").json()[0]["specialty_id"] == "SPEC-BIM"
+    assert client.get("/api/v1/roles/project_operator/permissions").json()[0]["scope"] == "nas"
+    assert history.status_code == 200
+    assert {
+        event["action"] for event in history.json()
+    } >= {
+        "user_specialty.assigned",
+        "project_membership.assigned",
+        "auth_identity.linked",
+        "auth_identity.authenticated",
+    }

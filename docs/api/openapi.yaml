@@ -155,6 +155,69 @@
         "title": "AuditEvent",
         "type": "object"
       },
+      "AuthIdentity": {
+        "description": "Authentication or SSO identity linked to a platform user.",
+        "properties": {
+          "email": {
+            "examples": [
+              "admin@example.com"
+            ],
+            "minLength": 5,
+            "title": "Email",
+            "type": "string"
+          },
+          "identity_id": {
+            "examples": [
+              "IDP-001"
+            ],
+            "minLength": 3,
+            "title": "Identity Id",
+            "type": "string"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/AuthProvider"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus",
+            "default": "active"
+          },
+          "subject": {
+            "examples": [
+              "aad|00000000"
+            ],
+            "minLength": 3,
+            "title": "Subject",
+            "type": "string"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identity_id",
+          "user_id",
+          "provider",
+          "subject",
+          "email"
+        ],
+        "title": "AuthIdentity",
+        "type": "object"
+      },
+      "AuthProvider": {
+        "description": "Authentication provider type.",
+        "enum": [
+          "local",
+          "oidc",
+          "saml"
+        ],
+        "title": "AuthProvider",
+        "type": "string"
+      },
       "BackupPayload": {
         "description": "API payload to register an information backup.",
         "properties": {
@@ -1088,6 +1151,31 @@
         "title": "MembershipStatus",
         "type": "string"
       },
+      "PermissionAction": {
+        "description": "Enterprise security permission action.",
+        "enum": [
+          "read",
+          "write",
+          "approve",
+          "execute",
+          "admin"
+        ],
+        "title": "PermissionAction",
+        "type": "string"
+      },
+      "PermissionScope": {
+        "description": "Enterprise security permission scope.",
+        "enum": [
+          "platform",
+          "company",
+          "project",
+          "nas",
+          "dashboard",
+          "provisioning"
+        ],
+        "title": "PermissionScope",
+        "type": "string"
+      },
       "PortfolioProject": {
         "description": "Project registered at Corporate Control Tower portfolio level.",
         "properties": {
@@ -1195,6 +1283,59 @@
           "risk_score"
         ],
         "title": "ProjectComparison",
+        "type": "object"
+      },
+      "ProjectMembership": {
+        "description": "User role assignment inside one project.",
+        "properties": {
+          "company_id": {
+            "examples": [
+              "CRTG"
+            ],
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "project_id": {
+            "examples": [
+              "PSZ-2026"
+            ],
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_membership_id": {
+            "examples": [
+              "PMEM-001"
+            ],
+            "minLength": 3,
+            "title": "Project Membership Id",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MembershipStatus",
+            "default": "active"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_membership_id",
+          "company_id",
+          "project_id",
+          "user_id",
+          "role"
+        ],
+        "title": "ProjectMembership",
         "type": "object"
       },
       "ProjectProvisioningSpec": {
@@ -1431,6 +1572,36 @@
         "title": "ProvisioningStepStatus",
         "type": "string"
       },
+      "RolePermission": {
+        "description": "Permission granted to an enterprise role.",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/PermissionAction"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "role_permission_id": {
+            "examples": [
+              "PERM-001"
+            ],
+            "minLength": 3,
+            "title": "Role Permission Id",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/PermissionScope"
+          }
+        },
+        "required": [
+          "role_permission_id",
+          "role",
+          "scope",
+          "action"
+        ],
+        "title": "RolePermission",
+        "type": "object"
+      },
       "SnapshotPayload": {
         "description": "API payload to create an information snapshot.",
         "properties": {
@@ -1470,6 +1641,65 @@
           "name"
         ],
         "title": "SnapshotPayload",
+        "type": "object"
+      },
+      "Specialty": {
+        "description": "Corporate user specialty or professional discipline.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "examples": [
+              "BIM Management"
+            ],
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "specialty_id": {
+            "examples": [
+              "SPEC-BIM"
+            ],
+            "minLength": 3,
+            "title": "Specialty Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "specialty_id",
+          "name"
+        ],
+        "title": "Specialty",
+        "type": "object"
+      },
+      "SsoAuthenticatePayload": {
+        "description": "API payload to resolve an SSO identity.",
+        "properties": {
+          "provider": {
+            "minLength": 3,
+            "title": "Provider",
+            "type": "string"
+          },
+          "subject": {
+            "minLength": 3,
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "subject"
+        ],
+        "title": "SsoAuthenticatePayload",
         "type": "object"
       },
       "User": {
@@ -1523,6 +1753,77 @@
         "title": "User",
         "type": "object"
       },
+      "UserHistoryEvent": {
+        "description": "Auditable user security history entry.",
+        "properties": {
+          "action": {
+            "examples": [
+              "project_membership.assigned"
+            ],
+            "minLength": 3,
+            "title": "Action",
+            "type": "string"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "history_id": {
+            "examples": [
+              "HIST-001"
+            ],
+            "minLength": 3,
+            "title": "History Id",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "history_id",
+          "user_id",
+          "action"
+        ],
+        "title": "UserHistoryEvent",
+        "type": "object"
+      },
       "UserRole": {
         "description": "Company-scoped user role.",
         "enum": [
@@ -1534,6 +1835,42 @@
         ],
         "title": "UserRole",
         "type": "string"
+      },
+      "UserSpecialty": {
+        "description": "Specialty assigned to a platform user.",
+        "properties": {
+          "specialty_id": {
+            "examples": [
+              "SPEC-BIM"
+            ],
+            "minLength": 3,
+            "title": "Specialty Id",
+            "type": "string"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          },
+          "user_specialty_id": {
+            "examples": [
+              "USPEC-001"
+            ],
+            "minLength": 3,
+            "title": "User Specialty Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_specialty_id",
+          "user_id",
+          "specialty_id"
+        ],
+        "title": "UserSpecialty",
+        "type": "object"
       },
       "UserStatus": {
         "description": "Lifecycle status for a user identity.",
@@ -1636,6 +1973,45 @@
           }
         },
         "summary": "List Audit Events"
+      }
+    },
+    "/api/v1/auth/sso/resolve": {
+      "post": {
+        "description": "Resolve an SSO identity into a registered platform user.",
+        "operationId": "resolve_sso_identity_api_v1_auth_sso_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsoAuthenticatePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthIdentity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Sso Identity"
       }
     },
     "/api/v1/companies": {
@@ -2482,6 +2858,116 @@
         "summary": "Change Company Governance Status"
       }
     },
+    "/api/v1/companies/{company_id}/projects/{project_id}/memberships": {
+      "get": {
+        "description": "List user memberships scoped to one project.",
+        "operationId": "list_project_memberships_api_v1_companies__company_id__projects__project_id__memberships_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectMembership"
+                  },
+                  "title": "Response List Project Memberships Api V1 Companies  Company Id  Projects  Project Id  Memberships Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Project Memberships"
+      },
+      "post": {
+        "description": "Assign a user role inside a project.",
+        "operationId": "assign_project_membership_api_v1_companies__company_id__projects__project_id__memberships_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMembership"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectMembership"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign Project Membership"
+      }
+    },
     "/api/v1/companies/{company_id}/provisioning/project-stack": {
       "post": {
         "description": "Provision a complete BIMSIG Enterprise project stack.",
@@ -3264,6 +3750,156 @@
         "summary": "Provision Websig"
       }
     },
+    "/api/v1/roles/{role}/permissions": {
+      "get": {
+        "description": "List permissions granted to one enterprise role.",
+        "operationId": "list_role_permissions_api_v1_roles__role__permissions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "role",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RolePermission"
+                  },
+                  "title": "Response List Role Permissions Api V1 Roles  Role  Permissions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Role Permissions"
+      },
+      "post": {
+        "description": "Grant a permission to one enterprise role.",
+        "operationId": "grant_role_permission_api_v1_roles__role__permissions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "role",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserRole"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolePermission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolePermission"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Grant Role Permission"
+      }
+    },
+    "/api/v1/specialties": {
+      "get": {
+        "description": "List enterprise user specialties.",
+        "operationId": "list_specialties_api_v1_specialties_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Specialty"
+                  },
+                  "title": "Response List Specialties Api V1 Specialties Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Specialties"
+      },
+      "post": {
+        "description": "Create an enterprise user specialty.",
+        "operationId": "create_specialty_api_v1_specialties_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Specialty"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Specialty"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Specialty"
+      }
+    },
     "/api/v1/users": {
       "get": {
         "description": "List platform users.",
@@ -3322,6 +3958,234 @@
           }
         },
         "summary": "Register User"
+      }
+    },
+    "/api/v1/users/{user_id}/auth-identities": {
+      "get": {
+        "description": "List authentication identities linked to one user.",
+        "operationId": "list_auth_identities_api_v1_users__user_id__auth_identities_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AuthIdentity"
+                  },
+                  "title": "Response List Auth Identities Api V1 Users  User Id  Auth Identities Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Auth Identities"
+      },
+      "post": {
+        "description": "Link an authentication identity to one user.",
+        "operationId": "register_auth_identity_api_v1_users__user_id__auth_identities_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthIdentity"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthIdentity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Auth Identity"
+      }
+    },
+    "/api/v1/users/{user_id}/history": {
+      "get": {
+        "description": "List security-relevant user history events.",
+        "operationId": "list_user_history_api_v1_users__user_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserHistoryEvent"
+                  },
+                  "title": "Response List User History Api V1 Users  User Id  History Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List User History"
+      }
+    },
+    "/api/v1/users/{user_id}/specialties": {
+      "get": {
+        "description": "List specialties assigned to one user.",
+        "operationId": "list_user_specialties_api_v1_users__user_id__specialties_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserSpecialty"
+                  },
+                  "title": "Response List User Specialties Api V1 Users  User Id  Specialties Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List User Specialties"
+      },
+      "post": {
+        "description": "Assign a specialty to one user.",
+        "operationId": "assign_user_specialty_api_v1_users__user_id__specialties_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSpecialty"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSpecialty"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Assign User Specialty"
       }
     },
     "/dashboard": {

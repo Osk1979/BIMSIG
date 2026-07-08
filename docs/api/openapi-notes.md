@@ -15,6 +15,18 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - `POST /api/v1/users`: register a platform user.
 - `GET /api/v1/companies/{company_id}/memberships`: list company memberships.
 - `POST /api/v1/companies/{company_id}/memberships`: assign user role in company.
+- `GET /api/v1/specialties`: list enterprise user specialties.
+- `POST /api/v1/specialties`: create an enterprise user specialty.
+- `GET /api/v1/users/{user_id}/specialties`: list specialties assigned to a user.
+- `POST /api/v1/users/{user_id}/specialties`: assign a specialty to a user.
+- `GET /api/v1/companies/{company_id}/projects/{project_id}/memberships`: list project memberships.
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/memberships`: assign a user role inside a project.
+- `GET /api/v1/roles/{role}/permissions`: list permissions granted to an enterprise role.
+- `POST /api/v1/roles/{role}/permissions`: grant a permission to an enterprise role.
+- `GET /api/v1/users/{user_id}/auth-identities`: list authentication identities linked to a user.
+- `POST /api/v1/users/{user_id}/auth-identities`: link an authentication identity to a user.
+- `POST /api/v1/auth/sso/resolve`: resolve an SSO identity into a platform user.
+- `GET /api/v1/users/{user_id}/history`: list user security history.
 - `GET /api/v1/license-plans`: list license plans.
 - `POST /api/v1/license-plans`: create a license plan.
 - `GET /api/v1/companies/{company_id}/licenses`: list company licenses.
@@ -65,6 +77,7 @@ The versioned OpenAPI contract is stored at `docs/api/openapi.yaml`.
 - ADR-0017 defines the integrated Project Provisioning Engine.
 - ADR-0018 defines the Corporate Executive Dashboard.
 - ADR-0019 defines the NAS Corporate Information Center.
+- ADR-0020 defines the Corporate User Security System.
 
 ## Configuration
 

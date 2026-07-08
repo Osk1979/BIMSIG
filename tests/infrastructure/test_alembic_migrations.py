@@ -24,6 +24,12 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     assert "information_versions" in inspector.get_table_names()
     assert "information_snapshots" in inspector.get_table_names()
     assert "information_backups" in inspector.get_table_names()
+    assert "specialties" in inspector.get_table_names()
+    assert "user_specialties" in inspector.get_table_names()
+    assert "project_memberships" in inspector.get_table_names()
+    assert "role_permissions" in inspector.get_table_names()
+    assert "auth_identities" in inspector.get_table_names()
+    assert "user_history_events" in inspector.get_table_names()
     assert "company_id" in {
         column["name"] for column in inspector.get_columns("portfolio_projects")
     }
@@ -45,4 +51,13 @@ def test_alembic_upgrade_head_creates_initial_tables(tmp_path, monkeypatch) -> N
     }
     assert "ix_information_assets_category" in {
         index["name"] for index in inspector.get_indexes("information_assets")
+    }
+    assert "ix_project_memberships_user_id" in {
+        index["name"] for index in inspector.get_indexes("project_memberships")
+    }
+    assert "ix_auth_identities_user_id" in {
+        index["name"] for index in inspector.get_indexes("auth_identities")
+    }
+    assert {"provider", "subject"} <= {
+        column["name"] for column in inspector.get_columns("auth_identities")
     }

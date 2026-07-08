@@ -42,6 +42,12 @@ Implemented first cut:
 - `POST /api/v1/users`
 - `GET /api/v1/companies/{company_id}/memberships`
 - `POST /api/v1/companies/{company_id}/memberships`
+- `GET /api/v1/specialties`
+- `POST /api/v1/specialties`
+- `GET /api/v1/users/{user_id}/specialties`
+- `POST /api/v1/users/{user_id}/specialties`
+- `GET /api/v1/companies/{company_id}/projects/{project_id}/memberships`
+- `POST /api/v1/companies/{company_id}/projects/{project_id}/memberships`
 
 ### Licenses
 
@@ -164,6 +170,15 @@ Implemented first cut:
 - `GET /api/v1/companies/{company_id}/security/roles`
 - `GET /api/v1/companies/{company_id}/audit/events`
 - `GET /api/v1/companies/{company_id}/audit/export`
+
+Implemented first cut:
+
+- `GET /api/v1/roles/{role}/permissions`
+- `POST /api/v1/roles/{role}/permissions`
+- `GET /api/v1/users/{user_id}/auth-identities`
+- `POST /api/v1/users/{user_id}/auth-identities`
+- `POST /api/v1/auth/sso/resolve`
+- `GET /api/v1/users/{user_id}/history`
 
 ## API Design Rules
 

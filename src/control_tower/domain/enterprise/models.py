@@ -36,6 +36,35 @@ class UserRole(StrEnum):
     SERVICE_ACCOUNT = "service_account"
 
 
+class PermissionScope(StrEnum):
+    """Enterprise security permission scope."""
+
+    PLATFORM = "platform"
+    COMPANY = "company"
+    PROJECT = "project"
+    NAS = "nas"
+    DASHBOARD = "dashboard"
+    PROVISIONING = "provisioning"
+
+
+class PermissionAction(StrEnum):
+    """Enterprise security permission action."""
+
+    READ = "read"
+    WRITE = "write"
+    APPROVE = "approve"
+    EXECUTE = "execute"
+    ADMIN = "admin"
+
+
+class AuthProvider(StrEnum):
+    """Authentication provider type."""
+
+    LOCAL = "local"
+    OIDC = "oidc"
+    SAML = "saml"
+
+
 class MembershipStatus(StrEnum):
     """Lifecycle status for company membership."""
 
@@ -71,6 +100,22 @@ class User(BaseModel):
     status: UserStatus = UserStatus.ACTIVE
 
 
+class Specialty(BaseModel):
+    """Corporate user specialty or professional discipline."""
+
+    specialty_id: str = Field(min_length=3, examples=["SPEC-BIM"])
+    name: str = Field(min_length=3, examples=["BIM Management"])
+    description: str | None = None
+
+
+class UserSpecialty(BaseModel):
+    """Specialty assigned to a platform user."""
+
+    user_specialty_id: str = Field(min_length=3, examples=["USPEC-001"])
+    user_id: str = Field(min_length=3, examples=["USR-001"])
+    specialty_id: str = Field(min_length=3, examples=["SPEC-BIM"])
+
+
 class CompanyMembership(BaseModel):
     """User membership and role inside a company."""
 
@@ -79,6 +124,48 @@ class CompanyMembership(BaseModel):
     user_id: str = Field(min_length=3, examples=["USR-001"])
     role: UserRole
     status: MembershipStatus = MembershipStatus.ACTIVE
+
+
+class ProjectMembership(BaseModel):
+    """User role assignment inside one project."""
+
+    project_membership_id: str = Field(min_length=3, examples=["PMEM-001"])
+    company_id: str = Field(min_length=3, examples=["CRTG"])
+    project_id: str = Field(min_length=3, examples=["PSZ-2026"])
+    user_id: str = Field(min_length=3, examples=["USR-001"])
+    role: UserRole
+    status: MembershipStatus = MembershipStatus.ACTIVE
+
+
+class RolePermission(BaseModel):
+    """Permission granted to an enterprise role."""
+
+    role_permission_id: str = Field(min_length=3, examples=["PERM-001"])
+    role: UserRole
+    scope: PermissionScope
+    action: PermissionAction
+
+
+class AuthIdentity(BaseModel):
+    """Authentication or SSO identity linked to a platform user."""
+
+    identity_id: str = Field(min_length=3, examples=["IDP-001"])
+    user_id: str = Field(min_length=3, examples=["USR-001"])
+    provider: AuthProvider
+    subject: str = Field(min_length=3, examples=["aad|00000000"])
+    email: str = Field(min_length=5, examples=["admin@example.com"])
+    status: UserStatus = UserStatus.ACTIVE
+
+
+class UserHistoryEvent(BaseModel):
+    """Auditable user security history entry."""
+
+    history_id: str = Field(min_length=3, examples=["HIST-001"])
+    user_id: str = Field(min_length=3, examples=["USR-001"])
+    action: str = Field(min_length=3, examples=["project_membership.assigned"])
+    detail: str | None = None
+    company_id: str | None = Field(default=None, min_length=3)
+    project_id: str | None = Field(default=None, min_length=3)
 
 
 class LicensePlan(BaseModel):

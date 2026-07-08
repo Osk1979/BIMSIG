@@ -15,7 +15,12 @@ from pydantic import BaseModel, Field
 
 from control_tower import __version__
 from control_tower.application.dashboard_service import DashboardService
-from control_tower.application.enterprise_service import CompanyService, LicensingService, UserService
+from control_tower.application.enterprise_service import (
+    CompanyService,
+    CorporateUserSecurityService,
+    LicensingService,
+    UserService,
+)
 from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import (
@@ -25,7 +30,20 @@ from control_tower.application.provisioning_service import (
 )
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.dashboard import CorporateDashboard
-from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
+from control_tower.domain.enterprise import (
+    AuthIdentity,
+    Company,
+    CompanyLicense,
+    CompanyMembership,
+    LicensePlan,
+    ProjectMembership,
+    RolePermission,
+    Specialty,
+    User,
+    UserHistoryEvent,
+    UserRole,
+    UserSpecialty,
+)
 from control_tower.domain.nas import (
     InformationAsset,
     InformationBackup,
@@ -37,15 +55,21 @@ from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.provisioning import ProvisioningRequest
 from control_tower.infrastructure.database import (
     SqlAlchemyAuditEventRepository,
+    SqlAlchemyAuthIdentityRepository,
     SqlAlchemyCompanyLicenseRepository,
     SqlAlchemyCompanyMembershipRepository,
     SqlAlchemyCompanyRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyLicensePlanRepository,
     SqlAlchemyPortfolioProjectRepository,
+    SqlAlchemyProjectMembershipRepository,
     SqlAlchemyProvisioningRequestRepository,
+    SqlAlchemyRolePermissionRepository,
     SqlAlchemySessionProvider,
+    SqlAlchemySpecialtyRepository,
+    SqlAlchemyUserHistoryRepository,
     SqlAlchemyUserRepository,
+    SqlAlchemyUserSpecialtyRepository,
     check_database,
     create_database_engine,
     initialize_database,
@@ -107,6 +131,13 @@ class BackupPayload(BaseModel):
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
+class SsoAuthenticatePayload(BaseModel):
+    """API payload to resolve an SSO identity."""
+
+    provider: str = Field(min_length=3)
+    subject: str = Field(min_length=3)
+
+
 def create_app(database_url: str | None = None, initialize_schema: bool = True) -> FastAPI:
     """Create the Corporate Control Tower API application."""
 
@@ -132,6 +163,12 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     information_repository = SqlAlchemyInformationAssetRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
     provisioning_repository = SqlAlchemyProvisioningRequestRepository(sessions)
+    specialty_repository = SqlAlchemySpecialtyRepository(sessions)
+    user_specialty_repository = SqlAlchemyUserSpecialtyRepository(sessions)
+    project_membership_repository = SqlAlchemyProjectMembershipRepository(sessions)
+    role_permission_repository = SqlAlchemyRolePermissionRepository(sessions)
+    auth_identity_repository = SqlAlchemyAuthIdentityRepository(sessions)
+    user_history_repository = SqlAlchemyUserHistoryRepository(sessions)
     companies = CompanyService(company_repository, audit_repository)
     users = UserService(user_repository, membership_repository, companies, audit_repository)
     licensing = LicensingService(
@@ -159,6 +196,18 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     )
     dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
     nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
+    user_security = CorporateUserSecurityService(
+        user_repository,
+        companies,
+        portfolio,
+        specialty_repository,
+        user_specialty_repository,
+        project_membership_repository,
+        role_permission_repository,
+        auth_identity_repository,
+        user_history_repository,
+        audit_repository,
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -267,6 +316,145 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             )
         try:
             return users.add_membership(membership)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/specialties", response_model=list[Specialty])
+    def list_specialties() -> list[Specialty]:
+        """List enterprise user specialties."""
+
+        return user_security.list_specialties()
+
+    @app.post("/api/v1/specialties", response_model=Specialty, status_code=status.HTTP_201_CREATED)
+    def create_specialty(specialty: Specialty) -> Specialty:
+        """Create an enterprise user specialty."""
+
+        return user_security.create_specialty(specialty)
+
+    @app.get("/api/v1/users/{user_id}/specialties", response_model=list[UserSpecialty])
+    def list_user_specialties(user_id: str) -> list[UserSpecialty]:
+        """List specialties assigned to one user."""
+
+        try:
+            return user_security.list_user_specialties(user_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/users/{user_id}/specialties",
+        response_model=UserSpecialty,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def assign_user_specialty(user_id: str, assignment: UserSpecialty) -> UserSpecialty:
+        """Assign a specialty to one user."""
+
+        if assignment.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Specialty assignment user_id must match path user_id",
+            )
+        try:
+            return user_security.assign_specialty(assignment)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/projects/{project_id}/memberships",
+        response_model=list[ProjectMembership],
+    )
+    def list_project_memberships(company_id: str, project_id: str) -> list[ProjectMembership]:
+        """List user memberships scoped to one project."""
+
+        try:
+            return user_security.list_project_memberships(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/projects/{project_id}/memberships",
+        response_model=ProjectMembership,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def assign_project_membership(
+        company_id: str,
+        project_id: str,
+        membership: ProjectMembership,
+    ) -> ProjectMembership:
+        """Assign a user role inside a project."""
+
+        if membership.company_id != company_id or membership.project_id != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Project membership scope must match path company_id and project_id",
+            )
+        try:
+            return user_security.assign_project_membership(membership)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.get("/api/v1/roles/{role}/permissions", response_model=list[RolePermission])
+    def list_role_permissions(role: UserRole) -> list[RolePermission]:
+        """List permissions granted to one enterprise role."""
+
+        return user_security.list_role_permissions(role)
+
+    @app.post(
+        "/api/v1/roles/{role}/permissions",
+        response_model=RolePermission,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def grant_role_permission(role: UserRole, permission: RolePermission) -> RolePermission:
+        """Grant a permission to one enterprise role."""
+
+        if permission.role != role:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Role permission role must match path role",
+            )
+        return user_security.grant_role_permission(permission)
+
+    @app.get("/api/v1/users/{user_id}/auth-identities", response_model=list[AuthIdentity])
+    def list_auth_identities(user_id: str) -> list[AuthIdentity]:
+        """List authentication identities linked to one user."""
+
+        try:
+            return user_security.list_auth_identities(user_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/users/{user_id}/auth-identities",
+        response_model=AuthIdentity,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_auth_identity(user_id: str, identity: AuthIdentity) -> AuthIdentity:
+        """Link an authentication identity to one user."""
+
+        if identity.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Auth identity user_id must match path user_id",
+            )
+        try:
+            return user_security.register_auth_identity(identity)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post("/api/v1/auth/sso/resolve", response_model=AuthIdentity)
+    def resolve_sso_identity(payload: SsoAuthenticatePayload) -> AuthIdentity:
+        """Resolve an SSO identity into a registered platform user."""
+
+        identity = user_security.authenticate_sso(payload.provider, payload.subject)
+        if identity is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SSO identity not found")
+        return identity
+
+    @app.get("/api/v1/users/{user_id}/history", response_model=list[UserHistoryEvent])
+    def list_user_history(user_id: str) -> list[UserHistoryEvent]:
+        """List security-relevant user history events."""
+
+        try:
+            return user_security.list_user_history(user_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

@@ -1,7 +1,20 @@
 from __future__ import annotations
 
 from control_tower.domain.audit import AuditEvent
-from control_tower.domain.enterprise import Company, CompanyLicense, CompanyMembership, LicensePlan, User
+from control_tower.domain.enterprise import (
+    AuthIdentity,
+    Company,
+    CompanyLicense,
+    CompanyMembership,
+    LicensePlan,
+    ProjectMembership,
+    RolePermission,
+    Specialty,
+    User,
+    UserHistoryEvent,
+    UserRole,
+    UserSpecialty,
+)
 from control_tower.domain.nas import InformationAsset, InformationBackup, InformationSnapshot, InformationVersion
 from control_tower.domain.portfolio import PortfolioProject
 from control_tower.domain.provisioning import ProvisioningRequest
@@ -51,6 +64,111 @@ class FakeMembershipRepository:
             for membership in self.memberships.values()
             if membership.company_id == company_id
         ]
+
+
+class FakeSpecialtyRepository:
+    def __init__(self) -> None:
+        self.specialties: dict[str, Specialty] = {}
+
+    def save(self, specialty: Specialty) -> Specialty:
+        self.specialties[specialty.specialty_id] = specialty
+        return specialty
+
+    def list(self) -> list[Specialty]:
+        return list(self.specialties.values())
+
+    def get(self, specialty_id: str) -> Specialty | None:
+        return self.specialties.get(specialty_id)
+
+
+class FakeUserSpecialtyRepository:
+    def __init__(self) -> None:
+        self.assignments: dict[str, UserSpecialty] = {}
+
+    def save(self, assignment: UserSpecialty) -> UserSpecialty:
+        self.assignments[assignment.user_specialty_id] = assignment
+        return assignment
+
+    def list_by_user(self, user_id: str) -> list[UserSpecialty]:
+        return [
+            assignment
+            for assignment in self.assignments.values()
+            if assignment.user_id == user_id
+        ]
+
+
+class FakeProjectMembershipRepository:
+    def __init__(self) -> None:
+        self.memberships: dict[str, ProjectMembership] = {}
+
+    def save(self, membership: ProjectMembership) -> ProjectMembership:
+        self.memberships[membership.project_membership_id] = membership
+        return membership
+
+    def list_by_project(self, company_id: str, project_id: str) -> list[ProjectMembership]:
+        return [
+            membership
+            for membership in self.memberships.values()
+            if membership.company_id == company_id and membership.project_id == project_id
+        ]
+
+    def list_by_user(self, user_id: str) -> list[ProjectMembership]:
+        return [
+            membership
+            for membership in self.memberships.values()
+            if membership.user_id == user_id
+        ]
+
+
+class FakeRolePermissionRepository:
+    def __init__(self) -> None:
+        self.permissions: dict[str, RolePermission] = {}
+
+    def save(self, permission: RolePermission) -> RolePermission:
+        self.permissions[permission.role_permission_id] = permission
+        return permission
+
+    def list_by_role(self, role: str | UserRole) -> list[RolePermission]:
+        role_value = role.value if isinstance(role, UserRole) else role
+        return [
+            permission
+            for permission in self.permissions.values()
+            if permission.role.value == role_value
+        ]
+
+
+class FakeAuthIdentityRepository:
+    def __init__(self) -> None:
+        self.identities: dict[str, AuthIdentity] = {}
+
+    def save(self, identity: AuthIdentity) -> AuthIdentity:
+        self.identities[identity.identity_id] = identity
+        return identity
+
+    def list_by_user(self, user_id: str) -> list[AuthIdentity]:
+        return [
+            identity
+            for identity in self.identities.values()
+            if identity.user_id == user_id
+        ]
+
+    def get_by_provider_subject(self, provider: str, subject: str) -> AuthIdentity | None:
+        for identity in self.identities.values():
+            if identity.provider.value == provider and identity.subject == subject:
+                return identity
+        return None
+
+
+class FakeUserHistoryRepository:
+    def __init__(self) -> None:
+        self.events: dict[str, UserHistoryEvent] = {}
+
+    def save(self, event: UserHistoryEvent) -> UserHistoryEvent:
+        self.events[event.history_id] = event
+        return event
+
+    def list_by_user(self, user_id: str) -> list[UserHistoryEvent]:
+        return [event for event in self.events.values() if event.user_id == user_id]
 
 
 class FakeLicensePlanRepository:
