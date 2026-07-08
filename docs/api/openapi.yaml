@@ -1505,6 +1505,227 @@
         "title": "DashboardMetric",
         "type": "object"
       },
+      "EnterpriseWizardActivation": {
+        "description": "API payload to activate a ready wizard.",
+        "properties": {
+          "actor": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "reason": {
+            "default": "Enterprise Wizard activation",
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "EnterpriseWizardActivation",
+        "type": "object"
+      },
+      "EnterpriseWizardSession": {
+        "description": "Resumable Enterprise Wizard session.",
+        "properties": {
+          "company_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "created_by": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Created By",
+            "type": "string"
+          },
+          "current_step": {
+            "$ref": "#/components/schemas/EnterpriseWizardStep",
+            "default": "company"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EnterpriseWizardStatus",
+            "default": "draft"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/EnterpriseWizardStepState"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "updated_by": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Updated By",
+            "type": "string"
+          },
+          "wizard_id": {
+            "examples": [
+              "WIZ-001"
+            ],
+            "minLength": 3,
+            "title": "Wizard Id",
+            "type": "string"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          }
+        },
+        "required": [
+          "wizard_id"
+        ],
+        "title": "EnterpriseWizardSession",
+        "type": "object"
+      },
+      "EnterpriseWizardStatus": {
+        "description": "Lifecycle status for one wizard session.",
+        "enum": [
+          "draft",
+          "ready",
+          "activated"
+        ],
+        "title": "EnterpriseWizardStatus",
+        "type": "string"
+      },
+      "EnterpriseWizardStep": {
+        "description": "Official Enterprise Wizard steps.",
+        "enum": [
+          "company",
+          "program",
+          "project",
+          "location",
+          "specialties",
+          "web_sig",
+          "gis",
+          "nas",
+          "users",
+          "activation"
+        ],
+        "title": "EnterpriseWizardStep",
+        "type": "string"
+      },
+      "EnterpriseWizardStepState": {
+        "description": "Persisted partial state for one wizard step.",
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EnterpriseWizardStepStatus",
+            "default": "pending"
+          },
+          "step": {
+            "$ref": "#/components/schemas/EnterpriseWizardStep"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "validation_errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Validation Errors",
+            "type": "array"
+          }
+        },
+        "required": [
+          "step"
+        ],
+        "title": "EnterpriseWizardStepState",
+        "type": "object"
+      },
+      "EnterpriseWizardStepStatus": {
+        "description": "Validation status for one wizard step.",
+        "enum": [
+          "pending",
+          "draft",
+          "valid",
+          "invalid"
+        ],
+        "title": "EnterpriseWizardStepStatus",
+        "type": "string"
+      },
+      "EnterpriseWizardStepSubmission": {
+        "description": "API payload to save one wizard step.",
+        "properties": {
+          "actor": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          }
+        },
+        "title": "EnterpriseWizardStepSubmission",
+        "type": "object"
+      },
       "GeoServerDatastore": {
         "description": "Corporate reference to a GeoServer datastore.",
         "properties": {
@@ -3703,6 +3924,31 @@
           }
         },
         "title": "StartCorporateWorkflowPayload",
+        "type": "object"
+      },
+      "StartEnterpriseWizardPayload": {
+        "description": "API payload to start an Enterprise Wizard session.",
+        "properties": {
+          "actor": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Actor",
+            "type": "string"
+          },
+          "wizard_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wizard Id"
+          }
+        },
+        "title": "StartEnterpriseWizardPayload",
         "type": "object"
       },
       "User": {
@@ -7016,6 +7262,272 @@
           }
         },
         "summary": "List Corporate Workflow Transitions"
+      }
+    },
+    "/api/v1/enterprise-wizard": {
+      "get": {
+        "description": "List Enterprise Wizard sessions.",
+        "operationId": "list_enterprise_wizard_sessions_api_v1_enterprise_wizard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EnterpriseWizardSession"
+                  },
+                  "title": "Response List Enterprise Wizard Sessions Api V1 Enterprise Wizard Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Enterprise Wizard Sessions"
+      },
+      "post": {
+        "description": "Start a resumable Enterprise Wizard session.",
+        "operationId": "start_enterprise_wizard_api_v1_enterprise_wizard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartEnterpriseWizardPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseWizardSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Enterprise Wizard"
+      }
+    },
+    "/api/v1/enterprise-wizard/{wizard_id}": {
+      "get": {
+        "description": "Resume one Enterprise Wizard session.",
+        "operationId": "get_enterprise_wizard_api_v1_enterprise_wizard__wizard_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wizard_id",
+            "required": true,
+            "schema": {
+              "title": "Wizard Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseWizardSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Enterprise Wizard"
+      }
+    },
+    "/api/v1/enterprise-wizard/{wizard_id}/activate": {
+      "post": {
+        "description": "Activate a ready Enterprise Wizard session into governed records.",
+        "operationId": "activate_enterprise_wizard_api_v1_enterprise_wizard__wizard_id__activate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wizard_id",
+            "required": true,
+            "schema": {
+              "title": "Wizard Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterpriseWizardActivation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseWizardSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Activate Enterprise Wizard"
+      }
+    },
+    "/api/v1/enterprise-wizard/{wizard_id}/steps/{step}": {
+      "put": {
+        "description": "Save one Enterprise Wizard step and persist partial progress.",
+        "operationId": "save_enterprise_wizard_step_api_v1_enterprise_wizard__wizard_id__steps__step__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wizard_id",
+            "required": true,
+            "schema": {
+              "title": "Wizard Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "step",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EnterpriseWizardStep"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterpriseWizardStepSubmission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseWizardSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Enterprise Wizard Step"
+      }
+    },
+    "/api/v1/enterprise-wizard/{wizard_id}/steps/{step}/validate": {
+      "post": {
+        "description": "Validate one Enterprise Wizard step without saving it.",
+        "operationId": "validate_enterprise_wizard_step_api_v1_enterprise_wizard__wizard_id__steps__step__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "wizard_id",
+            "required": true,
+            "schema": {
+              "title": "Wizard Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "step",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EnterpriseWizardStep"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterpriseWizardStepSubmission"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseWizardStepState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Enterprise Wizard Step"
       }
     },
     "/api/v1/license-plans": {

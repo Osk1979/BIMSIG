@@ -12,6 +12,12 @@ from control_tower.domain.corporate_workflow import (
     CorporateWorkflowStage,
     CorporateWorkflowTransition,
 )
+from control_tower.domain.enterprise_wizard import (
+    EnterpriseWizardSession,
+    EnterpriseWizardStep,
+    EnterpriseWizardStepState,
+    EnterpriseWizardStepStatus,
+)
 from control_tower.domain.portfolio import CorporateCustomer, CorporateProgram, PortfolioProject
 from control_tower.domain.nas import InformationAsset, InformationAssetType, InformationCategory
 from control_tower.domain.provisioning import ProvisioningRequest, ProvisioningResourceType, ProvisioningStep
@@ -21,6 +27,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyCorporateGisIntelligenceRepository,
     SqlAlchemyCorporateProgramRepository,
     SqlAlchemyCorporateWorkflowRepository,
+    SqlAlchemyEnterpriseWizardRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyPortfolioProjectRepository,
     SqlAlchemyProvisioningRequestRepository,
@@ -245,3 +252,41 @@ def test_sqlalchemy_corporate_workflow_repository_persists_transitions(tmp_path)
     assert workflow.current_stage == CorporateWorkflowStage.CREATE_COMPANY
     assert repository.list_workflows("CRTG")[0].workflow_id == "CWF-001"
     assert transitions[0].to_stage == CorporateWorkflowStage.CREATE_COMPANY
+
+
+def test_sqlalchemy_enterprise_wizard_repository_persists_partial_progress(tmp_path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'enterprise_wizard.db'}"
+    engine = create_database_engine(database_url)
+    initialize_database(engine)
+    repository = SqlAlchemyEnterpriseWizardRepository(SqlAlchemySessionProvider(engine))
+
+    repository.save(
+        EnterpriseWizardSession(
+            wizard_id="WIZ-001",
+            company_id="CRTG",
+            project_id="PSZ-2026",
+            current_step=EnterpriseWizardStep.PROGRAM,
+            steps=[
+                EnterpriseWizardStepState(
+                    step=EnterpriseWizardStep.COMPANY,
+                    status=EnterpriseWizardStepStatus.VALID,
+                    data={
+                        "company_id": "CRTG",
+                        "legal_name": "CRTG S.A.C.",
+                        "display_name": "CRTG",
+                    },
+                )
+            ],
+            created_by="portfolio-manager",
+            updated_by="portfolio-manager",
+        )
+    )
+    reloaded = SqlAlchemyEnterpriseWizardRepository(
+        SqlAlchemySessionProvider(engine)
+    ).get("WIZ-001")
+
+    assert reloaded is not None
+    assert reloaded.company_id == "CRTG"
+    assert reloaded.current_step == EnterpriseWizardStep.PROGRAM
+    assert reloaded.steps[0].status == EnterpriseWizardStepStatus.VALID
+    assert repository.list()[0].wizard_id == "WIZ-001"

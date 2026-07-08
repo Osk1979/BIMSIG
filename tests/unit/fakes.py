@@ -17,6 +17,7 @@ from control_tower.domain.enterprise import (
     UserRole,
     UserSpecialty,
 )
+from control_tower.domain.enterprise_wizard import EnterpriseWizardSession
 from control_tower.domain.gis import (
     GeoServerDatastore,
     GeoServerLayer,
@@ -451,6 +452,21 @@ class FakeCorporateWorkflowRepository:
             for transition in self.transitions
             if transition.workflow_id == workflow_id
         ]
+
+
+class FakeEnterpriseWizardRepository:
+    def __init__(self) -> None:
+        self.sessions: dict[str, EnterpriseWizardSession] = {}
+
+    def save(self, session: EnterpriseWizardSession) -> EnterpriseWizardSession:
+        self.sessions[session.wizard_id] = session
+        return session
+
+    def get(self, wizard_id: str) -> EnterpriseWizardSession | None:
+        return self.sessions.get(wizard_id)
+
+    def list(self) -> list[EnterpriseWizardSession]:
+        return list(self.sessions.values())
 
 
 class FakeAuditEventRepository:

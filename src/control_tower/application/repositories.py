@@ -26,6 +26,7 @@ from control_tower.domain.enterprise import (
     UserHistoryEvent,
     UserSpecialty,
 )
+from control_tower.domain.enterprise_wizard import EnterpriseWizardSession
 from control_tower.domain.gis import (
     GeoServerDatastore,
     GeoServerLayer,
@@ -348,3 +349,16 @@ class CorporateWorkflowRepository(Protocol):
 
     def list_transitions(self, workflow_id: str) -> list[CorporateWorkflowTransition]:
         """Return transitions for one workflow."""
+
+
+class EnterpriseWizardRepository(Protocol):
+    """Persistence port for resumable Enterprise Wizard sessions."""
+
+    def save(self, session: EnterpriseWizardSession) -> EnterpriseWizardSession:
+        """Persist one wizard session."""
+
+    def get(self, wizard_id: str) -> EnterpriseWizardSession | None:
+        """Return one wizard session."""
+
+    def list(self) -> list[EnterpriseWizardSession]:
+        """Return wizard sessions."""

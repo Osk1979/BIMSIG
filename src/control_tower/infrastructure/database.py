@@ -53,6 +53,12 @@ from control_tower.domain.enterprise import (
     UserSpecialty,
     UserStatus,
 )
+from control_tower.domain.enterprise_wizard import (
+    EnterpriseWizardSession,
+    EnterpriseWizardStatus,
+    EnterpriseWizardStep,
+    EnterpriseWizardStepState,
+)
 from control_tower.domain.gis import (
     GeoServerDatastore,
     GeoServerLayer,
@@ -1087,6 +1093,69 @@ class CorporateWorkflowTransitionRecord(Base):
             rollback=self.rollback,
             rollback_of=self.rollback_of,
             created_at=self.created_at,
+        )
+
+
+class EnterpriseWizardSessionRecord(Base):
+    """Persistent Enterprise Wizard session."""
+
+    __tablename__ = "enterprise_wizard_sessions"
+
+    wizard_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    company_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    project_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    workflow_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    current_step: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    steps_document: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by: Mapped[str] = mapped_column(String(160), nullable=False)
+    updated_by: Mapped[str] = mapped_column(String(160), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    @classmethod
+    def from_domain(cls, session: EnterpriseWizardSession) -> "EnterpriseWizardSessionRecord":
+        now = datetime.now(UTC)
+        return cls(
+            wizard_id=session.wizard_id,
+            company_id=session.company_id,
+            project_id=session.project_id,
+            workflow_id=session.workflow_id,
+            status=session.status.value,
+            current_step=session.current_step.value,
+            steps_document=json.dumps([step.model_dump(mode="json") for step in session.steps]),
+            created_by=session.created_by,
+            updated_by=session.updated_by,
+            created_at=session.created_at or now,
+            updated_at=session.updated_at or now,
+        )
+
+    def update_from_domain(self, session: EnterpriseWizardSession) -> None:
+        self.company_id = session.company_id
+        self.project_id = session.project_id
+        self.workflow_id = session.workflow_id
+        self.status = session.status.value
+        self.current_step = session.current_step.value
+        self.steps_document = json.dumps([step.model_dump(mode="json") for step in session.steps])
+        self.updated_by = session.updated_by
+        self.updated_at = datetime.now(UTC)
+
+    def to_domain(self) -> EnterpriseWizardSession:
+        return EnterpriseWizardSession(
+            wizard_id=self.wizard_id,
+            company_id=self.company_id,
+            project_id=self.project_id,
+            workflow_id=self.workflow_id,
+            status=EnterpriseWizardStatus(self.status),
+            current_step=EnterpriseWizardStep(self.current_step),
+            steps=[
+                EnterpriseWizardStepState.model_validate(step)
+                for step in json.loads(self.steps_document)
+            ],
+            created_by=self.created_by,
+            updated_by=self.updated_by,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
         )
 
 
@@ -2387,5 +2456,43 @@ class SqlAlchemyCorporateWorkflowRepository:
                 select(CorporateWorkflowTransitionRecord)
                 .where(CorporateWorkflowTransitionRecord.workflow_id == workflow_id)
                 .order_by(CorporateWorkflowTransitionRecord.created_at)
+            )
+            return [record.to_domain() for record in records]
+
+
+class SqlAlchemyEnterpriseWizardRepository:
+    """SQLAlchemy implementation of the Enterprise Wizard repository port."""
+
+    def __init__(self, sessions: SqlAlchemySessionProvider) -> None:
+        self._sessions = sessions
+
+    def save(self, session: EnterpriseWizardSession) -> EnterpriseWizardSession:
+        """Persist one wizard session."""
+
+        with self._sessions.session() as db:
+            record = db.get(EnterpriseWizardSessionRecord, session.wizard_id)
+            if record is None:
+                record = EnterpriseWizardSessionRecord.from_domain(session)
+                db.add(record)
+            else:
+                record.update_from_domain(session)
+            db.flush()
+            return record.to_domain()
+
+    def get(self, wizard_id: str) -> EnterpriseWizardSession | None:
+        """Return one wizard session."""
+
+        with self._sessions.session() as db:
+            record = db.get(EnterpriseWizardSessionRecord, wizard_id)
+            return record.to_domain() if record is not None else None
+
+    def list(self) -> list[EnterpriseWizardSession]:
+        """Return wizard sessions."""
+
+        with self._sessions.session() as db:
+            records = db.scalars(
+                select(EnterpriseWizardSessionRecord).order_by(
+                    EnterpriseWizardSessionRecord.updated_at.desc()
+                )
             )
             return [record.to_domain() for record in records]

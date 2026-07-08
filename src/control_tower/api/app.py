@@ -26,6 +26,7 @@ from control_tower.application.enterprise_service import (
     LicensingService,
     UserService,
 )
+from control_tower.application.enterprise_wizard_service import EnterpriseWizardService
 from control_tower.application.gis_service import CorporateGisService
 from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.operational_flow_service import OperationalFlowService
@@ -64,6 +65,13 @@ from control_tower.domain.enterprise import (
     UserRole,
     UserSpecialty,
 )
+from control_tower.domain.enterprise_wizard import (
+    EnterpriseWizardActivation,
+    EnterpriseWizardSession,
+    EnterpriseWizardStep,
+    EnterpriseWizardStepState,
+    EnterpriseWizardStepSubmission,
+)
 from control_tower.domain.gis import (
     GeoServerDatastore,
     GeoServerLayer,
@@ -100,6 +108,7 @@ from control_tower.infrastructure.database import (
     SqlAlchemyCorporateProgramRepository,
     SqlAlchemyCorporateWorkflowRepository,
     SqlAlchemyCompanyRepository,
+    SqlAlchemyEnterpriseWizardRepository,
     SqlAlchemyInformationAssetRepository,
     SqlAlchemyLicensePlanRepository,
     SqlAlchemyPortfolioProjectRepository,
@@ -199,6 +208,13 @@ class StartCorporateWorkflowPayload(BaseModel):
     reason: str = Field(default="Corporate workflow started", min_length=3)
 
 
+class StartEnterpriseWizardPayload(BaseModel):
+    """API payload to start an Enterprise Wizard session."""
+
+    wizard_id: str | None = Field(default=None, min_length=3)
+    actor: str = Field(default="system", min_length=1)
+
+
 def create_app(database_url: str | None = None, initialize_schema: bool = True) -> FastAPI:
     """Create the Corporate Control Tower API application."""
 
@@ -225,6 +241,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     gis_repository = SqlAlchemyCorporateGisRepository(sessions)
     gis_intelligence_repository = SqlAlchemyCorporateGisIntelligenceRepository(sessions)
     workflow_repository = SqlAlchemyCorporateWorkflowRepository(sessions)
+    wizard_repository = SqlAlchemyEnterpriseWizardRepository(sessions)
     customer_repository = SqlAlchemyCorporateCustomerRepository(sessions)
     program_repository = SqlAlchemyCorporateProgramRepository(sessions)
     portfolio_repository = SqlAlchemyPortfolioProjectRepository(sessions)
@@ -309,6 +326,14 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         role_permission_repository,
         auth_identity_repository,
         user_history_repository,
+        audit_repository,
+    )
+    enterprise_wizard = EnterpriseWizardService(
+        wizard_repository,
+        companies,
+        users,
+        corporate_portfolio,
+        workflow_engine,
         audit_repository,
     )
 
@@ -477,6 +502,79 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             return workflow_engine.list_transitions(company_id, workflow_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/enterprise-wizard",
+        response_model=EnterpriseWizardSession,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def start_enterprise_wizard(payload: StartEnterpriseWizardPayload) -> EnterpriseWizardSession:
+        """Start a resumable Enterprise Wizard session."""
+
+        return enterprise_wizard.start(wizard_id=payload.wizard_id, actor=payload.actor)
+
+    @app.get("/api/v1/enterprise-wizard", response_model=list[EnterpriseWizardSession])
+    def list_enterprise_wizard_sessions() -> list[EnterpriseWizardSession]:
+        """List Enterprise Wizard sessions."""
+
+        return enterprise_wizard.list_sessions()
+
+    @app.get("/api/v1/enterprise-wizard/{wizard_id}", response_model=EnterpriseWizardSession)
+    def get_enterprise_wizard(wizard_id: str) -> EnterpriseWizardSession:
+        """Resume one Enterprise Wizard session."""
+
+        try:
+            return enterprise_wizard.get(wizard_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/enterprise-wizard/{wizard_id}/steps/{step}/validate",
+        response_model=EnterpriseWizardStepState,
+    )
+    def validate_enterprise_wizard_step(
+        wizard_id: str,
+        step: EnterpriseWizardStep,
+        payload: EnterpriseWizardStepSubmission,
+    ) -> EnterpriseWizardStepState:
+        """Validate one Enterprise Wizard step without saving it."""
+
+        try:
+            enterprise_wizard.get(wizard_id)
+            return enterprise_wizard.validate_step(step, payload.data)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.put(
+        "/api/v1/enterprise-wizard/{wizard_id}/steps/{step}",
+        response_model=EnterpriseWizardSession,
+    )
+    def save_enterprise_wizard_step(
+        wizard_id: str,
+        step: EnterpriseWizardStep,
+        payload: EnterpriseWizardStepSubmission,
+    ) -> EnterpriseWizardSession:
+        """Save one Enterprise Wizard step and persist partial progress."""
+
+        try:
+            return enterprise_wizard.save_step(wizard_id, step, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/enterprise-wizard/{wizard_id}/activate",
+        response_model=EnterpriseWizardSession,
+    )
+    def activate_enterprise_wizard(
+        wizard_id: str,
+        payload: EnterpriseWizardActivation,
+    ) -> EnterpriseWizardSession:
+        """Activate a ready Enterprise Wizard session into governed records."""
+
+        try:
+            return enterprise_wizard.activate(wizard_id, payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     @app.get(
         "/api/v1/companies/{company_id}/gis-intelligence/sources",

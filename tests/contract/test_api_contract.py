@@ -434,6 +434,85 @@ def test_corporate_workflow_engine_contract(tmp_path) -> None:
     }
 
 
+def test_enterprise_wizard_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    wizard = client.post(
+        "/api/v1/enterprise-wizard",
+        json={"wizard_id": "WIZ-API-001", "actor": "portfolio-manager"},
+    )
+    invalid_project = client.post(
+        "/api/v1/enterprise-wizard/WIZ-API-001/steps/project/validate",
+        json={"data": {"project_id": "PSZ-WIZ"}, "actor": "portfolio-manager"},
+    )
+    step_payloads = {
+        "company": {
+            "company_id": "CRTG-WIZ",
+            "legal_name": "CRTG Wizard S.A.C.",
+            "display_name": "CRTG Wizard",
+        },
+        "program": {"program_id": "PRG-WIZ", "name": "Programa Wizard"},
+        "project": {"project_id": "PSZ-WIZ", "name": "Proyecto Wizard"},
+        "location": {"country": "PE", "region": "Lima"},
+        "specialties": {"specialties": ["bim", "gis"]},
+        "web_sig": {
+            "template_id": "WEB-SIG-ENTERPRISE-REV13",
+            "websig_slug": "crtg-wiz-psz",
+            "websig_instance_id": "WEB-CRTG-WIZ-PSZ",
+            "websig_url": "https://websig.example.com/crtg-wiz/psz",
+        },
+        "gis": {
+            "postgis_schema": "crtg_wiz_psz",
+            "geoserver_workspace": "CRTG_WIZ_PSZ",
+            "gis_binding_id": "GBD-CRTG-WIZ-PSZ",
+        },
+        "nas": {
+            "nas_root_uri": "nas://CRTG-WIZ/PSZ-WIZ",
+            "google_drive_folder_id": "DRIVE-WIZ",
+        },
+        "users": {
+            "users": [
+                {
+                    "user_id": "USR-WIZ-001",
+                    "email": "wizard@example.com",
+                    "display_name": "Wizard User",
+                    "role": "portfolio_manager",
+                }
+            ]
+        },
+        "activation": {"approved_by": "portfolio-manager"},
+    }
+    saved = None
+    for step, data in step_payloads.items():
+        saved = client.put(
+            f"/api/v1/enterprise-wizard/WIZ-API-001/steps/{step}",
+            json={"data": data, "actor": "portfolio-manager"},
+        )
+        assert saved.status_code == 200
+
+    resumed = client.get("/api/v1/enterprise-wizard/WIZ-API-001")
+    activated = client.post(
+        "/api/v1/enterprise-wizard/WIZ-API-001/activate",
+        json={"actor": "portfolio-manager", "reason": "Activacion Wizard API"},
+    )
+    project = client.get("/api/v1/companies/CRTG-WIZ/projects/PSZ-WIZ")
+    workflow = client.get("/api/v1/companies/CRTG-WIZ/workflows/corporate/CWF-WIZ-API-001")
+
+    assert wizard.status_code == 201
+    assert wizard.json()["current_step"] == "company"
+    assert invalid_project.status_code == 200
+    assert invalid_project.json()["status"] == "invalid"
+    assert "name is required" in invalid_project.json()["validation_errors"]
+    assert saved is not None
+    assert saved.json()["status"] == "ready"
+    assert resumed.json()["project_id"] == "PSZ-WIZ"
+    assert activated.status_code == 200
+    assert activated.json()["status"] == "activated"
+    assert activated.json()["workflow_id"] == "CWF-WIZ-API-001"
+    assert project.json()["status"] == "active"
+    assert project.json()["websig_instance_id"] == "WEB-CRTG-WIZ-PSZ"
+    assert workflow.json()["current_stage"] == "activate_project"
+
+
 def test_corporate_gis_intelligence_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(
