@@ -319,12 +319,59 @@ def test_executive_dashboard_contract(tmp_path) -> None:
 
     assert response.status_code == 200
     assert response.json()["company_id"] == "CRTG"
-    assert {"portfolio", "map_points", "kpis", "risks", "comparisons", "portfolio_governance"} <= set(response.json())
+    assert {
+        "portfolio",
+        "map_points",
+        "kpis",
+        "risks",
+        "comparisons",
+        "portfolio_governance",
+        "operational_flow",
+    } <= set(response.json())
     assert response.json()["portfolio_governance"][0]["project_id"] == "PSZ-2026"
+    assert response.json()["operational_flow"][0]["project_id"] == "PSZ-2026"
     assert html.status_code == 200
     assert "Dashboard Ejecutivo Corporativo" in html.text
     assert "Gobierno de Portafolio" in html.text
+    assert "Flujo Operacional" in html.text
     assert "data-theme=\"dark\"" in html.text
+
+
+def test_company_operational_flow_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    payload = {
+        "company": {
+            "company_id": "CRTG",
+            "legal_name": "CRTG S.A.C.",
+            "display_name": "CRTG",
+        },
+        "project": {
+            "project_id": "PSZ-2026",
+            "company_id": "CRTG",
+            "name": "Proyecto Suiza",
+        },
+        "factory_blueprint": {
+            "template_id": "WEB-SIG-ENTERPRISE-REV13",
+            "websig_slug": "crtg-psz-2026",
+            "websig_url": "https://websig.example.com/crtg/psz-2026",
+            "nas_root_uri": "nas://CRTG/PSZ-2026/websig/root",
+            "postgis_schema_name": "crtg_psz_2026",
+            "geoserver_workspace": "CRTG_PSZ_2026",
+        },
+        "approved_by": "portfolio-manager",
+    }
+    client.post("/api/v1/companies/CRTG/websig-factory/execute", json=payload)
+
+    response = client.get("/api/v1/companies/CRTG/operations/flow")
+
+    assert response.status_code == 200
+    assert response.json()["company_id"] == "CRTG"
+    assert response.json()["summary"]["observed"] == 1
+    assert response.json()["items"][0]["current_state"] == "observed"
+    assert response.json()["items"][0]["approved_by"] == "portfolio-manager"
+    assert response.json()["items"][0]["websig_registered"] is True
+    assert response.json()["items"][0]["nas_registered"] is True
+    assert response.json()["items"][0]["gis_registered"] is True
 
 
 def test_nas_information_center_contract(tmp_path) -> None:

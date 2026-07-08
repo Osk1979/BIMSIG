@@ -6,9 +6,12 @@ ADR references:
 - ADR-0016: Enterprise licensing.
 - ADR-0018: Corporate executive dashboard.
 - ADR-0025: Corporate Portfolio Domain.
+- ADR-0027: Corporate Control Tower operational flow.
 """
 
 from pydantic import BaseModel, Field
+
+from control_tower.domain.operations import OperationalFlowItem
 
 
 class DashboardMetric(BaseModel):
@@ -79,3 +82,4 @@ class CorporateDashboard(BaseModel):
     alerts: list[DashboardMetric]
     comparisons: list[ProjectComparison]
     portfolio_governance: list[PortfolioGovernanceItem] = Field(default_factory=list)
+    operational_flow: list[OperationalFlowItem] = Field(default_factory=list)

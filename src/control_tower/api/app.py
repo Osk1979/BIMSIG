@@ -26,6 +26,7 @@ from control_tower.application.enterprise_service import (
 )
 from control_tower.application.gis_service import CorporateGisService
 from control_tower.application.nas_service import NasInformationCenterService
+from control_tower.application.operational_flow_service import OperationalFlowService
 from control_tower.application.portfolio_service import CorporatePortfolioDomainService, PortfolioService
 from control_tower.application.provisioning_service import (
     ProjectProvisioningEngine,
@@ -64,6 +65,7 @@ from control_tower.domain.nas import (
     InformationSnapshot,
     InformationVersion,
 )
+from control_tower.domain.operations import CompanyOperationalFlow
 from control_tower.domain.portfolio import PortfolioProject, ProjectStatus
 from control_tower.domain.portfolio import (
     CorporateCustomer,
@@ -223,6 +225,12 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         audit_repository,
     )
     provisioning = ProvisioningService(portfolio, provisioning_repository, audit_repository)
+    operational_flow = OperationalFlowService(
+        companies,
+        portfolio,
+        corporate_portfolio,
+        provisioning_repository,
+    )
     project_stack_adapters = default_project_stack_adapters(
         nas_root=os.getenv("CONTROL_TOWER_NAS_ROOT"),
         postgis_database_url=os.getenv("CONTROL_TOWER_POSTGIS_DATABASE_URL"),
@@ -245,6 +253,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         portfolio,
         provisioning,
         corporate_portfolio,
+        operational_flow,
     )
     nas = NasInformationCenterService(information_repository, companies, portfolio, audit_repository)
     gis = CorporateGisService(gis_repository, companies, portfolio, audit_repository)
@@ -323,6 +332,15 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "version": __version__,
             "revision": "REV12",
         }
+
+    @app.get("/api/v1/companies/{company_id}/operations/flow", response_model=CompanyOperationalFlow)
+    def company_operational_flow(company_id: str) -> CompanyOperationalFlow:
+        """Return the governed operational flow for one company."""
+
+        try:
+            return operational_flow.company_flow(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.get("/api/v1/portfolio/summary")
     def portfolio_summary() -> dict[str, int]:

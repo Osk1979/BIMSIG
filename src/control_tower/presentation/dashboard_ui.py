@@ -225,6 +225,30 @@ def render_dashboard_html() -> str:
       padding: 4px 7px;
     }
     .chip.ready { color: var(--accent); border-color: var(--accent); }
+    .flow-grid { display: grid; gap: 10px; }
+    .flow-card {
+      display: grid;
+      grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr) 92px;
+      gap: 12px;
+      align-items: center;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .flow-card .state { font-size: 12px; color: var(--accent); text-transform: uppercase; }
+    .flow-card .phase { color: var(--muted); font-size: 12px; margin-top: 5px; }
+    .flow-card .next { font-size: 13px; line-height: 1.35; }
+    .flow-card .pending { color: var(--muted); font-size: 12px; margin-top: 5px; }
+    .flow-score {
+      display: grid;
+      place-items: center;
+      min-height: 64px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      color: var(--accent);
+      font-weight: 780;
+    }
     .readout {
       min-height: 72px;
       background: var(--panel-strong);
@@ -262,6 +286,7 @@ def render_dashboard_html() -> str:
       th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { display: none; }
       .radar { min-height: 300px; }
       .radar::after { display: none; }
+      .flow-card { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -302,6 +327,10 @@ def render_dashboard_html() -> str:
           <section class="section">
             <h2>Gobierno de Portafolio</h2>
             <div class="governance-grid" id="portfolioGovernance"></div>
+          </section>
+          <section class="section">
+            <h2>Flujo Operacional</h2>
+            <div class="flow-grid" id="operationalFlow"></div>
           </section>
           <section class="section">
             <h2>Comparativos entre proyectos</h2>
@@ -356,6 +385,7 @@ def render_dashboard_html() -> str:
       renderCockpit();
       renderMap();
       renderPortfolioGovernance();
+      renderOperationalFlow();
       renderPanels();
       renderComparisons();
     }
@@ -438,6 +468,38 @@ def render_dashboard_html() -> str:
           </div>
         </article>
       `).join("");
+    }
+
+    function renderOperationalFlow() {
+      const target = document.querySelector("#operationalFlow");
+      const items = data.operational_flow || [];
+      if (!items.length) {
+        target.innerHTML = `<div class="muted">Sin flujo operacional calculado.</div>`;
+        return;
+      }
+      target.innerHTML = items.map(item => {
+        const pending = item.pending_controls.length
+          ? item.pending_controls.slice(0, 2).join(" / ")
+          : "Sin bloqueos de gobierno";
+        return `
+          <article class="flow-card">
+            <div>
+              <div class="project">${item.project_name}</div>
+              <div class="state">${item.current_state}</div>
+              <div class="phase">${labelPhase(item.active_phase)}</div>
+            </div>
+            <div>
+              <div class="next">${item.next_action}</div>
+              <div class="pending">${pending}</div>
+            </div>
+            <div class="flow-score">${item.readiness_score}%</div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function labelPhase(phase) {
+      return phase.replaceAll("_", " ");
     }
 
     function chip(label, value) {

@@ -431,6 +431,32 @@
         "title": "CompanyMembership",
         "type": "object"
       },
+      "CompanyOperationalFlow": {
+        "description": "Company-scoped operational flow read model.",
+        "properties": {
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OperationalFlowItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/OperationalFlowSummary"
+          }
+        },
+        "required": [
+          "company_id",
+          "summary"
+        ],
+        "title": "CompanyOperationalFlow",
+        "type": "object"
+      },
       "CompanyStatus": {
         "description": "Lifecycle status for an enterprise tenant.",
         "enum": [
@@ -558,6 +584,13 @@
               "$ref": "#/components/schemas/CorporateMapPoint"
             },
             "title": "Map Points",
+            "type": "array"
+          },
+          "operational_flow": {
+            "items": {
+              "$ref": "#/components/schemas/OperationalFlowItem"
+            },
+            "title": "Operational Flow",
             "type": "array"
           },
           "portfolio": {
@@ -1587,6 +1620,195 @@
           "suspended"
         ],
         "title": "MembershipStatus",
+        "type": "string"
+      },
+      "OperationalFlowItem": {
+        "description": "Operational flow status for one governed project.",
+        "properties": {
+          "active_phase": {
+            "$ref": "#/components/schemas/OperationalPhase"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "completed_phases": {
+            "items": {
+              "$ref": "#/components/schemas/OperationalPhase"
+            },
+            "title": "Completed Phases",
+            "type": "array"
+          },
+          "current_state": {
+            "$ref": "#/components/schemas/OperationalState"
+          },
+          "gis_registered": {
+            "default": false,
+            "title": "Gis Registered",
+            "type": "boolean"
+          },
+          "nas_registered": {
+            "default": false,
+            "title": "Nas Registered",
+            "type": "boolean"
+          },
+          "next_action": {
+            "minLength": 3,
+            "title": "Next Action",
+            "type": "string"
+          },
+          "pending_controls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pending Controls",
+            "type": "array"
+          },
+          "project_id": {
+            "minLength": 3,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_name": {
+            "minLength": 3,
+            "title": "Project Name",
+            "type": "string"
+          },
+          "provisioning_requests": {
+            "minimum": 0.0,
+            "title": "Provisioning Requests",
+            "type": "integer"
+          },
+          "readiness_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Readiness Score",
+            "type": "integer"
+          },
+          "websig_registered": {
+            "default": false,
+            "title": "Websig Registered",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project_id",
+          "project_name",
+          "company_id",
+          "current_state",
+          "active_phase",
+          "next_action",
+          "readiness_score",
+          "provisioning_requests"
+        ],
+        "title": "OperationalFlowItem",
+        "type": "object"
+      },
+      "OperationalFlowSummary": {
+        "description": "Company-level operational flow counters.",
+        "properties": {
+          "approved": {
+            "minimum": 0.0,
+            "title": "Approved",
+            "type": "integer"
+          },
+          "archived": {
+            "minimum": 0.0,
+            "title": "Archived",
+            "type": "integer"
+          },
+          "average_readiness": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Average Readiness",
+            "type": "integer"
+          },
+          "intake": {
+            "minimum": 0.0,
+            "title": "Intake",
+            "type": "integer"
+          },
+          "observed": {
+            "minimum": 0.0,
+            "title": "Observed",
+            "type": "integer"
+          },
+          "planned": {
+            "minimum": 0.0,
+            "title": "Planned",
+            "type": "integer"
+          },
+          "provisioned": {
+            "minimum": 0.0,
+            "title": "Provisioned",
+            "type": "integer"
+          },
+          "qualified": {
+            "minimum": 0.0,
+            "title": "Qualified",
+            "type": "integer"
+          },
+          "total_projects": {
+            "minimum": 0.0,
+            "title": "Total Projects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_projects",
+          "intake",
+          "qualified",
+          "planned",
+          "approved",
+          "provisioned",
+          "observed",
+          "archived",
+          "average_readiness"
+        ],
+        "title": "OperationalFlowSummary",
+        "type": "object"
+      },
+      "OperationalPhase": {
+        "description": "Formal phases in the Corporate Control Tower operational flow.",
+        "enum": [
+          "intake",
+          "governance_qualification",
+          "portfolio_lifecycle",
+          "factory_dry_run",
+          "approval_gate",
+          "controlled_execution",
+          "reference_registration",
+          "dashboard_publication",
+          "audit_monitoring",
+          "continuity_backup"
+        ],
+        "title": "OperationalPhase",
+        "type": "string"
+      },
+      "OperationalState": {
+        "description": "Corporate operational state derived from governed references.",
+        "enum": [
+          "intake",
+          "qualified",
+          "planned",
+          "approved",
+          "provisioned",
+          "observed",
+          "archived"
+        ],
+        "title": "OperationalState",
         "type": "string"
       },
       "PermissionAction": {
@@ -4047,6 +4269,46 @@
           }
         },
         "summary": "Create Information Snapshot"
+      }
+    },
+    "/api/v1/companies/{company_id}/operations/flow": {
+      "get": {
+        "description": "Return the governed operational flow for one company.",
+        "operationId": "company_operational_flow_api_v1_companies__company_id__operations_flow_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyOperationalFlow"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Company Operational Flow"
       }
     },
     "/api/v1/companies/{company_id}/portfolio/customers": {
