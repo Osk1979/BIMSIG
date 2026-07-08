@@ -339,6 +339,10 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "Control Ejecutivo" in html.text
     assert "GIS Corporativo" in html.text
     assert "Corporate GIS Dashboard" in html.text
+    assert "Comunicacion KPI -> Mapa" in html.text
+    assert "Capas corporativas publicadas" in html.text
+    assert "Visor SIG Corporativo" in html.text
+    assert "gisKpiCharts" in html.text
     assert "Mapa Nacional" in html.text
     assert "Mapa Regional" in html.text
     assert "Explorador de Portafolio" in html.text

@@ -133,6 +133,78 @@ def render_dashboard_html() -> str:
     .metric .value { font-size: 24px; font-weight: 760; margin-top: 8px; }
     .metric.watch { border-color: var(--warn); }
     .metric.critical { border-color: var(--critical); }
+    .gis-workbench {
+      display: grid;
+      grid-template-columns: minmax(360px, 1.2fr) minmax(280px, .8fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .gis-toolbar {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) minmax(280px, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .gis-bridge, .gis-layer-stack {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .gis-bridge h3, .gis-layer-stack h3 {
+      font-size: 13px;
+      margin: 0 0 10px;
+    }
+    .bridge-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .bridge-card {
+      min-height: 74px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+      background: var(--panel);
+    }
+    .bridge-card .label { color: var(--muted); font-size: 11px; }
+    .bridge-card .value { font-size: 18px; font-weight: 780; margin-top: 5px; }
+    .bridge-card .target { color: var(--accent); font-size: 11px; margin-top: 4px; }
+    .layer-list { display: grid; gap: 7px; }
+    .layer-row {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .layer-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .kpi-chart-grid { display: grid; gap: 10px; }
+    .kpi-chart {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel-strong);
+    }
+    .kpi-chart .chart-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+    .kpi-chart .name { color: var(--muted); font-size: 12px; }
+    .kpi-chart .value { font-weight: 780; }
+    .bar-track {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .bar-fill {
+      height: 100%;
+      width: var(--value);
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--warn));
+    }
+    .map-caption {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+    }
     .cockpit {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -409,6 +481,7 @@ def render_dashboard_html() -> str:
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
+      .gis-workbench, .gis-toolbar { grid-template-columns: 1fr; }
       .radar { min-height: 380px; width: min(100%, 520px); }
       .governance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
@@ -426,6 +499,7 @@ def render_dashboard_html() -> str:
       .flow-card { grid-template-columns: 1fr; }
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
+      .bridge-grid { grid-template-columns: 1fr; }
       .notification { grid-template-columns: 1fr; }
     }
   </style>
@@ -482,6 +556,16 @@ def render_dashboard_html() -> str:
           <section class="section" id="corporateGisDashboard">
             <h2>Corporate GIS Dashboard / GIS Corporativo</h2>
             <div class="section-kicker">Mapa corporativo GIS - Solo lectura - Corporate Layers publicadas por WEB SIG Enterprise.</div>
+            <div class="gis-toolbar">
+              <div class="gis-bridge">
+                <h3>Comunicacion KPI -> Mapa</h3>
+                <div class="bridge-grid" id="gisKpiBridge"></div>
+              </div>
+              <div class="gis-layer-stack">
+                <h3>Capas corporativas publicadas</h3>
+                <div class="layer-list" id="gisLayerLegend"></div>
+              </div>
+            </div>
             <div class="map-mode-grid" id="gisMapModes"></div>
             <div class="filter-row" id="gisFilters">
               <button data-gis-filter="estado">Estado</button>
@@ -491,9 +575,15 @@ def render_dashboard_html() -> str:
               <button data-gis-filter="ssoma">SSOMA</button>
               <button data-gis-filter="produccion">Produccion</button>
             </div>
-            <div class="radar-shell">
-              <div class="radar" id="map"></div>
-              <div class="radar-side" id="radarReadouts"></div>
+            <div class="gis-workbench">
+              <div>
+                <div class="radar" id="map"></div>
+                <div class="map-caption">Visor SIG Corporativo: consume capas publicadas; no edita geometria ni captura campo.</div>
+              </div>
+              <div class="radar-side">
+                <div id="radarReadouts"></div>
+                <div class="kpi-chart-grid" id="gisKpiCharts"></div>
+              </div>
             </div>
           </section>
           <section class="section" id="portfolioExplorer">
@@ -702,6 +792,9 @@ def render_dashboard_html() -> str:
       const map = document.querySelector("#map");
       const readouts = document.querySelector("#radarReadouts");
       const modes = ["Mapa Nacional", "Mapa Regional", "Empresa", "Programa", "Proyecto"];
+      renderGisKpiBridge();
+      renderGisLayerLegend();
+      renderGisKpiCharts();
       document.querySelector("#gisMapModes").innerHTML = modes.map((mode, index) => `
         <div class="mode-pill ${index === 0 ? "active" : ""}">${mode}</div>
       `).join("");
@@ -730,6 +823,78 @@ def render_dashboard_html() -> str:
       ].map(([label, value]) => `
         <article class="readout"><div class="label">${label}</div><div class="value">${value}</div></article>
       `).join("");
+    }
+
+    function renderGisKpiBridge() {
+      const bridge = [
+        ["Produccion", data.production[0]?.value ?? "0%", "Capa avance"],
+        ["Riesgo", data.risks[0]?.value ?? "0", "Capa riesgos"],
+        ["Ambiental", data.environmental[0]?.value ?? "0", "Capa ambiental"],
+        ["SSOMA", data.ssoma[0]?.value ?? "0", "Capa SSOMA"],
+        ["Calidad", data.quality[0]?.value ?? "0%", "Capa calidad"],
+        ["Cronograma", data.schedule[0]?.value ?? "0", "Capa cronograma"]
+      ];
+      document.querySelector("#gisKpiBridge").innerHTML = bridge.map(([label, value, target]) => `
+        <article class="bridge-card">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="target">${target}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderGisLayerLegend() {
+      const layers = gisMap?.layers?.length
+        ? gisMap.layers.slice(0, 8).map(layer => [
+            layer.name,
+            layer.layer_type || layer.discipline || "corporate"
+          ])
+        : [
+            ["Avance fisico", "avance"],
+            ["Riesgos espaciales", "riesgo"],
+            ["Calidad QA/QC", "calidad"],
+            ["Ambiental", "ambiental"],
+            ["SSOMA", "ssoma"],
+            ["Produccion", "produccion"],
+            ["Predios", "predios"],
+            ["Interferencias", "interferencias"]
+          ];
+      document.querySelector("#gisLayerLegend").innerHTML = layers.map(([name, type]) => `
+        <div class="layer-row">
+          <span class="layer-dot"></span>
+          <span>${name}</span>
+          <span>${type}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderGisKpiCharts() {
+      const charts = [
+        ["Produccion", data.production[0]?.value ?? "0%", "avance"],
+        ["Salud portafolio", data.kpis[0]?.value ?? "0%", "portfolio"],
+        ["Cobertura WEB SIG", data.kpis[2]?.value ?? "0%", "websig"],
+        ["Avance espacial", `${data.gis_intelligence?.aggregated_spatial_progress ?? 0}%`, "gis"],
+        ["Calidad", data.quality[0]?.value ?? "0%", "quality"]
+      ];
+      document.querySelector("#gisKpiCharts").innerHTML = charts.map(([name, value, layer]) => {
+        const percent = normalizePercent(value);
+        return `
+          <article class="kpi-chart">
+            <div class="chart-top">
+              <div class="name">${name}</div>
+              <div class="value">${value}</div>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="--value:${percent}%"></div></div>
+            <div class="muted">Comunica con ${layer}</div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function normalizePercent(value) {
+      const parsed = Number(String(value).replace("%", ""));
+      if (Number.isNaN(parsed)) return 0;
+      return Math.max(0, Math.min(100, parsed));
     }
 
     function renderPortfolioGovernance() {
