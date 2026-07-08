@@ -2,7 +2,8 @@
 
 ## Scope
 
-This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Control Tower and Project Provisioning Engine.
+This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Control Tower as the
+Corporate Governance System defined by REV13 and local ADR-0024.
 
 ## Delivery Rules
 
@@ -22,6 +23,7 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | F2-003 | Add API scaffold and base tests | Done | ADR-0002, ADR-0003 | Health, project registration, and provisioning contracts pass tests. |
 | F2-004 | Add daily USB backup procedure | Done | ADR-0004 | Script creates ZIP and checksum. |
 | F2-005 | Add CI pipeline | Done | ADR-0002, ADR-0012 | GitHub Actions runs lint and tests on push and PR. |
+| F2-006 | Adopt REV13 Corporate Governance baseline | Done | ADR-0024 | F2 scope reflects corporate, technology, functional, portfolio, and information governance. |
 
 ## Milestone F2.1: Durable Portfolio Registry
 
@@ -60,6 +62,8 @@ This backlog covers F2 of the BIMSIG Enterprise master program: Corporate Contro
 | F2-403 | Define Google Workspace transition ADR | Done | ADR-0001, ADR-0010 | Sync boundaries and ownership are documented. |
 | F2-404 | Define authentication and authorization ADR | Done | ADR-0002, ADR-0006 | Roles and access model are accepted before protected APIs. |
 | F2-405 | Define PostGIS integration ADR | Done | ADR-0001, ADR-0005, ADR-0008 | Spatial ownership and portfolio metadata scope are documented. |
+| F2-406 | Define Corporate GIS Administration registry | Done | ADR-0023 | PostGIS schemas, GeoServer workspaces, datastores, layers, and project GIS bindings are governed. |
+| F2-407 | Decide Google Workspace transition closure or permanence | Planned | ADR-0010, ADR-0024 | Architecture states whether Google Workspace is temporary or permanent. |
 
 ## Milestone F2.5: Operational Readiness
 

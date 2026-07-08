@@ -5,6 +5,7 @@ ADR references:
 - ADR-0015: Tower vs WEB SIG operational boundary.
 - ADR-0017: Project Provisioning Engine.
 - ADR-0022: Permanent architecture governance rule.
+- ADR-0024: REV13 corporate governance baseline.
 """
 
 from __future__ import annotations
@@ -29,6 +30,8 @@ REQUIRED_PATHS = [
     "docs/adr/ADR-0015-tower-vs-websig-boundary.md",
     "docs/adr/ADR-0017-project-provisioning-engine.md",
     "docs/adr/ADR-0022-permanent-architecture-governance-rule.md",
+    "docs/adr/ADR-0024-adopt-rev13-corporate-governance-baseline.md",
+    "docs/traceability/rev13-adoption-traceability.md",
 ]
 
 REQUIRED_TRACEABILITY_TERMS = [
@@ -41,6 +44,12 @@ REQUIRED_TRACEABILITY_TERMS = [
     "NAS",
     "Google Workspace",
     "BIMSIG Field",
+    "Corporate Governance System",
+    "WEB SIG SUITE",
+    "Corporate CDE",
+    "Discipline Hub",
+    "PMO Digital",
+    "Digital Twin",
 ]
 
 FORBIDDEN_INDEPENDENT_APP_DIRS = [
@@ -60,8 +69,11 @@ def validate() -> list[str]:
         if not (ROOT / relative_path).exists():
             violations.append(f"Missing required architecture artifact: {relative_path}")
 
-    traceability_path = ROOT / "docs/traceability/rev11-to-rev12-traceability.md"
-    traceability = traceability_path.read_text(encoding="utf-8")
+    traceability_paths = [
+        ROOT / "docs/traceability/rev11-to-rev12-traceability.md",
+        ROOT / "docs/traceability/rev13-adoption-traceability.md",
+    ]
+    traceability = "\n".join(path.read_text(encoding="utf-8") for path in traceability_paths)
     for term in REQUIRED_TRACEABILITY_TERMS:
         if term not in traceability:
             violations.append(f"Missing traceability term: {term}")

@@ -1,5 +1,7 @@
 # REV11 to REV12 Traceability
 
+Current master architecture baseline: REV13 adoption is recorded in `docs/adr/ADR-0024-adopt-rev13-corporate-governance-baseline.md`.
+
 | REV11 Source | Mandate | REV12 Artifact |
 | --- | --- | --- |
 | Documento A | Corporate Control Tower governs portfolio | `src/control_tower/domain/portfolio` |
@@ -27,3 +29,4 @@
 | PROMPT MASTER 007 | DevSecOps across GitHub, Docker, CI/CD, testing, versioning, releases, ADR, backups, logs, monitoring, observability, and security | ADR-0021, `.github/workflows/ci.yml`, `Dockerfile`, `docs/backlog/prompt-007-devsecops-backlog.md` |
 | PROMPT MASTER 008 | Permanent rule to verify the Master Architecture before code, preserve Enterprise structure, integrate through corporate systems, and scale to hundreds of simultaneous projects | ADR-0022, `scripts/validate_architecture.py`, `docs/operations/architecture-verification-checklist.md` |
 | PROMPT MASTER 009 | Corporate GIS Administration for GeoServer and PostGIS governance without WEB SIG operation | ADR-0023, `src/control_tower/domain/gis`, `docs/backlog/prompt-009-corporate-gis-administration-backlog.md` |
+| PROMPT MASTER 010 | Adopt REV13 Corporate Governance System baseline and map REV13 ADR-0009 to local ADR-0024 | ADR-0024, `docs/traceability/rev13-adoption-traceability.md`, `docs/backlog/prompt-010-rev13-adoption-backlog.md` |
