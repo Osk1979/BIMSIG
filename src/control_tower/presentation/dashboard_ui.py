@@ -330,6 +330,59 @@ def render_dashboard_html() -> str:
       gap: 12px;
       margin-bottom: 14px;
     }
+    .gis-executive-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .8fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .gis-executive-panel {
+      background: linear-gradient(90deg, var(--accent-soft), transparent 58%), var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-width: 0;
+    }
+    .gis-executive-panel h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+    .gis-executive-panel .lead {
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 13px;
+    }
+    .spatial-summary-grid, .spatial-comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .spatial-card, .spatial-compare-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel-strong);
+      min-width: 0;
+    }
+    .spatial-card .label, .spatial-compare-card .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .spatial-card .value, .spatial-compare-card .value {
+      font-size: 21px;
+      font-weight: 780;
+      margin-top: 7px;
+      overflow-wrap: anywhere;
+    }
+    .spatial-card .hint, .spatial-compare-card .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 7px;
+    }
+    .spatial-card.warning, .spatial-compare-card.warning { border-color: var(--warn); }
+    .spatial-card.critical, .spatial-compare-card.critical { border-color: var(--critical); }
     .gis-bridge, .gis-layer-stack {
       background: var(--panel-strong);
       border: 1px solid var(--line);
@@ -767,7 +820,7 @@ def render_dashboard_html() -> str:
       padding: 4px 7px;
     }
     .chip.ready { color: var(--accent); border-color: var(--accent); }
-    .filter-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .filter-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
     .filter-row input, .filter-row button {
       min-width: 0;
       font-size: 12px;
@@ -785,6 +838,8 @@ def render_dashboard_html() -> str:
       text-align: center;
       font-size: 12px;
       font-weight: 700;
+      width: 100%;
+      margin: 0;
     }
     .mode-pill.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
     .wizard-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
@@ -915,6 +970,8 @@ def render_dashboard_html() -> str:
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
       .gis-workbench, .gis-toolbar, .gis-map-grid, .peru-admin-map { grid-template-columns: 1fr; }
+      .gis-executive-grid { grid-template-columns: 1fr; }
+      .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       #radarReadouts { grid-template-columns: repeat(3, minmax(120px, 1fr)); }
       .kpi-chart-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
       .radar { min-height: 380px; width: min(100%, 520px); }
@@ -936,6 +993,7 @@ def render_dashboard_html() -> str:
       .flow-card { grid-template-columns: 1fr; }
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
+      .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
       .service-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .notification { grid-template-columns: 1fr; }
@@ -1035,6 +1093,18 @@ def render_dashboard_html() -> str:
           <section class="section" id="corporateGisDashboard">
             <h2>Corporate GIS Dashboard / GIS Corporativo</h2>
             <div class="section-kicker">Mapa corporativo GIS - Solo lectura - Corporate Layers publicadas por WEB SIG Enterprise.</div>
+            <div class="gis-executive-grid">
+              <div class="gis-executive-panel">
+                <h3>Lectura geoespacial ejecutiva</h3>
+                <div class="lead" id="gisExecutiveSummary">Cargando resumen espacial corporativo...</div>
+              </div>
+              <div class="gis-executive-panel">
+                <h3>Alcance del visor</h3>
+                <div class="lead">La Torre consume capas publicadas, relaciona KPI con layer y sincroniza radar, mapa GIS y ubicacion administrativa. No edita geometria ni opera WEB SIG.</div>
+              </div>
+            </div>
+            <div class="spatial-summary-grid" id="gisSpatialSummary"></div>
+            <div class="spatial-comparison-grid" id="gisSpatialComparisons"></div>
             <div class="gis-toolbar">
               <div class="gis-bridge">
                 <h3>Comunicacion KPI -> Mapa</h3>
@@ -1053,10 +1123,13 @@ def render_dashboard_html() -> str:
             <div class="filter-row" id="gisFilters">
               <button data-gis-filter="estado">Estado</button>
               <button data-gis-filter="riesgo">Riesgo</button>
+              <button data-gis-filter="cronograma">Cronograma</button>
               <button data-gis-filter="calidad">Calidad</button>
               <button data-gis-filter="ambiental">Ambiental</button>
               <button data-gis-filter="ssoma">SSOMA</button>
               <button data-gis-filter="produccion">Produccion</button>
+              <button data-gis-filter="predios">Predios</button>
+              <button data-gis-filter="interferencias">Interferencias</button>
             </div>
             <div class="gis-workbench">
               <div class="gis-map-grid">
@@ -1181,6 +1254,7 @@ def render_dashboard_html() -> str:
     let reportTemplates = [];
     let activePortfolioFilter = "all";
     let activeGisFilter = "estado";
+    let activeGisView = "nacional";
     let activePeruRegion = "all";
     let selectedProjectId = null;
     let currentPrincipal = null;
@@ -1728,14 +1802,29 @@ def render_dashboard_html() -> str:
     function renderMap() {
       const map = document.querySelector("#projectRadar");
       const readouts = document.querySelector("#radarReadouts");
-      const modes = ["Mapa Nacional", "Mapa Regional", "Empresa", "Programa", "Proyecto"];
+      const modes = [
+        ["nacional", "Mapa Nacional"],
+        ["regional", "Mapa Regional"],
+        ["empresa", "Empresa"],
+        ["programa", "Programa"],
+        ["proyecto", "Proyecto"]
+      ];
+      renderGisExecutiveSummary();
+      renderGisSpatialSummary();
+      renderGisSpatialComparisons();
       renderGisKpiBridge();
       renderGisLayerLegend();
       renderGisKpiCharts();
       renderGisServiceSlots();
-      document.querySelector("#gisMapModes").innerHTML = modes.map((mode, index) => `
-        <div class="mode-pill ${index === 0 ? "active" : ""}">${mode}</div>
+      document.querySelector("#gisMapModes").innerHTML = modes.map(([mode, label]) => `
+        <button class="mode-pill ${activeGisView === mode ? "active" : ""}" data-gis-view="${mode}">${label}</button>
       `).join("");
+      document.querySelectorAll("[data-gis-view]").forEach(button => {
+        button.addEventListener("click", () => {
+          activeGisView = button.dataset.gisView;
+          renderMap();
+        });
+      });
       document.querySelectorAll("[data-gis-filter]").forEach(button => {
         button.classList.toggle("active", button.dataset.gisFilter === activeGisFilter);
       });
@@ -1776,6 +1865,77 @@ def render_dashboard_html() -> str:
       renderGisMapSurface();
       renderGisProjectDetail();
       renderPeruAdministrativeMap();
+    }
+
+    function renderGisExecutiveSummary() {
+      const points = data.map_points || [];
+      const summary = data.gis_intelligence || {};
+      const locations = points.map((point, index) => administrativeLocation(point, index));
+      const regions = uniqueCount(locations.map(item => item.region).filter(Boolean));
+      const activeLayers = gisMap?.layers?.length || summary.projects_with_active_layers || 0;
+      const selected = selectedProject();
+      const selectedIndex = Math.max(0, points.findIndex((point, index) => projectKey(point, index) === selectedProjectId));
+      const admin = selected ? administrativeLocation(selected, selectedIndex) : null;
+      document.querySelector("#gisExecutiveSummary").textContent = points.length
+        ? `El portafolio tiene ${points.length} proyecto${points.length === 1 ? "" : "s"} georreferenciado${points.length === 1 ? "" : "s"} en ${regions} region${regions === 1 ? "" : "es"}. Vista ${gisViewLabel(activeGisView)} con tema ${gisThemeLabel(activeGisFilter)}; proyecto enfocado: ${selected?.name || "sin seleccion"}${admin ? ` / ${admin.region} / ${admin.province} / ${admin.district}` : ""}. Capas activas: ${activeLayers}.`
+        : "Sin proyectos georreferenciados. El visor queda preparado para consumir capas corporativas publicadas por WEB SIG Enterprise.";
+    }
+
+    function renderGisSpatialSummary() {
+      const points = data.map_points || [];
+      const summary = data.gis_intelligence || {};
+      const locations = points.map((point, index) => administrativeLocation(point, index));
+      const regions = uniqueCount(locations.map(item => item.region).filter(Boolean));
+      const layers = gisMap?.layers?.length || summary.projects_with_active_layers || 0;
+      const riskProjects = summary.projects_with_spatial_risks ?? Number(data.risks[0]?.value ?? 0);
+      const environmentalAlerts = summary.projects_with_environmental_alerts ?? Number(data.environmental[1]?.value ?? 0);
+      const cards = [
+        ["Proyectos ubicados", points.length, `${regions} region${regions === 1 ? "" : "es"} / ${gisViewLabel(activeGisView)}`, points.length ? "stable" : "warning"],
+        ["Capas activas", layers, "Corporate Layers publicadas", layers ? "stable" : "warning"],
+        ["Riesgos espaciales", riskProjects, "Cruce ejecutivo de riesgo", riskProjects ? "warning" : "stable"],
+        ["Alertas ambientales", environmentalAlerts, "Tema ambiental activo", environmentalAlerts ? "warning" : "stable"],
+        ["Avance espacial", `${summary.aggregated_spatial_progress ?? normalizePercent(data.production[0]?.value)}%`, "Indicador agregado", "stable"],
+        ["Restricciones", summary.projects_with_active_restrictions ?? 0, "Restricciones corporativas", (summary.projects_with_active_restrictions ?? 0) ? "warning" : "stable"],
+        ["Vista activa", gisViewLabel(activeGisView), "Nacional / regional / empresa / programa / proyecto", "stable"],
+        ["Tema activo", gisThemeLabel(activeGisFilter), "Filtro ejecutivo aplicado", "stable"]
+      ];
+      document.querySelector("#gisSpatialSummary").innerHTML = cards.map(([label, value, hint, status]) => `
+        <article class="spatial-card ${status}">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="hint">${hint}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderGisSpatialComparisons() {
+      const comparisons = data.comparisons || [];
+      const points = data.map_points || [];
+      const regions = regionCounts(points.map((point, index) => ({
+        point,
+        index,
+        projectId: projectKey(point, index),
+        admin: administrativeLocation(point, index),
+        position: peruMapPosition(point)
+      })));
+      const highestRisk = [...comparisons].sort((left, right) => right.risk_score - left.risk_score)[0];
+      const lowerProgress = [...comparisons].sort((left, right) => left.production_score - right.production_score)[0];
+      const selected = selectedProject();
+      const selectedIndex = Math.max(0, points.findIndex((point, index) => projectKey(point, index) === selectedProjectId));
+      const admin = selected ? administrativeLocation(selected, selectedIndex) : null;
+      const cards = [
+        ["Proyecto enfocado", selected?.name || "sin seleccion", admin ? `${admin.region} / ${admin.province} / ${admin.district}` : "Ubicacion pendiente", "stable"],
+        ["Mayor riesgo espacial", highestRisk ? highestRisk.name : "sin riesgo", highestRisk ? `Score ${highestRisk.risk_score}` : "Sin comparativos", highestRisk ? "warning" : "stable"],
+        ["Menor avance espacial", lowerProgress ? lowerProgress.name : "sin avance", lowerProgress ? `Produccion ${lowerProgress.production_score}%` : "Sin comparativos", lowerProgress ? "warning" : "stable"],
+        ["Region con portafolio", regions[0]?.region || "por registrar", `${regions[0]?.count || 0} proyecto${regions[0]?.count === 1 ? "" : "s"}`, regions[0]?.count ? "stable" : "warning"]
+      ];
+      document.querySelector("#gisSpatialComparisons").innerHTML = cards.map(([label, value, hint, status]) => `
+        <article class="spatial-compare-card ${status}">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="hint">${hint}</div>
+        </article>
+      `).join("");
     }
 
     function renderGisMapSurface() {
@@ -1830,11 +1990,16 @@ def render_dashboard_html() -> str:
       }
       const governance = (data.portfolio_governance || []).find(item => item.project_id === selected.project_id || item.project_name === selected.name) || {};
       const flow = (data.operational_flow || []).find(item => item.project_id === governance.project_id) || {};
+      const selectedIndex = Math.max(0, (data.map_points || []).findIndex((point, index) => projectKey(point, index) === selectedProjectId));
+      const admin = administrativeLocation(selected, selectedIndex);
       detail.innerHTML = `
         <div class="name">${selected.name}</div>
         <div class="row"><span>Geometria</span><strong>publicada por WEB SIG</strong></div>
+        <div class="row"><span>Region / provincia</span><strong>${admin.region} / ${admin.province}</strong></div>
+        <div class="row"><span>Distrito</span><strong>${admin.district}</strong></div>
+        <div class="row"><span>Vista</span><strong>${gisViewLabel(activeGisView)}</strong></div>
         <div class="row"><span>Estado</span><strong>${governance.governance_status || "observed"}</strong></div>
-        <div class="row"><span>Layer activo</span><strong>${activeGisFilter}</strong></div>
+        <div class="row"><span>Layer activo</span><strong>${gisThemeLabel(activeGisFilter)}</strong></div>
         <div class="row"><span>Readiness</span><strong>${flow.readiness_score ?? "pendiente"}%</strong></div>
       `;
     }
@@ -1986,14 +2151,42 @@ def render_dashboard_html() -> str:
         .sort((left, right) => left.region.localeCompare(right.region));
     }
 
+    function gisViewLabel(view) {
+      const labels = {
+        nacional: "nacional",
+        regional: "regional",
+        empresa: "por empresa",
+        programa: "por programa",
+        proyecto: "por proyecto"
+      };
+      return labels[view] || "nacional";
+    }
+
+    function gisThemeLabel(filter) {
+      const labels = {
+        estado: "estado",
+        riesgo: "riesgo",
+        produccion: "produccion",
+        cronograma: "cronograma",
+        calidad: "calidad",
+        ambiental: "ambiental",
+        ssoma: "SSOMA",
+        predios: "predios",
+        interferencias: "interferencias"
+      };
+      return labels[filter] || "estado";
+    }
+
     function renderGisKpiBridge() {
       const bridge = [
         ["Produccion", data.production[0]?.value ?? "0%", "Capa avance", "produccion"],
         ["Riesgo", data.risks[0]?.value ?? "0", "Capa riesgos", "riesgo"],
+        ["Cronograma", data.schedule[0]?.value ?? "0", "Capa cronograma", "cronograma"],
         ["Ambiental", data.environmental[0]?.value ?? "0", "Capa ambiental", "ambiental"],
         ["SSOMA", data.ssoma[0]?.value ?? "0", "Capa SSOMA", "ssoma"],
         ["Calidad", data.quality[0]?.value ?? "0%", "Capa calidad", "calidad"],
-        ["Cronograma", data.schedule[0]?.value ?? "0", "Capa cronograma", "estado"]
+        ["Predios", data.portfolio.total_projects ?? 0, "Capa predios", "predios"],
+        ["Interferencias", data.risks[0]?.value ?? "0", "Capa interferencias", "interferencias"]
       ];
       document.querySelector("#gisKpiBridge").innerHTML = bridge.map(([label, value, target, filter]) => `
         <button class="bridge-card ${activeGisFilter === filter ? "active" : ""}" data-kpi-filter="${filter}">
@@ -2018,7 +2211,12 @@ def render_dashboard_html() -> str:
         : [
             { name: "Avance fisico", type: "WMS / avance", status: "not_configured", detail: "slot publicado por WEB SIG" },
             { name: "Riesgos espaciales", type: "WFS / riesgo", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Cronograma", type: "WMS / cronograma", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Calidad", type: "WFS / calidad", status: "not_configured", detail: "slot publicado por WEB SIG" },
             { name: "Ambiental", type: "WMTS / ambiental", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "SSOMA", type: "WMS / ssoma", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Predios", type: "WFS / predios", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Interferencias", type: "Vector Tiles / interferencias", status: "not_configured", detail: "slot preparado" },
             { name: "Vector Tiles", type: "Vector Tiles / spatial_kpis", status: "not_configured", detail: "slot preparado" }
           ];
       document.querySelector("#gisLayerLegend").innerHTML = layers.map(layer => `
@@ -2033,10 +2231,14 @@ def render_dashboard_html() -> str:
     function renderGisKpiCharts() {
       const charts = [
         ["Produccion", data.production[0]?.value ?? "0%", "avance"],
+        ["Riesgo", `${Math.max(0, 100 - Number(data.risks[0]?.value ?? 0) * 10)}%`, "riesgos"],
+        ["Cronograma", `${Math.round(Number(data.schedule[0]?.value ?? 0) * 100)}%`, "cronograma"],
         ["Salud portafolio", data.kpis[0]?.value ?? "0%", "portfolio"],
         ["Cobertura WEB SIG", data.kpis[2]?.value ?? "0%", "websig"],
         ["Avance espacial", `${data.gis_intelligence?.aggregated_spatial_progress ?? 0}%`, "gis"],
-        ["Calidad", data.quality[0]?.value ?? "0%", "quality"]
+        ["Calidad", data.quality[0]?.value ?? "0%", "quality"],
+        ["Ambiental", data.environmental[0]?.value ?? "0%", "ambiental"],
+        ["SSOMA", data.ssoma[0]?.value ?? "0%", "ssoma"]
       ];
       document.querySelector("#gisKpiCharts").innerHTML = charts.map(([name, value, layer]) => {
         const percent = normalizePercent(value);
@@ -2420,10 +2622,13 @@ def render_dashboard_html() -> str:
       const params = new URLSearchParams();
       if (filter === "estado") params.set("estado", "warning");
       if (filter === "riesgo") params.set("riesgo", "medium");
+      if (filter === "cronograma") params.set("estado", "schedule_watch");
       if (filter === "calidad") params.set("calidad", "true");
       if (filter === "ambiental") params.set("ambiental", "true");
       if (filter === "ssoma") params.set("ssoma", "true");
       if (filter === "produccion") params.set("produccion", "true");
+      if (filter === "predios") params.set("predios", "true");
+      if (filter === "interferencias") params.set("interferencias", "true");
       try {
         const response = await apiFetch(`/api/v1/companies/${encodeURIComponent(companyId)}/gis-intelligence/maps/filter?${params}`);
         if (response.ok) {

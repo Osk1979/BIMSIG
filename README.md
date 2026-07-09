@@ -248,3 +248,9 @@ CTO-104B completes the Executive Corporate Dashboard with a 60-second situation
 summary, actionable status matrix for the 17 executive blocks, semaphores,
 comparative cards, empty states, no-access states, and navigation toward the
 main corporate flows without exposing technical domains as primary navigation.
+
+CTO-104C turns Corporate GIS Dashboard into an executive geospatial viewer with
+national, regional, company, program, and project views; thematic filters for
+risk, production, schedule, quality, environmental, SSOMA, parcels, and
+interferences; spatial summaries, project comparisons, published-layer legend,
+and synchronized radar, GIS map, and Peru administrative map.
