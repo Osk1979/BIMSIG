@@ -842,6 +842,36 @@ def render_dashboard_html() -> str:
       margin: 0;
     }
     .mode-pill.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+    .wizard-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, .42fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .wizard-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(180deg, var(--panel), var(--panel-strong));
+      min-width: 0;
+    }
+    .wizard-panel h3 { margin: 0 0 8px; font-size: 16px; }
+    .wizard-progress-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, .18);
+      overflow: hidden;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+    }
+    .wizard-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--warning));
+      transition: width .2s ease;
+    }
+    .wizard-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+    .wizard-actions button { margin: 0; min-width: 0; padding: 9px; font-size: 12px; }
     .wizard-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
     .wizard-step {
       min-height: 76px;
@@ -851,10 +881,65 @@ def render_dashboard_html() -> str:
       background: var(--panel-strong);
       display: grid;
       align-content: space-between;
+      text-align: left;
+      margin: 0;
+      width: 100%;
     }
+    .wizard-step.active { border-color: var(--accent); background: var(--accent-soft); }
+    .wizard-step.valid { border-color: rgba(52, 211, 153, .55); }
+    .wizard-step.invalid { border-color: rgba(245, 158, 11, .75); }
+    .wizard-step.blocked { opacity: .72; border-style: dashed; }
     .wizard-step .number { color: var(--accent); font-weight: 780; font-size: 12px; }
     .wizard-step .name { font-weight: 720; }
     .wizard-step .state { color: var(--muted); font-size: 11px; }
+    .wizard-product-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .62fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .wizard-detail, .wizard-validation, .wizard-summary, .wizard-audit {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--panel-strong);
+      min-width: 0;
+    }
+    .wizard-detail h3, .wizard-validation h3, .wizard-summary h3, .wizard-audit h3 { margin: 0 0 8px; }
+    .wizard-detail-grid, .wizard-trace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .wizard-readout {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(15, 23, 42, .18);
+      min-height: 72px;
+    }
+    .wizard-readout .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .wizard-readout .value { margin-top: 6px; font-weight: 760; overflow-wrap: anywhere; }
+    .wizard-validation-list { display: grid; gap: 8px; }
+    .wizard-validation-item {
+      display: grid;
+      grid-template-columns: minmax(110px, .34fr) minmax(0, 1fr);
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 0;
+      font-size: 13px;
+    }
+    .wizard-validation-item:last-child { border-bottom: 0; }
+    .wizard-validation-item strong { color: var(--accent); }
+    .wizard-status-pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .wizard-status-pill.valid { color: var(--accent); border-color: var(--accent); }
+    .wizard-status-pill.blocked, .wizard-status-pill.invalid { color: var(--warning); border-color: var(--warning); }
     .notification-list { display: grid; gap: 8px; }
     .notification {
       display: grid;
@@ -966,6 +1051,7 @@ def render_dashboard_html() -> str:
       .home-command, .home-ops-grid { grid-template-columns: 1fr; }
       .executive-command { grid-template-columns: 1fr; }
       .executive-status-grid, .executive-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .wizard-command, .wizard-product-grid { grid-template-columns: 1fr; }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
@@ -993,6 +1079,7 @@ def render_dashboard_html() -> str:
       .flow-card { grid-template-columns: 1fr; }
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
+      .wizard-actions, .wizard-detail-grid, .wizard-trace-grid, .wizard-validation-item { grid-template-columns: 1fr; }
       .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
       .service-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1180,8 +1267,34 @@ def render_dashboard_html() -> str:
           </section>
           <section class="section" id="enterpriseWizard">
             <h2>Corporate Wizard</h2>
-            <div class="section-kicker">Flujo visual del Enterprise Wizard con avance parcial, validacion y progreso por etapa.</div>
+            <div class="section-kicker">Asistente corporativo para iniciar, pausar, reanudar y activar proyectos con trazabilidad en Workflow, Portfolio, GIS, NAS y Auditoria.</div>
+            <div class="wizard-command" id="wizardCommandCenter">
+              <div class="wizard-panel">
+                <h3>Creacion corporativa guiada</h3>
+                <div class="lead" id="wizardProgressLabel">Cargando sesiones del Enterprise Wizard...</div>
+                <div class="wizard-progress-track" aria-label="Progreso del Wizard">
+                  <div class="wizard-progress-fill" id="wizardProgressBar"></div>
+                </div>
+                <div class="wizard-actions">
+                  <button id="wizardStart" class="primary" data-rbac-scope="provisioning" data-rbac-action="execute">Iniciar</button>
+                  <button id="wizardSave" data-rbac-scope="provisioning" data-rbac-action="execute">Guardar avance</button>
+                  <button id="wizardActivate" data-rbac-scope="provisioning" data-rbac-action="execute">Activar</button>
+                </div>
+              </div>
+              <div class="wizard-panel" id="wizardResumePanel">
+                <h3>Reanudacion</h3>
+                <div class="muted">Sincroniza la sesion persistida, el paso actual y los pendientes antes de activar.</div>
+              </div>
+            </div>
             <div class="wizard-steps" id="wizardSteps"></div>
+            <div class="wizard-product-grid">
+              <div class="wizard-detail" id="wizardStepDetail"></div>
+              <div class="wizard-validation" id="wizardValidationPanel"></div>
+            </div>
+            <div class="wizard-product-grid">
+              <div class="wizard-summary" id="wizardActivationSummary"></div>
+              <div class="wizard-audit" id="wizardAuditTrail"></div>
+            </div>
           </section>
           <section class="section" id="corporateReporting">
             <h2>Corporate Reporting</h2>
@@ -1256,6 +1369,7 @@ def render_dashboard_html() -> str:
     let activeGisFilter = "estado";
     let activeGisView = "nacional";
     let activePeruRegion = "all";
+    let activeWizardStep = "company";
     let selectedProjectId = null;
     let currentPrincipal = null;
     let permissionMatrix = [];
@@ -2331,64 +2445,461 @@ def render_dashboard_html() -> str:
 
     function renderWizard() {
       const activeSession = wizardSessions[0];
-      const steps = activeSession ? wizardSessionSteps(activeSession) : derivedWizardSteps();
-      document.querySelector("#wizardSteps").innerHTML = steps.map(([name, ready], index) => `
-        <article class="wizard-step">
+      const steps = wizardProductSteps(activeSession);
+      const validCount = steps.filter(step => step.status === "valid").length;
+      const progress = Math.round((validCount / steps.length) * 100);
+      const current = steps.find(step => step.key === activeWizardStep) || steps.find(step => step.status !== "valid") || steps[0];
+      activeWizardStep = current.key;
+      const canExecute = hasPermission("provisioning", "execute");
+      document.querySelector("#wizardProgressLabel").textContent = activeSession
+        ? `${progress}% completado / sesion ${activeSession.wizard_id} / paso actual ${wizardLabel(activeSession.current_step)}`
+        : `${progress}% preparado / sin sesion activa / listo para iniciar`;
+      document.querySelector("#wizardProgressBar").style.width = `${progress}%`;
+      document.querySelector("#wizardResumePanel").innerHTML = wizardResumeMarkup(activeSession, current, canExecute);
+      document.querySelector("#wizardSteps").innerHTML = steps.map((step, index) => `
+        <button class="wizard-step ${step.status} ${step.key === current.key ? "active" : ""}" data-wizard-step="${step.key}" data-rbac-scope="provisioning" data-rbac-action="execute">
           <div class="number">Paso ${index + 1}</div>
-          <div class="name">${name}</div>
-          <div class="state">${ready}</div>
-        </article>
+          <div class="name">${step.name}</div>
+          <div class="state">${stepStatusText(step)}</div>
+        </button>
       `).join("");
+      document.querySelector("#wizardStepDetail").innerHTML = wizardStepDetailMarkup(current, activeSession, canExecute);
+      document.querySelector("#wizardValidationPanel").innerHTML = wizardValidationMarkup(steps);
+      document.querySelector("#wizardActivationSummary").innerHTML = wizardActivationSummaryMarkup(activeSession, steps);
+      document.querySelector("#wizardAuditTrail").innerHTML = wizardAuditMarkup(activeSession);
+      document.querySelectorAll("[data-wizard-step]").forEach(button => {
+        button.addEventListener("click", () => {
+          activeWizardStep = button.dataset.wizardStep;
+          renderWizard();
+          applyRbacUi();
+        });
+      });
+      wireWizardActions(activeSession, current, canExecute);
     }
 
-    function wizardSessionSteps(session) {
-      const saved = Object.fromEntries((session.steps || []).map(step => [step.step, step]));
-      const names = [
-        "Empresa", "Programa", "Proyecto", "Ubicacion", "Especialidades",
-        "Provisionamiento", "GIS", "NAS", "Usuarios", "Activacion"
-      ];
-      return names.map(name => {
-        const key = wizardKey(name);
-        const state = saved[key]?.status === "valid" ? "validado / autosave real" : "reanudable / pendiente";
-        return [name, state];
+    function wizardProductSteps(session) {
+      const saved = Object.fromEntries((session?.steps || []).map(step => [step.step, step]));
+      return wizardDefinitions().map(definition => {
+        const persisted = saved[definition.key];
+        const derived = wizardDerivedState(definition.key);
+        const status = persisted?.status || derived.status;
+        const errors = persisted?.validation_errors?.length ? persisted.validation_errors : derived.errors;
+        return Object.assign({}, definition, {
+          status,
+          data: persisted?.data && Object.keys(persisted.data).length ? persisted.data : derived.data,
+          errors,
+          source: persisted ? "enterprise_wizard_session" : derived.source
+        });
       });
     }
 
-    function wizardKey(name) {
-      const map = {
-        Empresa: "company",
-        Programa: "program",
-        Proyecto: "project",
-        Ubicacion: "location",
-        Especialidades: "specialties",
-        Provisionamiento: "web_sig",
-        GIS: "gis",
-        NAS: "nas",
-        Usuarios: "users",
-        Activacion: "activation"
-      };
-      return map[name];
+    function wizardDefinitions() {
+      return [
+        {
+          key: "company",
+          name: "Empresa",
+          purpose: "Define la empresa responsable del proyecto y el alcance multiempresa.",
+          required: ["company_id", "legal_name", "display_name"]
+        },
+        {
+          key: "program",
+          name: "Programa",
+          purpose: "Agrupa proyectos bajo un programa corporativo trazable.",
+          required: ["program_id", "name"]
+        },
+        {
+          key: "project",
+          name: "Proyecto",
+          purpose: "Registra el proyecto que sera gobernado por la Torre.",
+          required: ["project_id", "name"]
+        },
+        {
+          key: "location",
+          name: "Ubicacion administrativa",
+          purpose: "Formaliza pais, region, provincia, distrito y coordenadas corporativas.",
+          required: ["country", "region", "province", "district", "latitude", "longitude", "location_source", "location_validation_status"]
+        },
+        {
+          key: "specialties",
+          name: "Especialidades",
+          purpose: "Declara disciplinas que activaran controles, capas y responsables.",
+          required: ["specialties"]
+        },
+        {
+          key: "web_sig",
+          name: "WEB SIG",
+          purpose: "Vincula la instancia WEB SIG que nacera desde Factory, sin operarla desde la Torre.",
+          required: ["template_id", "websig_slug"]
+        },
+        {
+          key: "gis",
+          name: "GIS",
+          purpose: "Conecta esquema PostGIS, workspace GeoServer y binding GIS corporativo.",
+          required: ["postgis_schema", "geoserver_workspace"]
+        },
+        {
+          key: "nas",
+          name: "NAS",
+          purpose: "Registra el centro documental corporativo y su URI logica.",
+          required: ["nas_root_uri"]
+        },
+        {
+          key: "users",
+          name: "Usuarios",
+          purpose: "Asigna usuarios iniciales, roles y membresias corporativas.",
+          required: ["users"]
+        },
+        {
+          key: "activation",
+          name: "Activacion",
+          purpose: "Confirma aprobacion final y deja trazabilidad operacional.",
+          required: ["approved_by"]
+        }
+      ];
     }
 
-    function derivedWizardSteps() {
+    function wizardDerivedState(key) {
+      const payload = wizardPayloadForStep(key);
+      const definition = wizardDefinitions().find(item => item.key === key);
+      const errors = missingWizardFields(definition.required, payload);
+      const status = errors.length ? "pending" : "valid";
+      return { status, data: payload, errors, source: "dashboard_governance_data" };
+    }
+
+    function wizardPayloadForStep(key) {
       const governed = data.portfolio_governance || [];
-      const hasProject = governed.length > 0;
-      const websigReady = governed.some(item => item.websig !== "pendiente");
-      const gisReady = governed.some(item => item.gis !== "pendiente");
-      const nasReady = governed.some(item => item.nas !== "pendiente");
-      const usersReady = (data.users || []).length > 0;
-      return [
-        ["Empresa", "validado / dato corporativo"],
-        ["Programa", governed.some(item => item.program) ? "validado / dato real" : "pendiente / reanudable"],
-        ["Proyecto", hasProject ? "validado / dato real" : "pendiente / reanudable"],
-        ["Ubicacion", data.map_points.length > 0 ? "validado / dato real" : "pendiente / reanudable"],
-        ["Especialidades", hasProject ? "validado / dato real" : "pendiente / reanudable"],
-        ["Provisionamiento", websigReady ? "validado / WEB SIG registrada" : "pendiente / reanudable"],
-        ["GIS", gisReady ? "validado / recurso GIS" : "pendiente / reanudable"],
-        ["NAS", nasReady ? "validado / referencia NAS" : "pendiente / reanudable"],
-        ["Usuarios", usersReady ? "validado / usuarios reales" : "pendiente / reanudable"],
-        ["Activacion", (data.operational_flow || []).some(item => item.readiness_score >= 80) ? "validado / activable" : "pendiente / reanudable"]
+      const first = governed[0] || {};
+      const project = portfolioProjects.find(item => item.project_id === first.project_id) || portfolioProjects[0] || {};
+      const point = (data.map_points || []).find(item => item.project_id === first.project_id) || (data.map_points || [])[0] || {};
+      const admin = selectedProject() || {};
+      const companyId = data.company_id || document.querySelector("#companyId").value.trim();
+      const programId = first.program_id || project.program_id || (first.program ? slugId("PRG", first.program) : undefined);
+      const projectId = first.project_id || project.project_id;
+      const websigSlug = first.websig && first.websig !== "pendiente"
+        ? String(first.websig).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+        : undefined;
+      if (key === "company") {
+        return { company_id: companyId, legal_name: companyId, display_name: companyId };
+      }
+      if (key === "program") {
+        return { program_id: programId, name: first.program || project.program || programId };
+      }
+      if (key === "project") {
+        return { project_id: projectId, name: first.project_name || project.name };
+      }
+      if (key === "location") {
+        return {
+          country: project.country || admin.country || "PE",
+          region: project.region || admin.region || point.region,
+          province: project.province || admin.province || point.province,
+          district: project.district || admin.district || point.district,
+          latitude: project.latitude ?? point.latitude,
+          longitude: project.longitude ?? point.longitude,
+          location_source: project.location_source || "dashboard_governance_data",
+          location_validation_status: project.location_validation_status || "validated"
+        };
+      }
+      if (key === "specialties") {
+        const disciplines = (gisLayerPanel?.layers || []).map(layer => layer.discipline).filter(Boolean);
+        return { specialties: disciplines.length ? [...new Set(disciplines)] : ["gis"] };
+      }
+      if (key === "web_sig") {
+        return {
+          template_id: project.websig_template_id || "WEB-SIG-ENTERPRISE-REV13",
+          websig_slug: websigSlug,
+          websig_instance_id: project.websig_instance_id || first.websig,
+          websig_url: project.websig_url
+        };
+      }
+      if (key === "gis") {
+        return {
+          postgis_schema: project.postgis_schema || first.gis,
+          geoserver_workspace: project.geoserver_workspace || first.gis,
+          gis_binding_id: project.gis_binding_id || first.gis
+        };
+      }
+      if (key === "nas") {
+        return {
+          nas_root_uri: project.nas_root_uri || first.nas,
+          google_drive_folder_id: project.google_drive_folder_id
+        };
+      }
+      if (key === "users") {
+        return {
+          users: (data.users || []).map((user, index) => ({
+            user_id: user.user_id || `USR-DASH-${index + 1}`,
+            email: user.email,
+            display_name: user.display_name || user.email,
+            role: user.role || "portfolio_manager"
+          }))
+        };
+      }
+      return { approved_by: currentPrincipal?.user_id || currentPrincipal?.email || "portfolio-manager" };
+    }
+
+    function missingWizardFields(required, payload) {
+      return required.flatMap(field => {
+        const value = payload[field];
+        if (field === "users" && Array.isArray(value)) {
+          const missingUsers = value.some(user => !user.email);
+          return value.length && !missingUsers ? [] : ["Agrega al menos un usuario con correo corporativo."];
+        }
+        if (field === "specialties" && Array.isArray(value)) {
+          return value.length ? [] : ["Selecciona al menos una especialidad."];
+        }
+        return value === undefined || value === null || value === "" || value === "pendiente"
+          ? [wizardFriendlyMissing(field)]
+          : [];
+      });
+    }
+
+    function wizardFriendlyMissing(field) {
+      const labels = {
+        company_id: "Falta identificar la empresa.",
+        legal_name: "Falta razon social.",
+        display_name: "Falta nombre visible de empresa.",
+        program_id: "Falta codigo de programa.",
+        name: "Falta nombre.",
+        project_id: "Falta codigo de proyecto.",
+        country: "Falta pais.",
+        region: "Falta region.",
+        province: "Falta provincia.",
+        district: "Falta distrito.",
+        latitude: "Falta latitud corporativa.",
+        longitude: "Falta longitud corporativa.",
+        location_source: "Falta fuente de ubicacion.",
+        location_validation_status: "Falta estado de validacion de ubicacion.",
+        template_id: "Falta plantilla WEB SIG Factory.",
+        websig_slug: "Falta slug WEB SIG.",
+        postgis_schema: "Falta esquema PostGIS.",
+        geoserver_workspace: "Falta workspace GeoServer.",
+        nas_root_uri: "Falta URI NAS.",
+        approved_by: "Falta aprobador final."
+      };
+      return labels[field] || `Falta ${field}.`;
+    }
+
+    function wizardLabel(key) {
+      const definition = wizardDefinitions().find(item => item.key === key);
+      return definition ? definition.name : key;
+    }
+
+    function stepStatusText(step) {
+      if (step.status === "valid") return "validado / guardado parcial";
+      if (step.status === "invalid") return "requiere correccion";
+      if (step.status === "blocked") return "bloqueado por permisos";
+      return "pendiente / reanudable";
+    }
+
+    function wizardResumeMarkup(session, current, canExecute) {
+      if (!canExecute) {
+        return `
+          <h3>Reanudacion</h3>
+          <div class="wizard-status-pill blocked">Sin permiso para ejecutar provisioning</div>
+          <div class="muted">Puedes revisar el estado, pero la API bloqueara iniciar, guardar o activar.</div>
+        `;
+      }
+      if (!session) {
+        return `
+          <h3>Reanudacion</h3>
+          <div class="wizard-status-pill">Sin sesion activa</div>
+          <div class="muted">Pulsa Iniciar para crear una sesion persistida del Enterprise Wizard.</div>
+        `;
+      }
+      return `
+        <h3>Reanudacion</h3>
+        <div class="wizard-status-pill ${session.status === "ready" ? "valid" : ""}">${session.status}</div>
+        <div class="muted">Sesion ${session.wizard_id}. Reanuda desde ${current.name}; actualizado por ${session.updated_by || session.created_by}.</div>
+      `;
+    }
+
+    function wizardStepDetailMarkup(step, session, canExecute) {
+      const dataRows = Object.entries(step.data || {}).slice(0, 6);
+      const errors = step.errors.length ? step.errors : ["Datos minimos completos para este paso."];
+      return `
+        <h3>${step.name}</h3>
+        <div class="muted">${step.purpose}</div>
+        <div class="wizard-status-pill ${canExecute ? step.status : "blocked"}">${canExecute ? stepStatusText(step) : "bloqueado por permisos"}</div>
+        <div class="wizard-detail-grid" style="margin-top: 12px;">
+          <div class="wizard-readout">
+            <div class="label">Sesion</div>
+            <div class="value">${session?.wizard_id || "pendiente de iniciar"}</div>
+          </div>
+          <div class="wizard-readout">
+            <div class="label">Fuente</div>
+            <div class="value">${step.source}</div>
+          </div>
+          <div class="wizard-readout">
+            <div class="label">Campos requeridos</div>
+            <div class="value">${step.required.length}</div>
+          </div>
+          <div class="wizard-readout">
+            <div class="label">Estado</div>
+            <div class="value">${step.status}</div>
+          </div>
+        </div>
+        <div class="wizard-validation-list" style="margin-top: 12px;">
+          ${errors.map(error => `
+            <div class="wizard-validation-item">
+              <strong>${step.errors.length ? "Falta" : "Listo"}</strong>
+              <span>${error}</span>
+            </div>
+          `).join("")}
+        </div>
+        <div class="wizard-detail-grid" style="margin-top: 12px;">
+          ${dataRows.length ? dataRows.map(([key, value]) => `
+            <div class="wizard-readout">
+              <div class="label">${key}</div>
+              <div class="value">${Array.isArray(value) ? value.length : value ?? "pendiente"}</div>
+            </div>
+          `).join("") : `
+            <div class="wizard-readout">
+              <div class="label">Datos</div>
+              <div class="value">pendiente</div>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function wizardValidationMarkup(steps) {
+      return `
+        <h3>Validacion independiente</h3>
+        <div class="muted">Cada paso se puede validar y guardar sin completar los demas.</div>
+        <div class="wizard-validation-list">
+          ${steps.map(step => `
+            <div class="wizard-validation-item">
+              <strong>${step.name}</strong>
+              <span>${step.errors.length ? step.errors[0] : "Listo para flujo corporativo."}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function wizardActivationSummaryMarkup(session, steps) {
+      const validCount = steps.filter(step => step.status === "valid").length;
+      const ready = session?.status === "ready" || validCount === steps.length;
+      const traces = [
+        ["Workflow", session?.workflow_id || (ready ? "preparado para CWF" : "pendiente")],
+        ["Portfolio", steps.find(step => step.key === "project")?.data?.project_id || "pendiente"],
+        ["GIS", steps.find(step => step.key === "gis")?.data?.geoserver_workspace || "pendiente"],
+        ["NAS", steps.find(step => step.key === "nas")?.data?.nas_root_uri || "pendiente"],
+        ["Auditoria", session ? "eventos enterprise_wizard" : "pendiente de sesion"],
+        ["WEB SIG", steps.find(step => step.key === "web_sig")?.data?.websig_instance_id || "pendiente"]
       ];
+      return `
+        <h3>Resumen antes de activar</h3>
+        <div class="muted">${ready ? "La sesion esta lista para confirmacion final." : "Completa los pasos pendientes antes de activar."}</div>
+        <div class="wizard-trace-grid" style="margin-top: 12px;">
+          ${traces.map(([label, value]) => `
+            <div class="wizard-readout">
+              <div class="label">${label}</div>
+              <div class="value">${value}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function wizardAuditMarkup(session) {
+      const events = recentEvents()
+        .filter(event => ["Wizard", "Workflow", "Lifecycle", "Provisioning", "GIS", "NAS", "Audit"].includes(event.kind))
+        .slice(0, 6);
+      return `
+        <h3>Auditoria del flujo</h3>
+        <div class="muted">${session ? `Sesion ${session.wizard_id}` : "La auditoria se activara al iniciar la sesion."}</div>
+        <div class="notification-list" style="margin-top: 12px;">
+          ${events.length ? events.map(event => `
+            <article class="notification">
+              <div class="kind">${event.kind}</div>
+              <div class="message">${event.message}</div>
+              <div class="time">${event.time}</div>
+            </article>
+          `).join("") : `
+            <article class="notification">
+              <div class="kind">Wizard</div>
+              <div class="message">Sin eventos recientes del asistente corporativo.</div>
+              <div class="time">pendiente</div>
+            </article>
+          `}
+        </div>
+      `;
+    }
+
+    function wireWizardActions(session, current, canExecute) {
+      const start = document.querySelector("#wizardStart");
+      const save = document.querySelector("#wizardSave");
+      const activate = document.querySelector("#wizardActivate");
+      start.disabled = !canExecute;
+      save.disabled = !canExecute;
+      activate.disabled = !canExecute || session?.status !== "ready";
+      start.onclick = () => startWizardSession();
+      save.onclick = () => saveWizardStep(current.key);
+      activate.onclick = () => activateWizardSession();
+    }
+
+    async function startWizardSession() {
+      const actor = currentPrincipal?.user_id || currentPrincipal?.email || "corporate-user";
+      const response = await apiFetch("/api/v1/enterprise-wizard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actor })
+      });
+      if (response.ok) {
+        const created = await response.json();
+        wizardSessions = [created].concat(wizardSessions.filter(item => item.wizard_id !== created.wizard_id));
+        activeWizardStep = created.current_step;
+        renderWizard();
+        applyRbacUi();
+      }
+    }
+
+    async function saveWizardStep(stepKey) {
+      let session = wizardSessions[0];
+      if (!session) {
+        await startWizardSession();
+        session = wizardSessions[0];
+      }
+      if (!session) return;
+      const actor = currentPrincipal?.user_id || currentPrincipal?.email || "corporate-user";
+      const response = await apiFetch(`/api/v1/enterprise-wizard/${encodeURIComponent(session.wizard_id)}/steps/${stepKey}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actor, data: wizardPayloadForStep(stepKey) })
+      });
+      if (response.ok) {
+        const saved = await response.json();
+        wizardSessions = [saved].concat(wizardSessions.filter(item => item.wizard_id !== saved.wizard_id));
+        activeWizardStep = saved.current_step;
+        renderWizard();
+        applyRbacUi();
+      }
+    }
+
+    async function activateWizardSession() {
+      const session = wizardSessions[0];
+      if (!session || session.status !== "ready") return;
+      const actor = currentPrincipal?.user_id || currentPrincipal?.email || "portfolio-manager";
+      const response = await apiFetch(`/api/v1/enterprise-wizard/${encodeURIComponent(session.wizard_id)}/activate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actor, reason: "Activacion final desde Corporate Wizard" })
+      });
+      if (response.ok) {
+        const activated = await response.json();
+        wizardSessions = [activated].concat(wizardSessions.filter(item => item.wizard_id !== activated.wizard_id));
+        await loadDashboard();
+      }
+    }
+
+    function slugId(prefix, value) {
+      const slug = String(value || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 28);
+      return slug ? `${prefix}-${slug}` : undefined;
     }
 
     function renderOperationalFlow() {

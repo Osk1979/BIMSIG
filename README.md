@@ -155,6 +155,12 @@ province, district, corporate coordinates, source, and validation status; Wizard
 activation persists those values into the portfolio project so the Peru map can
 prefer official corporate data over inferred coordinates.
 
+CTO-104D completes the Enterprise Wizard product experience. The dashboard now
+shows a guided corporate assistant with visible progress, resumable sessions,
+independent step validation, partial save, activation readiness, permission-aware
+blocked states, audit events, and a pre-activation summary that traces Workflow,
+Portfolio, GIS, NAS, Audit, and WEB SIG references through existing services.
+
 CTO-107 introduces the Corporate Reporting & Print Engine. It exposes report
 templates, preview, issued report manifests, print-ready HTML output, checksum
 traceability, NAS logical references, and audit events for formal corporate
