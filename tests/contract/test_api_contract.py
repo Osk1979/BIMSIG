@@ -29,6 +29,49 @@ def test_operational_health_contract() -> None:
     assert response.json()["database"] == "ok"
 
 
+def test_infrastructure_connectors_contract(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("CONTROL_TOWER_NAS_ROOT", str(tmp_path / "nas-root"))
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    health = client.get("/api/v1/infrastructure/connectors/health")
+    dry_run = client.post(
+        "/api/v1/infrastructure/connectors/nas/dry-run",
+        json={
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "target": {"folder": "websig"},
+        },
+    )
+    execute_without_approval = client.post(
+        "/api/v1/infrastructure/connectors/nas/execute",
+        json={
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "target": {"folder": "websig"},
+        },
+    )
+    execute = client.post(
+        "/api/v1/infrastructure/connectors/nas/execute",
+        json={
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "target": {"folder": "websig"},
+            "approved_by": "USR-ADMIN",
+        },
+    )
+    audit = client.get("/api/v1/audit/events?limit=10")
+
+    assert health.status_code == 200
+    assert {item["connector"] for item in health.json()} == {"postgis", "geoserver", "nas", "google_drive"}
+    assert dry_run.status_code == 200
+    assert dry_run.json()["status"] == "planned"
+    assert execute_without_approval.status_code == 400
+    assert execute.status_code == 202
+    assert execute.json()["status"] == "executed"
+    assert (tmp_path / "nas-root" / "CRTG" / "PSZ-2026" / "websig").is_dir()
+    assert any(event["action"] == "infrastructure.nas.execute" for event in audit.json())
+
+
 def test_project_registration_and_websig_provisioning_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(

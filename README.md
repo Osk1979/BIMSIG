@@ -205,3 +205,9 @@ matrix is available at `GET /api/v1/auth/permissions/matrix`; the dashboard uses
 the same scopes/actions through `data-rbac-scope` and `data-rbac-action`, while
 the API enforces denied actions with `403 Permission denied` when authentication
 is required.
+
+HARDENING-003 adds controlled real infrastructure connectors for PostGIS,
+GeoServer, NAS filesystem, and Google Drive. The Tower now exposes connector
+health, validation, dry-run, and approved execute endpoints under
+`/api/v1/infrastructure/connectors`, with audit events and RBAC mapping to
+provisioning permissions.

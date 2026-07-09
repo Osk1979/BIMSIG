@@ -90,6 +90,9 @@ def infer_permission(path: str, method: str) -> tuple[PermissionScope, Permissio
     """Infer a coarse permission from an API path and HTTP method."""
 
     action = PermissionAction.READ if method == "GET" else PermissionAction.WRITE
+    if "/infrastructure/connectors" in path:
+        action = PermissionAction.EXECUTE if path.endswith("/execute") else PermissionAction.READ
+        return PermissionScope.PROVISIONING, action
     if "/websig-factory" in path or "/provisioning" in path:
         action = PermissionAction.EXECUTE if path.endswith("/execute") or method == "POST" else PermissionAction.READ
         return PermissionScope.PROVISIONING, action

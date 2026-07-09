@@ -30,6 +30,13 @@ from control_tower.application.enterprise_service import (
 )
 from control_tower.application.enterprise_wizard_service import EnterpriseWizardService
 from control_tower.application.gis_service import CorporateGisService
+from control_tower.application.infrastructure_connectors import (
+    InfrastructureConnectorAction,
+    InfrastructureConnectorKind,
+    InfrastructureConnectorRequest,
+    InfrastructureConnectorResult,
+    InfrastructureConnectorService,
+)
 from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.operational_flow_service import OperationalFlowService
 from control_tower.application.portfolio_service import CorporatePortfolioDomainService, PortfolioService
@@ -133,6 +140,7 @@ from control_tower.infrastructure.database import (
     initialize_database,
 )
 from control_tower.infrastructure.adapters.provisioning import default_project_stack_adapters
+from control_tower.infrastructure.adapters.connectors import default_infrastructure_connectors
 from control_tower.presentation.dashboard_ui import render_dashboard_html
 
 
@@ -311,6 +319,20 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         geoserver_password=os.getenv("CONTROL_TOWER_GEOSERVER_PASSWORD"),
         websig_factory_template_path=os.getenv("CONTROL_TOWER_WEBSIG_FACTORY_TEMPLATE_PATH"),
         websig_factory_output_root=os.getenv("CONTROL_TOWER_WEBSIG_FACTORY_OUTPUT_ROOT"),
+    )
+    infrastructure_connectors = InfrastructureConnectorService(
+        default_infrastructure_connectors(
+            postgis_database_url=os.getenv("CONTROL_TOWER_POSTGIS_DATABASE_URL"),
+            geoserver_url=os.getenv("CONTROL_TOWER_GEOSERVER_URL"),
+            geoserver_user=os.getenv("CONTROL_TOWER_GEOSERVER_USER"),
+            geoserver_password=os.getenv("CONTROL_TOWER_GEOSERVER_PASSWORD"),
+            nas_root=os.getenv("CONTROL_TOWER_NAS_ROOT"),
+            google_drive_root_id=os.getenv("CONTROL_TOWER_GOOGLE_DRIVE_ROOT_ID"),
+            google_drive_access_token=os.getenv("CONTROL_TOWER_GOOGLE_DRIVE_ACCESS_TOKEN"),
+            google_credentials_file=os.getenv("CONTROL_TOWER_GOOGLE_APPLICATION_CREDENTIALS")
+            or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"),
+        ),
+        audit_repository,
     )
     provisioning_engine = ProjectProvisioningEngine(
         companies,
@@ -520,6 +542,85 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "database": "ready",
             "revision": "REV12",
         }
+
+    @app.get(
+        "/api/v1/infrastructure/connectors/health",
+        response_model=list[InfrastructureConnectorResult],
+    )
+    def infrastructure_connectors_health() -> list[InfrastructureConnectorResult]:
+        """Return health for PostGIS, GeoServer, NAS, and Google Drive connectors."""
+
+        return infrastructure_connectors.health()
+
+    @app.get(
+        "/api/v1/infrastructure/connectors/{connector}/health",
+        response_model=InfrastructureConnectorResult,
+    )
+    def infrastructure_connector_health(connector: InfrastructureConnectorKind) -> InfrastructureConnectorResult:
+        """Return health for one controlled infrastructure connector."""
+
+        return infrastructure_connectors.run(
+            connector,
+            InfrastructureConnectorRequest(action=InfrastructureConnectorAction.HEALTH),
+        )
+
+    @app.post(
+        "/api/v1/infrastructure/connectors/{connector}/validate",
+        response_model=InfrastructureConnectorResult,
+    )
+    def validate_infrastructure_connector(
+        connector: InfrastructureConnectorKind,
+        payload: InfrastructureConnectorRequest,
+        request: Request,
+    ) -> InfrastructureConnectorResult:
+        """Validate connector credentials and configuration without side effects."""
+
+        principal = getattr(request.state, "principal", None)
+        return infrastructure_connectors.run(
+            connector,
+            payload.model_copy(update={"action": InfrastructureConnectorAction.VALIDATE}),
+            actor=principal.user_id if principal is not None else "system",
+        )
+
+    @app.post(
+        "/api/v1/infrastructure/connectors/{connector}/dry-run",
+        response_model=InfrastructureConnectorResult,
+    )
+    def dry_run_infrastructure_connector(
+        connector: InfrastructureConnectorKind,
+        payload: InfrastructureConnectorRequest,
+        request: Request,
+    ) -> InfrastructureConnectorResult:
+        """Plan a controlled infrastructure connector operation without side effects."""
+
+        principal = getattr(request.state, "principal", None)
+        return infrastructure_connectors.run(
+            connector,
+            payload.model_copy(update={"action": InfrastructureConnectorAction.DRY_RUN}),
+            actor=principal.user_id if principal is not None else "system",
+        )
+
+    @app.post(
+        "/api/v1/infrastructure/connectors/{connector}/execute",
+        response_model=InfrastructureConnectorResult,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def execute_infrastructure_connector(
+        connector: InfrastructureConnectorKind,
+        payload: InfrastructureConnectorRequest,
+        request: Request,
+    ) -> InfrastructureConnectorResult:
+        """Execute a controlled infrastructure connector operation after approval."""
+
+        principal = getattr(request.state, "principal", None)
+        result = infrastructure_connectors.run(
+            connector,
+            payload.model_copy(update={"action": InfrastructureConnectorAction.EXECUTE}),
+            actor=principal.user_id if principal is not None else "system",
+        )
+        if result.status.value in {"failed", "misconfigured"}:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.model_dump(mode="json"))
+        return result
 
     @app.get("/api/v1/operational/version")
     def operational_version() -> dict[str, str]:

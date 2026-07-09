@@ -2752,6 +2752,145 @@
         "title": "InformationVersion",
         "type": "object"
       },
+      "InfrastructureConnectorAction": {
+        "description": "Controlled action supported by infrastructure connectors.",
+        "enum": [
+          "health",
+          "validate",
+          "dry_run",
+          "execute"
+        ],
+        "title": "InfrastructureConnectorAction",
+        "type": "string"
+      },
+      "InfrastructureConnectorKind": {
+        "description": "External infrastructure connectors governed by the Tower.",
+        "enum": [
+          "postgis",
+          "geoserver",
+          "nas",
+          "google_drive"
+        ],
+        "title": "InfrastructureConnectorKind",
+        "type": "string"
+      },
+      "InfrastructureConnectorRequest": {
+        "description": "Controlled request for an external infrastructure connector.",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/InfrastructureConnectorAction",
+            "default": "health"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
+          "company_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "target": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Target",
+            "type": "object"
+          }
+        },
+        "title": "InfrastructureConnectorRequest",
+        "type": "object"
+      },
+      "InfrastructureConnectorResult": {
+        "description": "Auditable connector result without secret values.",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/InfrastructureConnectorAction"
+          },
+          "configured": {
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "connector": {
+            "$ref": "#/components/schemas/InfrastructureConnectorKind"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Metadata",
+            "type": "object"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InfrastructureConnectorStatus"
+          }
+        },
+        "required": [
+          "connector",
+          "action",
+          "status",
+          "configured",
+          "detail"
+        ],
+        "title": "InfrastructureConnectorResult",
+        "type": "object"
+      },
+      "InfrastructureConnectorStatus": {
+        "description": "Result status for one connector operation.",
+        "enum": [
+          "healthy",
+          "unhealthy",
+          "configured",
+          "misconfigured",
+          "planned",
+          "executed",
+          "failed"
+        ],
+        "title": "InfrastructureConnectorStatus",
+        "type": "string"
+      },
       "LicensePlan": {
         "description": "Commercial entitlement plan.",
         "properties": {
@@ -8823,6 +8962,215 @@
           }
         },
         "summary": "Validate Enterprise Wizard Step"
+      }
+    },
+    "/api/v1/infrastructure/connectors/health": {
+      "get": {
+        "description": "Return health for PostGIS, GeoServer, NAS, and Google Drive connectors.",
+        "operationId": "infrastructure_connectors_health_api_v1_infrastructure_connectors_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InfrastructureConnectorResult"
+                  },
+                  "title": "Response Infrastructure Connectors Health Api V1 Infrastructure Connectors Health Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Infrastructure Connectors Health"
+      }
+    },
+    "/api/v1/infrastructure/connectors/{connector}/dry-run": {
+      "post": {
+        "description": "Plan a controlled infrastructure connector operation without side effects.",
+        "operationId": "dry_run_infrastructure_connector_api_v1_infrastructure_connectors__connector__dry_run_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "connector",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InfrastructureConnectorKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfrastructureConnectorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfrastructureConnectorResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dry Run Infrastructure Connector"
+      }
+    },
+    "/api/v1/infrastructure/connectors/{connector}/execute": {
+      "post": {
+        "description": "Execute a controlled infrastructure connector operation after approval.",
+        "operationId": "execute_infrastructure_connector_api_v1_infrastructure_connectors__connector__execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "connector",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InfrastructureConnectorKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfrastructureConnectorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfrastructureConnectorResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Execute Infrastructure Connector"
+      }
+    },
+    "/api/v1/infrastructure/connectors/{connector}/health": {
+      "get": {
+        "description": "Return health for one controlled infrastructure connector.",
+        "operationId": "infrastructure_connector_health_api_v1_infrastructure_connectors__connector__health_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "connector",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InfrastructureConnectorKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfrastructureConnectorResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Infrastructure Connector Health"
+      }
+    },
+    "/api/v1/infrastructure/connectors/{connector}/validate": {
+      "post": {
+        "description": "Validate connector credentials and configuration without side effects.",
+        "operationId": "validate_infrastructure_connector_api_v1_infrastructure_connectors__connector__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "connector",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InfrastructureConnectorKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InfrastructureConnectorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfrastructureConnectorResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Infrastructure Connector"
       }
     },
     "/api/v1/license-plans": {
