@@ -50,6 +50,8 @@ from control_tower.application.reporting_service import CorporateReportingServic
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.corporate_gis_intelligence import (
     CorporateGisIntelligenceMap,
+    CorporateGisLayerPanel,
+    CorporateGisServiceValidation,
     CorporateGisSource,
     CorporateGisSummary,
     CorporateLayer,
@@ -855,6 +857,58 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
+    @app.post(
+        "/api/v1/companies/{company_id}/gis-intelligence/real-services",
+        response_model=CorporateGisSource,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def register_real_corporate_gis_service(
+        company_id: str,
+        source: CorporateGisSource,
+        validate: bool = True,
+    ) -> CorporateGisSource:
+        """Register and optionally validate one real GIS service published by WEB SIG."""
+
+        if source.company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="GIS source company_id must match path company_id",
+            )
+        try:
+            return gis_intelligence.register_real_service(source, validate=validate)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis-intelligence/sources/{source_id}/validate",
+        response_model=CorporateGisServiceValidation,
+    )
+    def validate_corporate_gis_source(company_id: str, source_id: str) -> CorporateGisServiceValidation:
+        """Validate one published WMS, WFS, WMTS, or Vector Tiles source."""
+
+        try:
+            source = next(
+                item for item in gis_intelligence.list_sources(company_id) if item.source_id == source_id
+            )
+        except StopIteration as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="GIS source not found") from exc
+        return gis_intelligence.validate_source(source)
+
+    @app.post(
+        "/api/v1/companies/{company_id}/gis-intelligence/sources/validate",
+        response_model=list[CorporateGisServiceValidation],
+    )
+    def validate_corporate_gis_sources(
+        company_id: str,
+        project_id: str | None = None,
+    ) -> list[CorporateGisServiceValidation]:
+        """Validate published GIS services for a company or project."""
+
+        try:
+            return gis_intelligence.validate_sources(company_id, project_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
     @app.get(
         "/api/v1/companies/{company_id}/projects/{project_id}/gis-intelligence/sources",
         response_model=list[CorporateGisSource],
@@ -879,6 +933,30 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         try:
             return gis_intelligence.list_layers(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/v1/companies/{company_id}/gis-intelligence/layer-panel",
+        response_model=CorporateGisLayerPanel,
+    )
+    def corporate_gis_layer_panel(
+        company_id: str,
+        project_id: str | None = None,
+        discipline: str | None = None,
+        estado: str | None = None,
+        riesgo: str | None = None,
+    ) -> CorporateGisLayerPanel:
+        """Return read-only layer panel, legend, availability, and filters."""
+
+        try:
+            return gis_intelligence.layer_panel(
+                company_id,
+                project_id,
+                discipline=discipline,
+                estado=estado,
+                riesgo=riesgo,
+            )
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

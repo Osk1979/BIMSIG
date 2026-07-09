@@ -810,6 +810,96 @@ def test_corporate_gis_intelligence_contract(tmp_path) -> None:
     assert dashboard.json()["gis_intelligence"]["projects_with_active_layers"] == 1
 
 
+def test_real_gis_layers_contract(tmp_path, monkeypatch) -> None:
+    from control_tower.application import corporate_gis_intelligence_service as service_module
+
+    class FakeHttpResponse:
+        status = 200
+
+        def __init__(self, body: bytes) -> None:
+            self._body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        def read(self, size: int = -1) -> bytes:
+            return self._body if size < 0 else self._body[:size]
+
+    def fake_urlopen(request, timeout=10):
+        url = request.full_url.casefold()
+        if "service=wms" in url:
+            return FakeHttpResponse(b"<WMS_Capabilities></WMS_Capabilities>")
+        if "service=wfs" in url:
+            return FakeHttpResponse(b"<WFS_Capabilities></WFS_Capabilities>")
+        if "service=wmts" in url:
+            return FakeHttpResponse(b"<Capabilities></Capabilities>")
+        return FakeHttpResponse(b'{"tiles":["https://tiles.example.com/{z}/{x}/{y}.pbf"],"vector_layers":[]}')
+
+    monkeypatch.setattr(service_module, "urlopen", fake_urlopen)
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/projects",
+        json={"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+    )
+    source = client.post(
+        "/api/v1/companies/CRTG/gis-intelligence/real-services",
+        json={
+            "source_id": "CGIS-SRC-WMS",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "service_kind": "wms",
+            "service_url": "https://websig.example.com/wms",
+            "discipline": "production",
+            "layer_type": "physical_progress",
+            "status": "registered",
+            "updated_on": "2026-07-09",
+        },
+    )
+    client.post(
+        "/api/v1/companies/CRTG/gis-intelligence/layers",
+        json={
+            "layer_id": "CGIS-LYR-WMS",
+            "source_id": "CGIS-SRC-WMS",
+            "company_id": "CRTG",
+            "project_id": "PSZ-2026",
+            "name": "Avance fisico",
+            "layer_type": "physical_progress",
+            "discipline": "production",
+            "status": "available",
+            "spatial_indicator": "physical_progress",
+            "indicator_value": 78,
+            "updated_on": "2026-07-09",
+            "region": "Lima",
+            "risk_level": "low",
+        },
+    )
+
+    validation = client.post("/api/v1/companies/CRTG/gis-intelligence/sources/CGIS-SRC-WMS/validate")
+    validations = client.post("/api/v1/companies/CRTG/gis-intelligence/sources/validate", params={"project_id": "PSZ-2026"})
+    panel = client.get(
+        "/api/v1/companies/CRTG/gis-intelligence/layer-panel",
+        params={"project_id": "PSZ-2026", "discipline": "production", "estado": "available", "riesgo": "low"},
+    )
+
+    assert source.status_code == 201
+    assert source.json()["status"] == "active"
+    assert validation.status_code == 200
+    assert validation.json()["availability"] == "available"
+    assert validation.json()["capability_detected"] is True
+    assert validations.json()[0]["service_kind"] == "wms"
+    assert panel.status_code == 200
+    assert panel.json()["layers"][0]["legend_url"].startswith("https://websig.example.com/wms?")
+    assert panel.json()["layers"][0]["availability"] == "available"
+    assert panel.json()["filters"]["discipline"] == ["production"]
+
+
 def test_nas_information_center_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(

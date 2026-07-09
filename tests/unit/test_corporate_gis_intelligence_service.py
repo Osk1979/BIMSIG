@@ -4,7 +4,9 @@ from control_tower.application.corporate_gis_intelligence_service import Corpora
 from control_tower.application.enterprise_service import CompanyService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.domain.corporate_gis_intelligence import (
+    CorporateGisAvailability,
     CorporateGisSource,
+    CorporateGisSourceStatus,
     CorporateLayer,
     CorporateLayerStatus,
     CorporateLayerType,
@@ -142,3 +144,87 @@ def test_corporate_gis_intelligence_maps_filter_published_layers_only() -> None:
     assert project.layers[0].project_id == "PSZ-2026"
     assert thematic.layers[0].layer_type == CorporateLayerType.QUALITY
     assert filtered.layers[0].metadata["calidad"] == "observed"
+
+
+class FakeHttpResponse:
+    def __init__(self, body: bytes, status: int = 200) -> None:
+        self._body = body
+        self.status = status
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        return None
+
+    def read(self, size: int = -1) -> bytes:
+        return self._body if size < 0 else self._body[:size]
+
+
+def test_corporate_gis_intelligence_validates_real_services_and_layer_panel(monkeypatch) -> None:
+    from control_tower.application import corporate_gis_intelligence_service as service_module
+
+    def fake_urlopen(request, timeout=10):
+        url = request.full_url.casefold()
+        if "service=wms" in url:
+            return FakeHttpResponse(b"<WMS_Capabilities></WMS_Capabilities>")
+        if "service=wfs" in url:
+            return FakeHttpResponse(b"<WFS_Capabilities></WFS_Capabilities>")
+        if "service=wmts" in url:
+            return FakeHttpResponse(b"<Capabilities></Capabilities>")
+        return FakeHttpResponse(b'{"tiles":["https://tiles.example.com/{z}/{x}/{y}.pbf"],"vector_layers":[]}')
+
+    monkeypatch.setattr(service_module, "urlopen", fake_urlopen)
+    audit = FakeAuditEventRepository()
+    companies = CompanyService(FakeCompanyRepository(), audit)
+    portfolio = PortfolioService(FakePortfolioProjectRepository(), audit)
+    repository = FakeCorporateGisIntelligenceRepository()
+    service = CorporateGisIntelligenceService(repository, companies, portfolio, audit)
+    companies.register(Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"))
+    portfolio.register(PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"))
+
+    for kind in [GisServiceKind.WMS, GisServiceKind.WFS, GisServiceKind.WMTS, GisServiceKind.VECTOR_TILES]:
+        source = service.register_real_service(
+            CorporateGisSource(
+                source_id=f"CGIS-SRC-{kind.value.upper()}",
+                company_id="CRTG",
+                project_id="PSZ-2026",
+                service_kind=kind,
+                service_url=f"https://websig.example.com/{kind.value}",
+                discipline=GisDiscipline.GIS,
+                layer_type=CorporateLayerType.SPATIAL_KPIS,
+                updated_on=date(2026, 7, 9),
+            )
+        )
+        service.register_layer(
+            CorporateLayer(
+                layer_id=f"CGIS-LYR-{kind.value.upper()}",
+                source_id=source.source_id,
+                company_id="CRTG",
+                project_id="PSZ-2026",
+                name=f"Layer {kind.value}",
+                layer_type=CorporateLayerType.SPATIAL_KPIS,
+                discipline=GisDiscipline.GIS,
+                status=CorporateLayerStatus.AVAILABLE,
+                spatial_indicator="spatial_kpi",
+                indicator_value=1,
+                updated_on=date(2026, 7, 9),
+                risk_level="low",
+            )
+        )
+
+    validations = service.validate_sources("CRTG", "PSZ-2026")
+    panel = service.layer_panel("CRTG", "PSZ-2026", discipline="gis", estado="available", riesgo="low")
+
+    assert {validation.service_kind for validation in validations} == {
+        GisServiceKind.WMS,
+        GisServiceKind.WFS,
+        GisServiceKind.WMTS,
+        GisServiceKind.VECTOR_TILES,
+    }
+    assert {validation.availability for validation in validations} == {CorporateGisAvailability.AVAILABLE}
+    assert repository.sources["CGIS-SRC-WMS"].status == CorporateGisSourceStatus.ACTIVE
+    assert len(panel.layers) == 4
+    assert panel.layers[0].availability == CorporateGisAvailability.AVAILABLE
+    assert panel.filters["discipline"] == ["gis"]
+    assert "gis_intelligence.wms_validated" in {event.action for event in audit.events}

@@ -216,3 +216,9 @@ HARDENING-004 adds productive corporate PDF reporting. The Reporting & Print
 Engine can issue PDF reports with cover page, index, KPIs, portfolio, GIS
 summary, audit, metadata, binary checksum, download endpoint, and NAS metadata
 registration for the emitted report artifact.
+
+HARDENING-005 adds real GIS layer consumption for Corporate GIS Intelligence.
+The Tower can register and validate WMS, WFS, WMTS, and Vector Tiles services
+published by WEB SIG, expose a read-only layer panel with availability and
+legend metadata, and drive the Corporate GIS Dashboard without editing geometry
+or capturing field data.

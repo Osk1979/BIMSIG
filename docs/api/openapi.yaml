@@ -840,6 +840,17 @@
         "title": "CorporateDashboard",
         "type": "object"
       },
+      "CorporateGisAvailability": {
+        "description": "Availability status for published GIS services consumed by the Tower.",
+        "enum": [
+          "available",
+          "degraded",
+          "unavailable",
+          "not_configured"
+        ],
+        "title": "CorporateGisAvailability",
+        "type": "string"
+      },
       "CorporateGisIntelligenceMap": {
         "description": "Corporate spatial map assembled from project WEB SIG publications.",
         "properties": {
@@ -871,6 +882,119 @@
           "summary"
         ],
         "title": "CorporateGisIntelligenceMap",
+        "type": "object"
+      },
+      "CorporateGisLayerPanel": {
+        "description": "Read-only GIS layer panel assembled from published WEB SIG services.",
+        "properties": {
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "filters": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Filters",
+            "type": "object"
+          },
+          "layers": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateLayerLegendItem"
+            },
+            "title": "Layers",
+            "type": "array"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "validations": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateGisServiceValidation"
+            },
+            "title": "Validations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "company_id"
+        ],
+        "title": "CorporateGisLayerPanel",
+        "type": "object"
+      },
+      "CorporateGisServiceValidation": {
+        "description": "Validation result for one published WEB SIG GIS service.",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/CorporateGisAvailability"
+          },
+          "capability_detected": {
+            "default": false,
+            "title": "Capability Detected",
+            "type": "boolean"
+          },
+          "checked_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Url"
+          },
+          "detail": {
+            "minLength": 2,
+            "title": "Detail",
+            "type": "string"
+          },
+          "service_kind": {
+            "$ref": "#/components/schemas/GisServiceKind"
+          },
+          "service_url": {
+            "minLength": 6,
+            "title": "Service Url",
+            "type": "string"
+          },
+          "source_id": {
+            "minLength": 3,
+            "title": "Source Id",
+            "type": "string"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          }
+        },
+        "required": [
+          "source_id",
+          "service_kind",
+          "service_url",
+          "availability",
+          "detail"
+        ],
+        "title": "CorporateGisServiceValidation",
         "type": "object"
       },
       "CorporateGisSource": {
@@ -1177,6 +1301,81 @@
           "updated_on"
         ],
         "title": "CorporateLayer",
+        "type": "object"
+      },
+      "CorporateLayerLegendItem": {
+        "description": "Legend item used by the Corporate GIS dashboard layer panel.",
+        "properties": {
+          "availability": {
+            "$ref": "#/components/schemas/CorporateGisAvailability",
+            "default": "not_configured"
+          },
+          "discipline": {
+            "$ref": "#/components/schemas/GisDiscipline"
+          },
+          "indicator_value": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Indicator Value",
+            "type": "number"
+          },
+          "layer_id": {
+            "minLength": 3,
+            "title": "Layer Id",
+            "type": "string"
+          },
+          "layer_type": {
+            "$ref": "#/components/schemas/CorporateLayerType"
+          },
+          "legend_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Legend Url"
+          },
+          "name": {
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "risk_level": {
+            "default": "none",
+            "minLength": 3,
+            "title": "Risk Level",
+            "type": "string"
+          },
+          "service_kind": {
+            "$ref": "#/components/schemas/GisServiceKind"
+          },
+          "service_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Url"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CorporateLayerStatus"
+          }
+        },
+        "required": [
+          "layer_id",
+          "name",
+          "service_kind",
+          "layer_type",
+          "discipline",
+          "status"
+        ],
+        "title": "CorporateLayerLegendItem",
         "type": "object"
       },
       "CorporateLayerStatus": {
@@ -5480,6 +5679,110 @@
         "summary": "Executive Dashboard"
       }
     },
+    "/api/v1/companies/{company_id}/gis-intelligence/layer-panel": {
+      "get": {
+        "description": "Return read-only layer panel, legend, availability, and filters.",
+        "operationId": "corporate_gis_layer_panel_api_v1_companies__company_id__gis_intelligence_layer_panel_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "discipline",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Discipline"
+            }
+          },
+          {
+            "in": "query",
+            "name": "estado",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "in": "query",
+            "name": "riesgo",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Riesgo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisLayerPanel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Corporate Gis Layer Panel"
+      }
+    },
     "/api/v1/companies/{company_id}/gis-intelligence/layers": {
       "get": {
         "description": "List corporate GIS intelligence layers for one company.",
@@ -6013,6 +6316,66 @@
         "summary": "Filter Projects By Spatial Indicator"
       }
     },
+    "/api/v1/companies/{company_id}/gis-intelligence/real-services": {
+      "post": {
+        "description": "Register and optionally validate one real GIS service published by WEB SIG.",
+        "operationId": "register_real_corporate_gis_service_api_v1_companies__company_id__gis_intelligence_real_services_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "validate",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Validate",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporateGisSource"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisSource"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Real Corporate Gis Service"
+      }
+    },
     "/api/v1/companies/{company_id}/gis-intelligence/sources": {
       "get": {
         "description": "List WEB SIG GIS sources consolidated by Corporate GIS Intelligence.",
@@ -6103,6 +6466,115 @@
           }
         },
         "summary": "Register Corporate Gis Source"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/sources/validate": {
+      "post": {
+        "description": "Validate published GIS services for a company or project.",
+        "operationId": "validate_corporate_gis_sources_api_v1_companies__company_id__gis_intelligence_sources_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CorporateGisServiceValidation"
+                  },
+                  "title": "Response Validate Corporate Gis Sources Api V1 Companies  Company Id  Gis Intelligence Sources Validate Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Corporate Gis Sources"
+      }
+    },
+    "/api/v1/companies/{company_id}/gis-intelligence/sources/{source_id}/validate": {
+      "post": {
+        "description": "Validate one published WMS, WFS, WMTS, or Vector Tiles source.",
+        "operationId": "validate_corporate_gis_source_api_v1_companies__company_id__gis_intelligence_sources__source_id__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporateGisServiceValidation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Corporate Gis Source"
       }
     },
     "/api/v1/companies/{company_id}/gis-intelligence/summary": {

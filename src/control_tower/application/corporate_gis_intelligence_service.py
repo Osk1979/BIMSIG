@@ -8,17 +8,27 @@ ADR references:
 - ADR-0015: Tower vs WEB SIG operational boundary.
 """
 
+from urllib.parse import urlencode
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from control_tower.application.enterprise_service import CompanyService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.repositories import AuditEventRepository, CorporateGisIntelligenceRepository
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.corporate_gis_intelligence import (
+    CorporateGisAvailability,
     CorporateGisIntelligenceMap,
+    CorporateGisLayerPanel,
+    CorporateGisServiceValidation,
     CorporateGisSource,
+    CorporateGisSourceStatus,
     CorporateGisSummary,
     CorporateLayer,
+    CorporateLayerLegendItem,
     CorporateLayerStatus,
     CorporateLayerType,
+    GisServiceKind,
     ProjectSpatialIndicator,
 )
 
@@ -70,6 +80,17 @@ class CorporateGisIntelligenceService:
         self._audit_event("gis_intelligence.source_registered", "corporate_gis_source", saved.source_id)
         return saved
 
+    def register_real_service(self, source: CorporateGisSource, *, validate: bool = True) -> CorporateGisSource:
+        """Register a published GIS service and optionally validate its availability."""
+
+        saved = self.register_source(source)
+        if validate:
+            validation = self.validate_source(saved)
+            status = self._source_status_for_availability(validation.availability)
+            if status != saved.status:
+                saved = self._repository.save_source(saved.model_copy(update={"status": status}))
+        return saved
+
     def list_sources(self, company_id: str, project_id: str | None = None) -> list[CorporateGisSource]:
         """List GIS sources by company and optional project."""
 
@@ -98,6 +119,84 @@ class CorporateGisIntelligenceService:
         if project_id is not None:
             self._require_company_project(company_id, project_id)
         return self._repository.list_layers(company_id, project_id)
+
+    def validate_source(self, source: CorporateGisSource) -> CorporateGisServiceValidation:
+        """Validate a published WEB SIG GIS source without editing geometry."""
+
+        checked_url = self._capabilities_url(source)
+        if source.service_kind == GisServiceKind.VECTOR_TILES:
+            return self._validate_vector_tiles(source)
+        try:
+            request = Request(checked_url, method="GET", headers={"User-Agent": "BIMSIG-Control-Tower/REV13"})
+            with urlopen(request, timeout=10) as response:
+                body = response.read(4096).decode("utf-8", errors="ignore").casefold()
+                status_code = getattr(response, "status", 200)
+        except HTTPError as exc:
+            return self._validation(source, CorporateGisAvailability.UNAVAILABLE, f"HTTP {exc.code}: {exc.reason}", checked_url, exc.code)
+        except (URLError, TimeoutError, OSError) as exc:
+            return self._validation(source, CorporateGisAvailability.UNAVAILABLE, str(exc), checked_url)
+        expected = {
+            GisServiceKind.WMS: "wms_capabilities",
+            GisServiceKind.WFS: "wfs_capabilities",
+            GisServiceKind.WMTS: "capabilities",
+        }.get(source.service_kind)
+        detected = expected in body or "capabilities" in body
+        availability = CorporateGisAvailability.AVAILABLE if detected else CorporateGisAvailability.DEGRADED
+        detail = "Capabilities document detected." if detected else "Service responded but capabilities signature was not detected."
+        return self._validation(source, availability, detail, checked_url, status_code, detected)
+
+    def validate_sources(
+        self,
+        company_id: str,
+        project_id: str | None = None,
+    ) -> list[CorporateGisServiceValidation]:
+        """Validate all published GIS services for a company or project."""
+
+        sources = self.list_sources(company_id, project_id)
+        validations = [self.validate_source(source) for source in sources]
+        for validation in validations:
+            self._audit_event(
+                f"gis_intelligence.{validation.service_kind.value}_validated",
+                "corporate_gis_source",
+                validation.source_id,
+            )
+        return validations
+
+    def layer_panel(
+        self,
+        company_id: str,
+        project_id: str | None = None,
+        *,
+        discipline: str | None = None,
+        estado: str | None = None,
+        riesgo: str | None = None,
+    ) -> CorporateGisLayerPanel:
+        """Return the read-only layer panel, legend, availability, and filters."""
+
+        layers = self.list_layers(company_id, project_id)
+        if discipline:
+            layers = [layer for layer in layers if layer.discipline.value == discipline]
+        if estado:
+            layers = [layer for layer in layers if layer.status.value == estado]
+        if riesgo:
+            layers = [layer for layer in layers if layer.risk_level == riesgo]
+        source_by_id = {source.source_id: source for source in self.list_sources(company_id, project_id)}
+        validations = [
+            self.validate_source(source_by_id[layer.source_id])
+            for layer in layers
+            if layer.source_id in source_by_id
+        ]
+        validation_by_source = {validation.source_id: validation for validation in validations}
+        return CorporateGisLayerPanel(
+            company_id=company_id,
+            project_id=project_id,
+            layers=[
+                self._legend_item(layer, source_by_id.get(layer.source_id), validation_by_source.get(layer.source_id))
+                for layer in layers
+            ],
+            validations=validations,
+            filters=self._panel_filters(self.list_layers(company_id, project_id)),
+        )
 
     def layer_status(self, company_id: str, project_id: str) -> list[CorporateLayer]:
         """Return layer status for one governed project."""
@@ -356,6 +455,95 @@ class CorporateGisIntelligenceService:
             or value in layer.metadata.values()
             or layer.metadata.get(layer.layer_type.value) == value
         )
+
+    def _capabilities_url(self, source: CorporateGisSource) -> str:
+        service = {
+            GisServiceKind.WMS: "WMS",
+            GisServiceKind.WFS: "WFS",
+            GisServiceKind.WMTS: "WMTS",
+        }.get(source.service_kind)
+        if service is None:
+            return source.service_url
+        separator = "&" if "?" in source.service_url else "?"
+        return f"{source.service_url}{separator}{urlencode({'service': service, 'request': 'GetCapabilities'})}"
+
+    def _validate_vector_tiles(self, source: CorporateGisSource) -> CorporateGisServiceValidation:
+        if not source.service_url:
+            return self._validation(source, CorporateGisAvailability.NOT_CONFIGURED, "Vector Tiles URL is not configured.", None)
+        try:
+            request = Request(source.service_url, method="GET", headers={"User-Agent": "BIMSIG-Control-Tower/REV13"})
+            with urlopen(request, timeout=10) as response:
+                body = response.read(4096).decode("utf-8", errors="ignore").casefold()
+                status_code = getattr(response, "status", 200)
+        except HTTPError as exc:
+            return self._validation(source, CorporateGisAvailability.UNAVAILABLE, f"HTTP {exc.code}: {exc.reason}", source.service_url, exc.code)
+        except (URLError, TimeoutError, OSError) as exc:
+            return self._validation(source, CorporateGisAvailability.UNAVAILABLE, str(exc), source.service_url)
+        detected = "tiles" in body or "vector_layers" in body or source.service_url.endswith(".pbf")
+        availability = CorporateGisAvailability.AVAILABLE if detected else CorporateGisAvailability.DEGRADED
+        detail = "Vector tiles metadata detected." if detected else "Vector tile endpoint responded without tile metadata signature."
+        return self._validation(source, availability, detail, source.service_url, status_code, detected)
+
+    @staticmethod
+    def _validation(
+        source: CorporateGisSource,
+        availability: CorporateGisAvailability,
+        detail: str,
+        checked_url: str | None,
+        status_code: int | None = None,
+        capability_detected: bool = False,
+    ) -> CorporateGisServiceValidation:
+        return CorporateGisServiceValidation(
+            source_id=source.source_id,
+            service_kind=source.service_kind,
+            service_url=source.service_url,
+            availability=availability,
+            status_code=status_code,
+            capability_detected=capability_detected,
+            detail=detail,
+            checked_url=checked_url,
+        )
+
+    @staticmethod
+    def _source_status_for_availability(availability: CorporateGisAvailability) -> CorporateGisSourceStatus:
+        if availability == CorporateGisAvailability.AVAILABLE:
+            return CorporateGisSourceStatus.ACTIVE
+        if availability == CorporateGisAvailability.DEGRADED:
+            return CorporateGisSourceStatus.DEGRADED
+        return CorporateGisSourceStatus.UNAVAILABLE
+
+    @staticmethod
+    def _legend_item(
+        layer: CorporateLayer,
+        source: CorporateGisSource | None,
+        validation: CorporateGisServiceValidation | None,
+    ) -> CorporateLayerLegendItem:
+        legend_url = None
+        if source and source.service_kind == GisServiceKind.WMS:
+            separator = "&" if "?" in source.service_url else "?"
+            legend_url = f"{source.service_url}{separator}{urlencode({'service': 'WMS', 'request': 'GetLegendGraphic', 'format': 'image/png', 'layer': layer.name})}"
+        return CorporateLayerLegendItem(
+            layer_id=layer.layer_id,
+            name=layer.name,
+            service_kind=source.service_kind if source else GisServiceKind.GIS_API,
+            layer_type=layer.layer_type,
+            discipline=layer.discipline,
+            status=layer.status,
+            availability=validation.availability if validation else CorporateGisAvailability.NOT_CONFIGURED,
+            risk_level=layer.risk_level,
+            indicator_value=layer.indicator_value,
+            service_url=source.service_url if source else None,
+            legend_url=legend_url,
+        )
+
+    @staticmethod
+    def _panel_filters(layers: list[CorporateLayer]) -> dict[str, list[str]]:
+        return {
+            "discipline": sorted({layer.discipline.value for layer in layers}),
+            "estado": sorted({layer.status.value for layer in layers}),
+            "riesgo": sorted({layer.risk_level for layer in layers}),
+            "layer_type": sorted({layer.layer_type.value for layer in layers}),
+        }
 
     def _require_company(self, company_id: str) -> None:
         if not self._companies.exists(company_id):

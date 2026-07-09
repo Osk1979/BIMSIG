@@ -210,6 +210,9 @@ def render_dashboard_html() -> str:
       font-size: 12px;
     }
     .layer-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .layer-dot.warning, .layer-dot.degraded { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+    .layer-dot.critical, .layer-dot.unavailable { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+    .layer-row small { display: block; color: var(--muted); margin-top: 2px; }
     .kpi-chart-grid { display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr)); gap: 10px; }
     .kpi-chart {
       border: 1px solid var(--line);
@@ -968,6 +971,7 @@ def render_dashboard_html() -> str:
     let currentPanel = "operations";
     let data = null;
     let gisMap = null;
+    let gisLayerPanel = null;
     let portfolioProjects = [];
     let wizardSessions = [];
     let auditEvents = [];
@@ -1049,22 +1053,26 @@ def render_dashboard_html() -> str:
       }
       data = await response.json();
       gisMap = null;
+      gisLayerPanel = null;
       portfolioProjects = [];
       wizardSessions = [];
       auditEvents = [];
       try {
-        const [gisResponse, projectsResponse, wizardResponse, auditResponse] = await Promise.all([
+        const [gisResponse, panelResponse, projectsResponse, wizardResponse, auditResponse] = await Promise.all([
           apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`),
+          apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/layer-panel`),
           apiFetch(`/api/v1/companies/${encodedCompany}/projects`),
           apiFetch("/api/v1/enterprise-wizard"),
           apiFetch("/api/v1/audit/events?limit=12")
         ]);
         gisMap = gisResponse.ok ? await gisResponse.json() : null;
+        gisLayerPanel = panelResponse.ok ? await panelResponse.json() : null;
         portfolioProjects = projectsResponse.ok ? await projectsResponse.json() : [];
         wizardSessions = wizardResponse.ok ? await wizardResponse.json() : [];
         auditEvents = auditResponse.ok ? await auditResponse.json() : [];
       } catch {
         gisMap = null;
+        gisLayerPanel = null;
       }
       render();
     }
@@ -1244,7 +1252,7 @@ def render_dashboard_html() -> str:
     }
 
     function renderGisServiceSlots() {
-      const layers = gisMap?.layers || [];
+      const layers = gisLayerPanel?.layers || [];
       const services = [
         ["WMS", layers.some(layer => String(layer.service_kind || "").toLowerCase() === "wms")],
         ["WFS", layers.some(layer => String(layer.service_kind || "").toLowerCase() === "wfs")],
@@ -1443,26 +1451,24 @@ def render_dashboard_html() -> str:
     }
 
     function renderGisLayerLegend() {
-      const layers = gisMap?.layers?.length
-        ? gisMap.layers.slice(0, 8).map(layer => [
-            layer.name,
-            layer.layer_type || layer.discipline || "corporate"
-          ])
+      const layers = gisLayerPanel?.layers?.length
+        ? gisLayerPanel.layers.slice(0, 8).map(layer => ({
+            name: layer.name,
+            type: `${layer.service_kind} / ${layer.layer_type}`,
+            status: layer.availability || layer.status,
+            detail: `${layer.discipline} - riesgo ${layer.risk_level}`
+          }))
         : [
-            ["Avance fisico", "avance"],
-            ["Riesgos espaciales", "riesgo"],
-            ["Calidad QA/QC", "calidad"],
-            ["Ambiental", "ambiental"],
-            ["SSOMA", "ssoma"],
-            ["Produccion", "produccion"],
-            ["Predios", "predios"],
-            ["Interferencias", "interferencias"]
+            { name: "Avance fisico", type: "WMS / avance", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Riesgos espaciales", type: "WFS / riesgo", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Ambiental", type: "WMTS / ambiental", status: "not_configured", detail: "slot publicado por WEB SIG" },
+            { name: "Vector Tiles", type: "Vector Tiles / spatial_kpis", status: "not_configured", detail: "slot preparado" }
           ];
-      document.querySelector("#gisLayerLegend").innerHTML = layers.map(([name, type]) => `
+      document.querySelector("#gisLayerLegend").innerHTML = layers.map(layer => `
         <div class="layer-row">
-          <span class="layer-dot"></span>
-          <span>${name}</span>
-          <span>${type}</span>
+          <span class="layer-dot ${layer.status}"></span>
+          <span>${layer.name}<small>${layer.detail}</small></span>
+          <span>${layer.type}</span>
         </div>
       `).join("");
     }
@@ -1823,6 +1829,7 @@ def render_dashboard_html() -> str:
         const response = await apiFetch(`/api/v1/companies/${encodeURIComponent(companyId)}/gis-intelligence/maps/filter?${params}`);
         if (response.ok) {
           gisMap = await response.json();
+          gisLayerPanel = null;
           renderMap();
           renderGisIntelligence();
         }

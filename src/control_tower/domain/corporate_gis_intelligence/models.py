@@ -73,6 +73,15 @@ class CorporateLayerStatus(StrEnum):
     DISABLED = "disabled"
 
 
+class CorporateGisAvailability(StrEnum):
+    """Availability status for published GIS services consumed by the Tower."""
+
+    AVAILABLE = "available"
+    DEGRADED = "degraded"
+    UNAVAILABLE = "unavailable"
+    NOT_CONFIGURED = "not_configured"
+
+
 class CorporateGisSource(BaseModel):
     """Published GIS source consumed by Corporate GIS Intelligence."""
 
@@ -88,6 +97,45 @@ class CorporateGisSource(BaseModel):
     status: CorporateGisSourceStatus = CorporateGisSourceStatus.REGISTERED
     updated_on: date
     metadata: dict[str, str] = Field(default_factory=dict)
+
+
+class CorporateGisServiceValidation(BaseModel):
+    """Validation result for one published WEB SIG GIS service."""
+
+    source_id: str = Field(min_length=3)
+    service_kind: GisServiceKind
+    service_url: str = Field(min_length=6)
+    availability: CorporateGisAvailability
+    status_code: int | None = None
+    capability_detected: bool = False
+    detail: str = Field(min_length=2)
+    checked_url: str | None = None
+
+
+class CorporateLayerLegendItem(BaseModel):
+    """Legend item used by the Corporate GIS dashboard layer panel."""
+
+    layer_id: str = Field(min_length=3)
+    name: str = Field(min_length=3)
+    service_kind: GisServiceKind
+    layer_type: CorporateLayerType
+    discipline: GisDiscipline
+    status: CorporateLayerStatus
+    availability: CorporateGisAvailability = CorporateGisAvailability.NOT_CONFIGURED
+    risk_level: str = Field(default="none", min_length=3)
+    indicator_value: float = Field(default=0, ge=0)
+    service_url: str | None = None
+    legend_url: str | None = None
+
+
+class CorporateGisLayerPanel(BaseModel):
+    """Read-only GIS layer panel assembled from published WEB SIG services."""
+
+    company_id: str = Field(min_length=3)
+    project_id: str | None = Field(default=None, min_length=3)
+    layers: list[CorporateLayerLegendItem] = Field(default_factory=list)
+    validations: list[CorporateGisServiceValidation] = Field(default_factory=list)
+    filters: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class CorporateLayer(BaseModel):
