@@ -791,6 +791,72 @@ def render_dashboard_html() -> str:
       min-width: 0;
     }
     .governance-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .portfolio-navigator {
+      display: grid;
+      grid-template-columns: minmax(240px, .36fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .portfolio-search {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) repeat(6, minmax(86px, .15fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .portfolio-search input, .portfolio-search button {
+      margin: 0;
+      min-width: 0;
+      padding: 9px 10px;
+      font-size: 12px;
+    }
+    .portfolio-search button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+    .portfolio-tree, .portfolio-detail {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      padding: 12px;
+      min-width: 0;
+    }
+    .portfolio-tree { display: grid; gap: 8px; }
+    .portfolio-node {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(15, 23, 42, .18);
+    }
+    .portfolio-node.company { border-color: rgba(52, 211, 153, .48); }
+    .portfolio-node.program { margin-left: 12px; }
+    .portfolio-node.project { margin-left: 24px; cursor: pointer; }
+    .portfolio-node.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .portfolio-node .title { font-weight: 780; }
+    .portfolio-node .meta { color: var(--muted); font-size: 11px; margin-top: 4px; line-height: 1.35; }
+    .portfolio-detail h3 { margin: 0 0 8px; }
+    .portfolio-decision {
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent-soft), rgba(15, 23, 42, .16));
+      margin-bottom: 12px;
+    }
+    .portfolio-decision .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .portfolio-decision .value { margin-top: 6px; font-size: 20px; font-weight: 820; line-height: 1.25; }
+    .portfolio-status-grid, .portfolio-action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .portfolio-readout, .portfolio-action {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(15, 23, 42, .16);
+      min-width: 0;
+    }
+    .portfolio-readout .label, .portfolio-action .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .portfolio-readout .value, .portfolio-action .value { margin-top: 6px; font-weight: 780; overflow-wrap: anywhere; }
+    .portfolio-action { color: var(--text); text-decoration: none; }
+    .portfolio-action:hover { border-color: var(--accent); }
     .governance-card {
       background: var(--panel-strong);
       border: 1px solid var(--line);
@@ -1132,6 +1198,7 @@ def render_dashboard_html() -> str:
       .executive-command { grid-template-columns: 1fr; }
       .executive-status-grid, .executive-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .wizard-command, .wizard-product-grid, .wizard-workspace { grid-template-columns: 1fr; }
+      .portfolio-navigator, .portfolio-search { grid-template-columns: 1fr; }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
@@ -1146,6 +1213,7 @@ def render_dashboard_html() -> str:
     @media (max-width: 700px) {
       main { padding: 14px; }
       .summary, .metric-grid, .cockpit, .governance-grid { grid-template-columns: 1fr; }
+      .portfolio-status-grid, .portfolio-action-grid { grid-template-columns: 1fr; }
       .brief-grid, .home-action-grid, .home-grid { grid-template-columns: 1fr; }
       .executive-quick-grid, .executive-status-grid, .executive-comparison-grid { grid-template-columns: 1fr; }
       .topbar { align-items: stretch; flex-direction: column; }
@@ -1335,16 +1403,21 @@ def render_dashboard_html() -> str:
           </section>
           <section class="section" id="portfolioExplorer">
             <h2>Explorador de Portafolio</h2>
-            <div class="section-kicker">Empresa / Programa / Proyecto / WEB SIG / Estado / Dashboard.</div>
-            <div class="filter-row" id="portfolioFilters">
-              <button data-portfolio-filter="all" class="active">Empresa</button>
-              <button data-portfolio-filter="program">Programa</button>
-              <button data-portfolio-filter="active">Estado</button>
-              <button data-portfolio-filter="customer">Cliente</button>
+            <div class="section-kicker">Navegador corporativo Empresa / Programa / Proyecto / WEB SIG / Estado / Dashboard.</div>
+            <div class="portfolio-search" id="portfolioFilters">
+              <input id="portfolioSearch" placeholder="Buscar empresa, programa, proyecto, WEB SIG, cliente o estado" autocomplete="off">
+              <button data-portfolio-filter="all" class="active">Todos</button>
+              <button data-portfolio-filter="active">Activos</button>
+              <button data-portfolio-filter="websig">WEB SIG</button>
+              <button data-portfolio-filter="attention">Atencion</button>
               <button data-portfolio-filter="contract">Contrato</button>
-              <button data-portfolio-filter="owner">Responsable / Fecha</button>
+              <button data-portfolio-filter="owner">Responsable</button>
             </div>
-            <div class="governance-grid" id="portfolioGovernance"></div>
+            <div class="portfolio-navigator">
+              <div class="portfolio-tree" id="portfolioOrganizationTree"></div>
+              <div class="portfolio-detail" id="portfolioProjectDetail"></div>
+            </div>
+            <div class="governance-grid" id="portfolioGovernance" hidden></div>
           </section>
           <section class="section" id="enterpriseWizard">
             <h2>Corporate Wizard</h2>
@@ -1452,6 +1525,8 @@ def render_dashboard_html() -> str:
     let reportPreview = null;
     let reportTemplates = [];
     let activePortfolioFilter = "all";
+    let portfolioSearchTerm = "";
+    let selectedPortfolioProjectId = localStorage.getItem("selectedPortfolioProjectId") || null;
     let activeGisFilter = "estado";
     let activeGisView = "nacional";
     let activePeruRegion = "all";
@@ -2463,71 +2538,197 @@ def render_dashboard_html() -> str:
     }
 
     function renderPortfolioGovernance() {
-      const target = document.querySelector("#portfolioGovernance");
       const items = filteredPortfolioItems();
+      const tree = document.querySelector("#portfolioOrganizationTree");
+      const detail = document.querySelector("#portfolioProjectDetail");
       if (!items.length) {
-        target.innerHTML = `<div class="muted">Sin proyectos gobernados.</div>`;
+        tree.innerHTML = `
+          <div class="portfolio-node company">
+            <div class="title">${data.company_id || "Empresa"}</div>
+            <div class="meta">Sin proyectos que coincidan con la busqueda o filtro activo.</div>
+          </div>
+        `;
+        detail.innerHTML = portfolioEmptyState();
         return;
       }
       document.querySelectorAll("[data-portfolio-filter]").forEach(button => {
         button.classList.toggle("active", button.dataset.portfolioFilter === activePortfolioFilter);
       });
-      target.innerHTML = items.map(item => {
-        const flow = (data.operational_flow || []).find(flowItem => flowItem.project_id === item.project_id);
-        const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
-        return `
-        <details class="governance-card" open>
-          <summary>
-            <div class="project">${item.project_name}</div>
-            <div class="meta">${data.company_id} / ${item.program || "Programa pendiente"} / ${item.governance_status}</div>
-          </summary>
-          <div class="portfolio-path">
-            <span><strong>Empresa</strong> ${data.company_id}</span>
-            <span><strong>Programa</strong> ${item.program || "pendiente"}</span>
-            <span><strong>Proyecto</strong> ${item.project_name}</span>
-            <span><strong>WEB SIG Enterprise</strong> ${item.websig}</span>
-            <span><strong>Estado</strong> ${item.governance_status}</span>
-            <span><strong>Cliente</strong> ${item.customer || "pendiente"}</span>
-            <span><strong>Contrato</strong> ${project.contract_id || item.contract || "pendiente"}</span>
-            <span><strong>Responsable</strong> ${project.owner || item.owner || "pendiente"}</span>
-            <span><strong>Fecha</strong> ${project.created_at || project.updated_at || "pendiente"}</span>
-            <span><strong>Dashboard</strong> ${flow ? `${flow.readiness_score}%` : "pendiente"}</span>
+      if (!selectedPortfolioProjectId || !items.some(item => item.project_id === selectedPortfolioProjectId)) {
+        selectedPortfolioProjectId = items[0].project_id;
+        localStorage.setItem("selectedPortfolioProjectId", selectedPortfolioProjectId);
+      }
+      tree.innerHTML = portfolioTreeMarkup(items);
+      const selected = items.find(item => item.project_id === selectedPortfolioProjectId) || items[0];
+      detail.innerHTML = portfolioProjectDetailMarkup(selected);
+      document.querySelectorAll("[data-portfolio-project]").forEach(button => {
+        button.addEventListener("click", () => {
+          selectedPortfolioProjectId = button.dataset.portfolioProject;
+          localStorage.setItem("selectedPortfolioProjectId", selectedPortfolioProjectId);
+          renderPortfolioGovernance();
+          applyRbacUi();
+        });
+      });
+    }
+
+    function portfolioTreeMarkup(items) {
+      const byProgram = new Map();
+      items.forEach(item => {
+        const program = item.program || "Programa pendiente";
+        if (!byProgram.has(program)) byProgram.set(program, []);
+        byProgram.get(program).push(item);
+      });
+      const activePrograms = byProgram.size;
+      return `
+        <div class="portfolio-node company">
+          <div class="title">${data.company_id}</div>
+          <div class="meta">Empresa activa / ${activePrograms} programa${activePrograms === 1 ? "" : "s"} / ${items.length} proyecto${items.length === 1 ? "" : "s"}</div>
+        </div>
+        ${Array.from(byProgram.entries()).map(([program, projects]) => `
+          <div class="portfolio-node program">
+            <div class="title">${program}</div>
+            <div class="meta">${projects.length} proyecto${projects.length === 1 ? "" : "s"} / ciclo de vida corporativo</div>
           </div>
-          <div class="chips">
-            ${chip("WEB SIG", item.websig)}
-            ${chip("NAS", item.nas)}
-            ${chip("GIS", item.gis)}
-            <span class="chip ready">Solo lectura</span>
-          </div>
-        </details>
+          ${projects.map(project => `
+            <button class="portfolio-node project ${project.project_id === selectedPortfolioProjectId ? "selected" : ""}" data-portfolio-project="${project.project_id}">
+              <div class="title">${project.project_name}</div>
+              <div class="meta">${project.governance_status} / WEB SIG ${project.websig || "pendiente"} / GIS ${project.gis || "pendiente"}</div>
+            </button>
+          `).join("")}
+        `).join("")}
       `;
-      }).join("");
+    }
+
+    function portfolioProjectDetailMarkup(item) {
+      const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
+      const flow = (data.operational_flow || []).find(flowItem => flowItem.project_id === item.project_id) || {};
+      const users = (data.users || []).length;
+      const licenses = (data.licenses || []).length;
+      const alerts = data.alerts[0]?.value ?? 0;
+      const lastEvent = recentEvents()[0];
+      const decision = portfolioDecision(item, flow);
+      return `
+        <h3>${item.project_name}</h3>
+        <div class="muted">${data.company_id} -> ${item.program || "Programa pendiente"} -> ${item.project_name} -> WEB SIG -> Estado -> Dashboard</div>
+        <div class="portfolio-decision">
+          <div class="label">Decision operativa</div>
+          <div class="value">${decision}</div>
+        </div>
+        <div class="portfolio-status-grid">
+          ${portfolioReadout("Ciclo de vida", item.lifecycle_stage || item.governance_status)}
+          ${portfolioReadout("Estado WEB SIG", item.websig || "pendiente")}
+          ${portfolioReadout("Estado GIS", item.gis || "pendiente")}
+          ${portfolioReadout("Estado NAS", item.nas || "pendiente")}
+          ${portfolioReadout("Usuarios", users)}
+          ${portfolioReadout("Licencias", licenses)}
+          ${portfolioReadout("Alertas", alerts)}
+          ${portfolioReadout("Ultima actividad", lastEvent ? `${lastEvent.kind}: ${lastEvent.message}` : "sin actividad")}
+          ${portfolioReadout("Dashboard", flow.readiness_score ? `${flow.readiness_score}%` : "pendiente")}
+        </div>
+        <div class="portfolio-action-grid">
+          ${portfolioAction("Dashboard", "#corporateDashboard", "Lectura ejecutiva", "dashboard", "read")}
+          ${portfolioAction("GIS", "#corporateGisDashboard", "Mapa y capas", "dashboard", "read")}
+          ${portfolioAction("NAS", "#portfolioExplorer", "Centro documental", "project", "read")}
+          ${portfolioAction("Reportes", "#corporateReporting", "Impresion corporativa", "dashboard", "read")}
+          ${portfolioAction("Auditoria", "#corporateNotifications", "Eventos y trazabilidad", "provisioning", "read")}
+          ${portfolioAction("Wizard", "#enterpriseWizard", "Provisionar / reanudar", "provisioning", "execute")}
+        </div>
+        <div class="portfolio-path">
+          <span><strong>Cliente</strong> ${item.customer || "pendiente"}</span>
+          <span><strong>Contrato</strong> ${project.contract_id || item.contract || "pendiente"}</span>
+          <span><strong>Responsable</strong> ${project.owner || item.owner || "pendiente"}</span>
+          <span><strong>Ubicacion</strong> ${project.region || "region pendiente"} / ${project.province || "provincia pendiente"} / ${project.district || "distrito pendiente"}</span>
+        </div>
+      `;
+    }
+
+    function portfolioDecision(item, flow) {
+      if (item.websig === "pendiente") return "Completar provisioning WEB SIG antes de considerar el proyecto operativo.";
+      if (item.gis === "pendiente") return "Registrar GIS corporativo para que el proyecto aparezca en el visor ejecutivo.";
+      if (item.nas === "pendiente") return "Vincular NAS para asegurar trazabilidad documental.";
+      if (flow.pending_controls?.length) return flow.next_action || "Revisar controles pendientes del flujo operacional.";
+      return "Proyecto listo para seguimiento ejecutivo desde Dashboard, GIS, Reportes y Auditoria.";
+    }
+
+    function portfolioReadout(label, value) {
+      return `
+        <div class="portfolio-readout">
+          <div class="label">${label}</div>
+          <div class="value">${value ?? "pendiente"}</div>
+        </div>
+      `;
+    }
+
+    function portfolioAction(label, href, value, scope, action) {
+      const allowed = hasPermission(scope, action);
+      return `
+        <a class="portfolio-action ${allowed ? "" : "no-access"}" href="${allowed ? href : "#portfolioExplorer"}" data-rbac-scope="${scope}" data-rbac-action="${action}">
+          <div class="label">${label}</div>
+          <div class="value">${allowed ? value : "Sin acceso"}</div>
+        </a>
+      `;
+    }
+
+    function portfolioEmptyState() {
+      return `
+        <h3>Sin datos para mostrar</h3>
+        <div class="portfolio-decision">
+          <div class="label">Siguiente accion</div>
+          <div class="value">Ajustar filtros o iniciar un nuevo proyecto desde el Enterprise Wizard.</div>
+        </div>
+        <div class="portfolio-action-grid">
+          ${portfolioAction("Wizard", "#enterpriseWizard", "Crear proyecto", "provisioning", "execute")}
+          ${portfolioAction("Dashboard", "#corporateDashboard", "Volver a resumen", "dashboard", "read")}
+        </div>
+      `;
     }
 
     function filteredPortfolioItems() {
       const items = data.portfolio_governance || [];
+      const searched = portfolioSearchTerm
+        ? items.filter(item => {
+          const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
+          const haystack = [
+            data.company_id,
+            item.program,
+            item.project_name,
+            item.websig,
+            item.gis,
+            item.nas,
+            item.governance_status,
+            item.lifecycle_stage,
+            item.customer,
+            project.contract_id,
+            project.owner,
+            project.region,
+            project.province,
+            project.district
+          ].join(" ").toLowerCase();
+          return haystack.includes(portfolioSearchTerm.toLowerCase());
+        })
+        : items;
       if (activePortfolioFilter === "active") {
-        return items.filter(item => item.governance_status === "active" || item.lifecycle_stage === "active");
+        return searched.filter(item => item.governance_status === "active" || item.lifecycle_stage === "active");
       }
-      if (activePortfolioFilter === "program") {
-        return [...items].sort((left, right) => String(left.program || "").localeCompare(String(right.program || "")));
+      if (activePortfolioFilter === "websig") {
+        return searched.filter(item => item.websig && item.websig !== "pendiente");
       }
-      if (activePortfolioFilter === "customer") {
-        return items.filter(item => item.customer);
+      if (activePortfolioFilter === "attention") {
+        return searched.filter(item => item.websig === "pendiente" || item.gis === "pendiente" || item.nas === "pendiente");
       }
       if (activePortfolioFilter === "contract") {
-        return items.filter(item => {
+        return searched.filter(item => {
           const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
           return project.contract_id || item.contract;
         });
       }
       if (activePortfolioFilter === "owner") {
-        return items.filter(item => {
+        return searched.filter(item => {
           const project = portfolioProjects.find(projectItem => projectItem.project_id === item.project_id) || {};
           return project.owner || item.owner || project.created_at || project.updated_at;
         });
       }
-      return items;
+      return [...searched].sort((left, right) => String(left.program || "").localeCompare(String(right.program || "")));
     }
 
     function renderWizard() {
@@ -3355,6 +3556,10 @@ def render_dashboard_html() -> str:
         activePortfolioFilter = button.dataset.portfolioFilter;
         if (data) renderPortfolioGovernance();
       });
+    });
+    document.querySelector("#portfolioSearch").addEventListener("input", event => {
+      portfolioSearchTerm = event.target.value.trim();
+      if (data) renderPortfolioGovernance();
     });
     document.querySelectorAll("[data-gis-filter]").forEach(button => {
       button.addEventListener("click", () => {

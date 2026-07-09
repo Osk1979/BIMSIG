@@ -161,6 +161,12 @@ independent step validation, partial save, activation readiness, permission-awar
 blocked states, audit events, and a pre-activation summary that traces Workflow,
 Portfolio, GIS, NAS, Audit, and WEB SIG references through existing services.
 
+CTO-104E turns Portfolio Explorer into an Organization Navigator. The dashboard
+now presents the corporate hierarchy as Empresa -> Programa -> Proyecto -> WEB
+SIG -> Estado, with search, executive filters, persistent project selection,
+project detail, and navigation to Dashboard, GIS, NAS, Reports, Audit, and
+Wizard using the existing Portfolio, RBAC, and dashboard data flows.
+
 CTO-107 introduces the Corporate Reporting & Print Engine. It exposes report
 templates, preview, issued report manifests, print-ready HTML output, checksum
 traceability, NAS logical references, and audit events for formal corporate
