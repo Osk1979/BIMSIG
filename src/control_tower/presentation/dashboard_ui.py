@@ -892,6 +892,42 @@ def render_dashboard_html() -> str:
     .wizard-section-tab.active { border-color: var(--accent); background: var(--accent-soft); }
     .wizard-section-tab .label { font-weight: 780; display: block; }
     .wizard-section-tab .meta { color: var(--muted); font-size: 11px; margin-top: 4px; display: block; }
+    .wizard-decision-card {
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent-soft), rgba(15, 23, 42, .18));
+      margin-top: 12px;
+    }
+    .wizard-decision-card .label {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .wizard-decision-card .value {
+      margin-top: 6px;
+      font-size: 20px;
+      font-weight: 820;
+      line-height: 1.25;
+    }
+    .wizard-focus-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .wizard-focus-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: rgba(15, 23, 42, .16);
+    }
+    .wizard-focus-item strong {
+      display: block;
+      color: var(--accent);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
     .wizard-workspace {
       display: grid;
       grid-template-columns: minmax(180px, .32fr) minmax(0, 1fr);
@@ -947,12 +983,6 @@ def render_dashboard_html() -> str:
     .wizard-readout .value { margin-top: 6px; font-weight: 760; overflow-wrap: anywhere; }
     .wizard-validation-list { display: grid; gap: 8px; }
     .wizard-validation { display: none; }
-    .wizard-compact-status {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 12px;
-    }
     .wizard-validation-item {
       display: grid;
       grid-template-columns: minmax(110px, .34fr) minmax(0, 1fr);
@@ -1130,7 +1160,6 @@ def render_dashboard_html() -> str:
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
       .wizard-section-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .wizard-compact-status { grid-template-columns: 1fr; }
       .wizard-actions, .wizard-detail-grid, .wizard-trace-grid, .wizard-validation-item { grid-template-columns: 1fr; }
       .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
@@ -2519,8 +2548,8 @@ def render_dashboard_html() -> str:
       activeWizardStep = current.key;
       const canExecute = hasPermission("provisioning", "execute");
       document.querySelector("#wizardProgressLabel").textContent = activeSession
-        ? `${progress}% completado / sesion ${activeSession.wizard_id} / paso actual ${wizardLabel(activeSession.current_step)}`
-        : `${progress}% preparado / sin sesion activa / listo para iniciar`;
+        ? `Decision actual: ${current.name}. Sesion ${activeSession.wizard_id}.`
+        : `Decision actual: iniciar una sesion corporativa guiada.`;
       document.querySelector("#wizardProgressBar").style.width = `${progress}%`;
       document.querySelector("#wizardResumePanel").innerHTML = wizardResumeMarkup(activeSession, current, canExecute);
       document.querySelector("#wizardSectionTabs").innerHTML = sections.map(section => wizardSectionTabMarkup(section, steps)).join("");
@@ -2588,16 +2617,10 @@ def render_dashboard_html() -> str:
     }
 
     function wizardSectionTabMarkup(section, steps) {
-      const sectionSteps = section.stepKeys.length
-        ? steps.filter(step => section.stepKeys.includes(step.key))
-        : steps;
-      const valid = sectionSteps.filter(step => step.status === "valid").length;
-      const total = sectionSteps.length;
       return `
         <button class="wizard-section-tab ${activeWizardSection === section.key ? "active" : ""}" data-wizard-section="${section.key}">
           <span class="label">${section.label}</span>
           <span class="meta">${section.hint}</span>
-          <span class="meta">${valid}/${total} listo</span>
         </button>
       `;
     }
@@ -2819,64 +2842,57 @@ def render_dashboard_html() -> str:
     function wizardResumeMarkup(session, current, canExecute) {
       if (!canExecute) {
         return `
-          <h3>Reanudacion</h3>
+          <h3>Siguiente accion</h3>
           <div class="wizard-status-pill blocked">Sin permiso para ejecutar provisioning</div>
-          <div class="muted">Puedes revisar el estado, pero la API bloqueara iniciar, guardar o activar.</div>
+          <div class="muted">Solicitar permiso o revisar la sesion en modo lectura.</div>
         `;
       }
       if (!session) {
         return `
-          <h3>Reanudacion</h3>
+          <h3>Siguiente accion</h3>
           <div class="wizard-status-pill">Sin sesion activa</div>
-          <div class="muted">Pulsa Iniciar para crear una sesion persistida del Enterprise Wizard.</div>
+          <div class="muted">Iniciar una sesion persistida para crear o reanudar un proyecto.</div>
         `;
       }
       return `
-        <h3>Reanudacion</h3>
+        <h3>Siguiente accion</h3>
         <div class="wizard-status-pill ${session.status === "ready" ? "valid" : ""}">${session.status}</div>
-        <div class="muted">Sesion ${session.wizard_id}. Reanuda desde ${current.name}; actualizado por ${session.updated_by || session.created_by}.</div>
+        <div class="muted">Continuar con ${current.name} o activar si la sesion ya esta lista.</div>
       `;
     }
 
     function wizardStepDetailMarkup(step, session, canExecute) {
-      const dataRows = Object.entries(step.data || {}).slice(0, 4);
       const errors = step.errors.length ? step.errors : ["Datos minimos completos para este paso."];
+      const primaryDecision = step.errors.length
+        ? errors[0]
+        : `Confirmar ${step.name} y continuar con el flujo corporativo.`;
+      const referenceRows = Object.entries(step.data || {}).slice(0, 3);
       return `
         <h3>${step.name}</h3>
         <div class="muted">${step.purpose}</div>
         <div class="wizard-status-pill ${canExecute ? step.status : "blocked"}">${canExecute ? stepStatusText(step) : "bloqueado por permisos"}</div>
-        <div class="wizard-compact-status">
-          <div class="wizard-readout">
-            <div class="label">Sesion</div>
-            <div class="value">${session?.wizard_id || "pendiente de iniciar"}</div>
-          </div>
-          <div class="wizard-readout">
-            <div class="label">Faltantes</div>
-            <div class="value">${step.errors.length}</div>
-          </div>
-          <div class="wizard-readout">
-            <div class="label">Estado</div>
-            <div class="value">${step.status}</div>
-          </div>
+        <div class="wizard-decision-card">
+          <div class="label">Decision requerida</div>
+          <div class="value">${primaryDecision}</div>
         </div>
-        <div class="wizard-validation-list" style="margin-top: 12px;">
-          ${errors.map(error => `
-            <div class="wizard-validation-item">
-              <strong>${step.errors.length ? "Resolver" : "Listo"}</strong>
-              <span>${error}</span>
+        <div class="wizard-focus-list">
+          <div class="wizard-focus-item">
+            <strong>Accion sugerida</strong>
+            <span>${step.errors.length ? "Completar el dato faltante y guardar avance." : "Guardar avance y pasar al siguiente paso."}</span>
+          </div>
+          <div class="wizard-focus-item">
+            <strong>Sesion</strong>
+            <span>${session?.wizard_id || "Pendiente de iniciar"} / ${step.status}</span>
+          </div>
+          ${referenceRows.length ? `
+            <div class="wizard-focus-item">
+              <strong>Referencia principal</strong>
+              <span>${referenceRows.map(([key, value]) => `${key}: ${Array.isArray(value) ? value.length : value ?? "pendiente"}`).join(" / ")}</span>
             </div>
-          `).join("")}
-        </div>
-        <div class="wizard-detail-grid" style="margin-top: 12px;">
-          ${dataRows.length ? dataRows.map(([key, value]) => `
-            <div class="wizard-readout">
-              <div class="label">${key}</div>
-              <div class="value">${Array.isArray(value) ? value.length : value ?? "pendiente"}</div>
-            </div>
-          `).join("") : `
-            <div class="wizard-readout">
-              <div class="label">Datos</div>
-              <div class="value">pendiente</div>
+          ` : `
+            <div class="wizard-focus-item">
+              <strong>Referencia principal</strong>
+              <span>Pendiente de datos.</span>
             </div>
           `}
         </div>

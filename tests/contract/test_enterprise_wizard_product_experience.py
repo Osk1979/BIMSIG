@@ -25,6 +25,8 @@ def test_enterprise_wizard_product_experience_contract(tmp_path) -> None:
         "Reanudacion",
         "Resumen antes de activar",
         "Validacion independiente",
+        "Decision requerida",
+        "Siguiente accion",
         "Datos base",
         "Plataforma",
         "Trazabilidad",
