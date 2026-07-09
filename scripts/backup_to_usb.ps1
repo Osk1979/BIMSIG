@@ -115,7 +115,7 @@ if (Test-Path -LiteralPath $backupPath) {
 
 $zip = [System.IO.Compression.ZipFile]::Open($backupPath, [System.IO.Compression.ZipArchiveMode]::Create)
 try {
-    Get-ChildItem -LiteralPath $repository -Recurse -File -Force |
+    Get-ChildItem -LiteralPath $repository -Recurse -File -Force -ErrorAction SilentlyContinue |
         Where-Object { -not (Test-ExcludedPath -FullName $_.FullName -Root $repository) } |
         ForEach-Object {
             $entryName = $_.FullName.Substring($repository.Length).TrimStart("\", "/") -replace "\\", "/"
