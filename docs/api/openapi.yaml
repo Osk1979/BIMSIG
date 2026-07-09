@@ -208,6 +208,39 @@
         "title": "AuthIdentity",
         "type": "object"
       },
+      "AuthLoginPayload": {
+        "description": "API payload for Enterprise login through a linked identity.",
+        "properties": {
+          "provider": {
+            "minLength": 3,
+            "title": "Provider",
+            "type": "string"
+          },
+          "subject": {
+            "minLength": 3,
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "subject"
+        ],
+        "title": "AuthLoginPayload",
+        "type": "object"
+      },
+      "AuthLogoutResponse": {
+        "description": "API response for logout.",
+        "properties": {
+          "status": {
+            "default": "logged_out",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "AuthLogoutResponse",
+        "type": "object"
+      },
       "AuthProvider": {
         "description": "Authentication provider type.",
         "enum": [
@@ -217,6 +250,123 @@
         ],
         "title": "AuthProvider",
         "type": "string"
+      },
+      "AuthSession": {
+        "description": "Signed Enterprise API session.",
+        "properties": {
+          "access_token": {
+            "minLength": 20,
+            "title": "Access Token",
+            "type": "string"
+          },
+          "claims": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ]
+            },
+            "title": "Claims",
+            "type": "object"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/AuthenticatedPrincipal"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "expires_at",
+          "principal"
+        ],
+        "title": "AuthSession",
+        "type": "object"
+      },
+      "AuthenticatedPrincipal": {
+        "description": "Authenticated Enterprise actor resolved at the API boundary.",
+        "properties": {
+          "company_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Company Ids",
+            "type": "array"
+          },
+          "display_name": {
+            "examples": [
+              "Usuario Admin"
+            ],
+            "minLength": 2,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "examples": [
+              "admin@example.com"
+            ],
+            "minLength": 5,
+            "title": "Email",
+            "type": "string"
+          },
+          "project_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Project Ids",
+            "type": "array"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/AuthProvider"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/UserRole"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "subject": {
+            "examples": [
+              "aad|00000000"
+            ],
+            "minLength": 3,
+            "title": "Subject",
+            "type": "string"
+          },
+          "user_id": {
+            "examples": [
+              "USR-001"
+            ],
+            "minLength": 3,
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "display_name",
+          "provider",
+          "subject"
+        ],
+        "title": "AuthenticatedPrincipal",
+        "type": "object"
       },
       "BackupPayload": {
         "description": "API payload to register an information backup.",
@@ -4884,6 +5034,83 @@
           }
         },
         "summary": "List Audit Events"
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "description": "Issue an Enterprise bearer session for a linked local/OIDC/SAML identity.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLoginPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login"
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "description": "Revoke the current Enterprise bearer session.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLogoutResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout"
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "description": "Return the authenticated Enterprise principal.",
+        "operationId": "current_identity_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticatedPrincipal"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Current Identity"
       }
     },
     "/api/v1/auth/sso/resolve": {

@@ -6,7 +6,7 @@ ADR references:
 - ADR-0016: Enterprise licensing.
 """
 
-from datetime import date
+from datetime import UTC, date, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
@@ -155,6 +155,40 @@ class AuthIdentity(BaseModel):
     subject: str = Field(min_length=3, examples=["aad|00000000"])
     email: str = Field(min_length=5, examples=["admin@example.com"])
     status: UserStatus = UserStatus.ACTIVE
+
+
+class AuthenticatedPrincipal(BaseModel):
+    """Authenticated Enterprise actor resolved at the API boundary."""
+
+    user_id: str = Field(min_length=3, examples=["USR-001"])
+    email: str = Field(min_length=5, examples=["admin@example.com"])
+    display_name: str = Field(min_length=2, examples=["Usuario Admin"])
+    provider: AuthProvider
+    subject: str = Field(min_length=3, examples=["aad|00000000"])
+    company_ids: list[str] = Field(default_factory=list)
+    project_ids: list[str] = Field(default_factory=list)
+    roles: list[UserRole] = Field(default_factory=list)
+
+
+class AuthSession(BaseModel):
+    """Signed Enterprise API session."""
+
+    access_token: str = Field(min_length=20)
+    token_type: str = "bearer"
+    expires_at: datetime
+    principal: AuthenticatedPrincipal
+    claims: dict[str, str | list[str]] = Field(default_factory=dict)
+
+
+class SsoProviderConfig(BaseModel):
+    """Metadata required to prepare an OIDC or SAML provider integration."""
+
+    provider: AuthProvider
+    issuer: str = Field(min_length=3)
+    audience: str = Field(min_length=3)
+    metadata_url: str | None = Field(default=None, min_length=6)
+    enabled: bool = True
+    configured_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class UserHistoryEvent(BaseModel):

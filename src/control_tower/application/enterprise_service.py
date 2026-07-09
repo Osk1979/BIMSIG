@@ -115,6 +115,11 @@ class UserService:
 
         return self._users.list()
 
+    def get_user(self, user_id: str) -> User | None:
+        """Return one user when it exists."""
+
+        return self._users.get(user_id)
+
     def add_membership(self, membership: CompanyMembership) -> CompanyMembership:
         """Assign a user role inside a company."""
 
@@ -132,6 +137,18 @@ class UserService:
         if not self._companies.exists(company_id):
             raise ValueError(f"Company is not registered: {company_id}")
         return self._memberships.list_by_company(company_id)
+
+    def list_memberships_for_user(self, user_id: str) -> list[CompanyMembership]:
+        """Return company memberships for one user."""
+
+        if self._users.get(user_id) is None:
+            raise ValueError(f"User is not registered: {user_id}")
+        return [
+            membership
+            for company in self._companies.list_companies()
+            for membership in self._memberships.list_by_company(company.company_id)
+            if membership.user_id == user_id
+        ]
 
     def _audit_event(self, action: str, entity_type: str, entity_id: str) -> None:
         if self._audit is None:
@@ -287,6 +304,12 @@ class CorporateUserSecurityService:
 
         self._require_company_project(company_id, project_id)
         return self._project_memberships.list_by_project(company_id, project_id)
+
+    def list_project_memberships_for_user(self, user_id: str) -> list[ProjectMembership]:
+        """Return project memberships for one user."""
+
+        self._require_user(user_id)
+        return self._project_memberships.list_by_user(user_id)
 
     def grant_role_permission(self, permission: RolePermission) -> RolePermission:
         """Grant a permission to an enterprise role."""

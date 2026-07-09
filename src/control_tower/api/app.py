@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from control_tower import __version__
+from control_tower.application.auth_service import EnterpriseAuthService
 from control_tower.application.corporate_gis_intelligence_service import CorporateGisIntelligenceService
 from control_tower.application.corporate_workflow_service import CorporateWorkflowEngine
 from control_tower.application.dashboard_service import DashboardService
@@ -54,6 +55,8 @@ from control_tower.domain.corporate_workflow import (
 from control_tower.domain.dashboard import CorporateDashboard
 from control_tower.domain.enterprise import (
     AuthIdentity,
+    AuthSession,
+    AuthenticatedPrincipal,
     Company,
     CompanyLicense,
     CompanyMembership,
@@ -199,6 +202,19 @@ class SsoAuthenticatePayload(BaseModel):
 
     provider: str = Field(min_length=3)
     subject: str = Field(min_length=3)
+
+
+class AuthLoginPayload(BaseModel):
+    """API payload for Enterprise login through a linked identity."""
+
+    provider: str = Field(min_length=3)
+    subject: str = Field(min_length=3)
+
+
+class AuthLogoutResponse(BaseModel):
+    """API response for logout."""
+
+    status: str = "logged_out"
 
 
 class StartCorporateWorkflowPayload(BaseModel):
@@ -347,17 +363,66 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         workflow_engine,
         audit_repository,
     )
+    auth_service = EnterpriseAuthService(
+        user_security,
+        users,
+        companies,
+        signing_secret=os.getenv("CONTROL_TOWER_AUTH_SECRET", "dev-only-control-tower-auth-secret"),
+        audit=audit_repository,
+        ttl_minutes=int(os.getenv("CONTROL_TOWER_AUTH_TTL_MINUTES", "480")),
+    )
+    auth_required = os.getenv("CONTROL_TOWER_AUTH_REQUIRED", "false").lower() == "true"
+
+    def bearer_token(request: Request) -> str | None:
+        authorization = request.headers.get("Authorization", "")
+        if not authorization.lower().startswith("bearer "):
+            return None
+        return authorization.split(" ", 1)[1].strip()
+
+    def is_public_path(path: str) -> bool:
+        public_prefixes = (
+            "/api/v1/auth/login",
+            "/api/v1/auth/sso/resolve",
+            "/api/v1/operational",
+            "/health",
+            "/dashboard",
+            "/docs",
+            "/openapi.json",
+            "/redoc",
+        )
+        return path == "/" or any(path.startswith(prefix) for prefix in public_prefixes)
 
     @app.middleware("http")
     async def devsecops_request_controls(request: Request, call_next) -> Response:
-        """Add request traceability, baseline security headers, and HTTP access logs."""
+        """Add request traceability, auth context, security headers, and HTTP access logs."""
 
         request_id = request.headers.get("X-Request-ID", uuid4().hex)
         started = time.perf_counter()
+        token = bearer_token(request)
+        if token is not None:
+            try:
+                request.state.principal = auth_service.verify(token)
+            except ValueError:
+                if auth_required:
+                    return Response(
+                        content='{"detail":"Invalid authentication token"}',
+                        media_type="application/json",
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                    )
+        elif auth_required and request.method != "OPTIONS" and not is_public_path(request.url.path):
+            return Response(
+                content='{"detail":"Authentication required"}',
+                media_type="application/json",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         response = await call_next(request)
         duration_ms = round((time.perf_counter() - started) * 1000, 2)
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Response-Time-Ms"] = str(duration_ms)
+        principal = getattr(request.state, "principal", None)
+        if principal is not None:
+            response.headers["X-Authenticated-User"] = principal.user_id
         for header, value in SECURITY_HEADERS.items():
             response.headers.setdefault(header, value)
         logger.info(
@@ -371,6 +436,16 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             },
         )
         return response
+
+    def require_principal(request: Request) -> AuthenticatedPrincipal:
+        principal = getattr(request.state, "principal", None)
+        if principal is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return principal
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -1077,10 +1152,42 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     def resolve_sso_identity(payload: SsoAuthenticatePayload) -> AuthIdentity:
         """Resolve an SSO identity into a registered platform user."""
 
-        identity = user_security.authenticate_sso(payload.provider, payload.subject)
-        if identity is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SSO identity not found")
-        return identity
+        try:
+            return user_security.authenticate_sso(payload.provider, payload.subject)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="SSO identity not found") from exc
+
+    @app.post("/api/v1/auth/login", response_model=AuthSession)
+    def login(payload: AuthLoginPayload) -> AuthSession:
+        """Issue an Enterprise bearer session for a linked local/OIDC/SAML identity."""
+
+        try:
+            return auth_service.login(payload.provider, payload.subject)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+    @app.get("/api/v1/auth/me", response_model=AuthenticatedPrincipal)
+    def current_identity(request: Request) -> AuthenticatedPrincipal:
+        """Return the authenticated Enterprise principal."""
+
+        return require_principal(request)
+
+    @app.post("/api/v1/auth/logout", response_model=AuthLogoutResponse)
+    def logout(request: Request) -> AuthLogoutResponse:
+        """Revoke the current Enterprise bearer session."""
+
+        token = bearer_token(request)
+        if token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        try:
+            auth_service.logout(token)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        return AuthLogoutResponse()
 
     @app.get("/api/v1/users/{user_id}/history", response_model=list[UserHistoryEvent])
     def list_user_history(user_id: str) -> list[UserHistoryEvent]:

@@ -178,3 +178,24 @@ company/project instance and writes `websig.config.json` with company, project,
 WEB SIG, PostGIS, GeoServer, NAS, dashboard, module, GIS service slot, and Tower
 boundary metadata. When not configured, the Tower records governed references
 without filesystem side effects.
+
+## Enterprise Auth & SSO
+
+HARDENING-001 adds signed Enterprise bearer sessions on top of the existing
+local/OIDC/SAML identity records. The API exposes:
+
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/logout`
+
+Configure production enforcement with:
+
+```bash
+CONTROL_TOWER_AUTH_REQUIRED=true
+CONTROL_TOWER_AUTH_SECRET=<secret-from-vault-or-env>
+CONTROL_TOWER_AUTH_TTL_MINUTES=480
+```
+
+When `CONTROL_TOWER_AUTH_REQUIRED=true`, protected API routes require a bearer
+token. Local dashboard and contract-test flows remain compatible when the flag is
+not enabled.

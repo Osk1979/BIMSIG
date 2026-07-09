@@ -1006,3 +1006,63 @@ def test_corporate_user_security_contract(tmp_path) -> None:
         "auth_identity.linked",
         "auth_identity.authenticated",
     }
+
+
+def test_enterprise_auth_session_contract(tmp_path, monkeypatch) -> None:
+    database_url = sqlite_url(tmp_path)
+    client = TestClient(create_app(database_url=database_url))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    client.post(
+        "/api/v1/users",
+        json={"user_id": "USR-001", "email": "admin@example.com", "display_name": "Admin"},
+    )
+    client.post(
+        "/api/v1/companies/CRTG/memberships",
+        json={
+            "membership_id": "MEM-001",
+            "company_id": "CRTG",
+            "user_id": "USR-001",
+            "role": "portfolio_manager",
+        },
+    )
+    client.post(
+        "/api/v1/users/USR-001/auth-identities",
+        json={
+            "identity_id": "IDP-001",
+            "user_id": "USR-001",
+            "provider": "oidc",
+            "subject": "aad|001",
+            "email": "admin@example.com",
+        },
+    )
+    login = client.post("/api/v1/auth/login", json={"provider": "oidc", "subject": "aad|001"})
+    token = login.json()["access_token"]
+    me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    logout = client.post("/api/v1/auth/logout", headers={"Authorization": f"Bearer {token}"})
+    rejected_me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert login.status_code == 200
+    assert login.json()["token_type"] == "bearer"
+    assert login.json()["principal"]["user_id"] == "USR-001"
+    assert login.json()["principal"]["company_ids"] == ["CRTG"]
+    assert "portfolio_manager" in login.json()["claims"]["roles"]
+    assert me.status_code == 200
+    assert me.headers["X-Authenticated-User"] == "USR-001"
+    assert logout.status_code == 200
+    assert logout.json()["status"] == "logged_out"
+    assert rejected_me.status_code == 401
+
+    monkeypatch.setenv("CONTROL_TOWER_AUTH_REQUIRED", "true")
+    monkeypatch.setenv("CONTROL_TOWER_AUTH_SECRET", "test-auth-secret-32-characters")
+    protected_client = TestClient(create_app(database_url=database_url))
+    unauthorized = protected_client.post(
+        "/api/v1/companies",
+        json={"company_id": "DENY", "legal_name": "Denied S.A.C.", "display_name": "DENY"},
+    )
+    health = protected_client.get("/health")
+
+    assert unauthorized.status_code == 401
+    assert health.status_code == 200
