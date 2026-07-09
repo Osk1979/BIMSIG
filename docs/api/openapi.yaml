@@ -5113,6 +5113,32 @@
         "summary": "Current Identity"
       }
     },
+    "/api/v1/auth/permissions/matrix": {
+      "get": {
+        "description": "Return the Enterprise RBAC role matrix used by API and UI.",
+        "operationId": "permission_matrix_api_v1_auth_permissions_matrix_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response Permission Matrix Api V1 Auth Permissions Matrix Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Permission Matrix"
+      }
+    },
     "/api/v1/auth/sso/resolve": {
       "post": {
         "description": "Resolve an SSO identity into a registered platform user.",

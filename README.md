@@ -199,3 +199,9 @@ CONTROL_TOWER_AUTH_TTL_MINUTES=480
 When `CONTROL_TOWER_AUTH_REQUIRED=true`, protected API routes require a bearer
 token. Local dashboard and contract-test flows remain compatible when the flag is
 not enabled.
+
+HARDENING-002 adds Enterprise RBAC alignment between API and UI. The shared role
+matrix is available at `GET /api/v1/auth/permissions/matrix`; the dashboard uses
+the same scopes/actions through `data-rbac-scope` and `data-rbac-action`, while
+the API enforces denied actions with `403 Permission denied` when authentication
+is required.

@@ -9,6 +9,7 @@ ADR references:
 
 import logging
 import os
+import re
 import time
 from uuid import uuid4
 
@@ -37,6 +38,7 @@ from control_tower.application.provisioning_service import (
     ProjectProvisioningSpec,
     ProvisioningService,
 )
+from control_tower.application.rbac_policy import RbacPolicy, infer_permission
 from control_tower.application.reporting_service import CorporateReportingService
 from control_tower.domain.audit import AuditEvent
 from control_tower.domain.corporate_gis_intelligence import (
@@ -372,6 +374,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         ttl_minutes=int(os.getenv("CONTROL_TOWER_AUTH_TTL_MINUTES", "480")),
     )
     auth_required = os.getenv("CONTROL_TOWER_AUTH_REQUIRED", "false").lower() == "true"
+    rbac_policy = RbacPolicy()
 
     def bearer_token(request: Request) -> str | None:
         authorization = request.headers.get("Authorization", "")
@@ -382,6 +385,9 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     def is_public_path(path: str) -> bool:
         public_prefixes = (
             "/api/v1/auth/login",
+            "/api/v1/auth/logout",
+            "/api/v1/auth/me",
+            "/api/v1/auth/permissions/matrix",
             "/api/v1/auth/sso/resolve",
             "/api/v1/operational",
             "/health",
@@ -391,6 +397,14 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "/redoc",
         )
         return path == "/" or any(path.startswith(prefix) for prefix in public_prefixes)
+
+    def request_scope_ids(path: str) -> tuple[str | None, str | None]:
+        company_match = re.search(r"/companies/([^/]+)", path)
+        project_match = re.search(r"/projects/([^/]+)", path)
+        return (
+            company_match.group(1) if company_match else None,
+            project_match.group(1) if project_match else None,
+        )
 
     @app.middleware("http")
     async def devsecops_request_controls(request: Request, call_next) -> Response:
@@ -416,6 +430,31 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        principal = getattr(request.state, "principal", None)
+        if auth_required and principal is not None and not is_public_path(request.url.path):
+            permission_scope, permission_action = infer_permission(request.url.path, request.method)
+            company_id, project_id = request_scope_ids(request.url.path)
+            if not rbac_policy.is_allowed(
+                principal,
+                permission_scope,
+                permission_action,
+                company_id=company_id,
+                project_id=project_id,
+            ):
+                audit_repository.save(
+                    AuditEvent(
+                        actor=principal.user_id,
+                        action="auth.permission.denied",
+                        entity_type="api_request",
+                        entity_id=request.url.path,
+                        detail=f"{request.method} denied for {permission_scope.value}:{permission_action.value}",
+                    )
+                )
+                return Response(
+                    content='{"detail":"Permission denied"}',
+                    media_type="application/json",
+                    status_code=status.HTTP_403_FORBIDDEN,
+                )
         response = await call_next(request)
         duration_ms = round((time.perf_counter() - started) * 1000, 2)
         response.headers["X-Request-ID"] = request_id
@@ -446,6 +485,12 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return principal
+
+    @app.get("/api/v1/auth/permissions/matrix")
+    def permission_matrix() -> list[dict[str, str]]:
+        """Return the Enterprise RBAC role matrix used by API and UI."""
+
+        return rbac_policy.matrix()
 
     @app.get("/health")
     def health() -> dict[str, str]:

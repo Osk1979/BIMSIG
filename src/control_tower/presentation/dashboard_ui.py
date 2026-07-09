@@ -91,6 +91,26 @@ def render_dashboard_html() -> str:
     }
     .process-nav a:hover { border-color: var(--accent); color: var(--accent); }
     .process-nav a.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .access-status {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--panel-strong);
+      color: var(--muted);
+      font-size: 12px;
+      margin: 12px 0;
+    }
+    .access-status strong { color: var(--text); display: block; margin-top: 4px; }
+    [data-rbac-hidden="true"] { display: none !important; }
+    [data-rbac-disabled="true"] { opacity: .44; pointer-events: none; }
+    .no-access {
+      border: 1px solid var(--warn);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 10px 0;
+      color: var(--muted);
+      background: rgba(214, 169, 74, .08);
+    }
     .experience-header {
       margin-bottom: 14px;
       padding: 14px 16px;
@@ -767,19 +787,23 @@ def render_dashboard_html() -> str:
       <div class="experience-label">Corporate Experience</div>
       <label for="companyId">Empresa</label>
       <input id="companyId" value="CRTG" autocomplete="off">
-      <button class="primary" id="load">Actualizar</button>
+      <button class="primary" id="load" data-rbac-scope="dashboard" data-rbac-action="read">Actualizar</button>
       <button id="theme">Light Mode</button>
+      <div class="access-status" id="accessStatus">
+        Acceso local
+        <strong>Modo sin bloqueo</strong>
+      </div>
       <nav class="process-nav" aria-label="Corporate Navigation">
-        <a class="active" href="#corporateHome">Inicio</a>
-        <a href="#portfolioExplorer">Portafolio</a>
-        <a href="#corporateGisDashboard">Mapa Corporativo</a>
-        <a href="#enterpriseWizard">Provisionamiento</a>
-        <a href="#corporateDashboard">Empresas</a>
-        <a href="#panels">Usuarios</a>
-        <a href="#panels">Licencias</a>
-        <a href="#operatingModelSection">Configuracion</a>
-        <a href="#corporateNotifications">Auditoria</a>
-        <a href="#operationalFlowSection">Administracion</a>
+        <a class="active" href="#corporateHome" data-rbac-scope="dashboard" data-rbac-action="read">Inicio</a>
+        <a href="#portfolioExplorer" data-rbac-scope="project" data-rbac-action="read">Portafolio</a>
+        <a href="#corporateGisDashboard" data-rbac-scope="dashboard" data-rbac-action="read">Mapa Corporativo</a>
+        <a href="#enterpriseWizard" data-rbac-scope="provisioning" data-rbac-action="execute">Provisionamiento</a>
+        <a href="#corporateDashboard" data-rbac-scope="company" data-rbac-action="read">Empresas</a>
+        <a href="#panels" data-rbac-scope="platform" data-rbac-action="admin">Usuarios</a>
+        <a href="#panels" data-rbac-scope="company" data-rbac-action="read">Licencias</a>
+        <a href="#operatingModelSection" data-rbac-scope="platform" data-rbac-action="admin">Configuracion</a>
+        <a href="#corporateNotifications" data-rbac-scope="provisioning" data-rbac-action="read">Auditoria</a>
+        <a href="#operationalFlowSection" data-rbac-scope="company" data-rbac-action="write">Administracion</a>
       </nav>
       <p class="muted">Dashboard Ejecutivo Corporativo de BIMSIG Enterprise REV13.</p>
     </aside>
@@ -790,9 +814,9 @@ def render_dashboard_html() -> str:
           <h1 id="heading">Resumen ejecutivo</h1>
         </div>
         <div class="toolbar">
-          <button data-panel="operations" class="active">Inicio</button>
-          <button data-panel="governance">Auditoria</button>
-          <button data-panel="enterprise">Administracion</button>
+          <button data-panel="operations" class="active" data-rbac-scope="dashboard" data-rbac-action="read">Inicio</button>
+          <button data-panel="governance" data-rbac-scope="provisioning" data-rbac-action="read">Auditoria</button>
+          <button data-panel="enterprise" data-rbac-scope="platform" data-rbac-action="admin">Administracion</button>
         </div>
       </div>
       <section class="experience-header" id="corporateHome">
@@ -951,13 +975,76 @@ def render_dashboard_html() -> str:
     let activeGisFilter = "estado";
     let activePeruRegion = "all";
     let selectedProjectId = null;
+    let currentPrincipal = null;
+    let permissionMatrix = [];
+
+    function authHeaders() {
+      const token = window.localStorage.getItem("controlTowerToken");
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
+    async function apiFetch(url, options = {}) {
+      const headers = Object.assign({}, authHeaders(), options.headers || {});
+      return fetch(url, Object.assign({}, options, { headers }));
+    }
+
+    async function loadAccessContext() {
+      try {
+        const [meResponse, matrixResponse] = await Promise.all([
+          apiFetch("/api/v1/auth/me"),
+          apiFetch("/api/v1/auth/permissions/matrix")
+        ]);
+        currentPrincipal = meResponse.ok ? await meResponse.json() : null;
+        permissionMatrix = matrixResponse.ok ? await matrixResponse.json() : [];
+      } catch {
+        currentPrincipal = null;
+        permissionMatrix = [];
+      }
+      applyRbacUi();
+    }
+
+    function hasPermission(scope, action) {
+      if (!currentPrincipal) return true;
+      const roles = currentPrincipal.roles || [];
+      if (roles.includes("platform_admin")) return true;
+      return permissionMatrix.some(row =>
+        roles.includes(row.role) &&
+        row.scope === scope &&
+        (row.action === action || row.action === "admin")
+      );
+    }
+
+    function applyRbacUi() {
+      const status = document.querySelector("#accessStatus");
+      if (status) {
+        if (currentPrincipal) {
+          const roles = (currentPrincipal.roles || []).join(", ") || "sin rol";
+          status.innerHTML = `Sesion Enterprise<strong>${currentPrincipal.display_name} / ${roles}</strong>`;
+        } else {
+          status.innerHTML = "Acceso local<strong>Modo sin bloqueo</strong>";
+        }
+      }
+      document.querySelectorAll("[data-rbac-scope]").forEach(element => {
+        const allowed = hasPermission(element.dataset.rbacScope, element.dataset.rbacAction || "read");
+        if (element.tagName === "A") {
+          element.dataset.rbacHidden = String(!allowed);
+        } else {
+          element.dataset.rbacDisabled = String(!allowed);
+          element.setAttribute("aria-disabled", String(!allowed));
+        }
+      });
+    }
 
     async function loadDashboard() {
+      await loadAccessContext();
       const companyId = document.querySelector("#companyId").value.trim();
       const encodedCompany = encodeURIComponent(companyId);
-      const response = await fetch(`/api/v1/companies/${encodedCompany}/dashboard/executive`);
+      const response = await apiFetch(`/api/v1/companies/${encodedCompany}/dashboard/executive`);
       if (!response.ok) {
         document.querySelector("#heading").textContent = "Empresa no encontrada";
+        if (response.status === 401 || response.status === 403) {
+          document.querySelector("#heading").textContent = "Sin acceso al dashboard";
+        }
         return;
       }
       data = await response.json();
@@ -967,10 +1054,10 @@ def render_dashboard_html() -> str:
       auditEvents = [];
       try {
         const [gisResponse, projectsResponse, wizardResponse, auditResponse] = await Promise.all([
-          fetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`),
-          fetch(`/api/v1/companies/${encodedCompany}/projects`),
-          fetch("/api/v1/enterprise-wizard"),
-          fetch("/api/v1/audit/events?limit=12")
+          apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`),
+          apiFetch(`/api/v1/companies/${encodedCompany}/projects`),
+          apiFetch("/api/v1/enterprise-wizard"),
+          apiFetch("/api/v1/audit/events?limit=12")
         ]);
         gisMap = gisResponse.ok ? await gisResponse.json() : null;
         portfolioProjects = projectsResponse.ok ? await projectsResponse.json() : [];
@@ -997,6 +1084,7 @@ def render_dashboard_html() -> str:
       renderNotifications();
       renderPanels();
       renderComparisons();
+      applyRbacUi();
     }
 
     function renderCorporateHome() {
@@ -1732,7 +1820,7 @@ def render_dashboard_html() -> str:
       if (filter === "ssoma") params.set("ssoma", "true");
       if (filter === "produccion") params.set("produccion", "true");
       try {
-        const response = await fetch(`/api/v1/companies/${encodeURIComponent(companyId)}/gis-intelligence/maps/filter?${params}`);
+        const response = await apiFetch(`/api/v1/companies/${encodeURIComponent(companyId)}/gis-intelligence/maps/filter?${params}`);
         if (response.ok) {
           gisMap = await response.json();
           renderMap();

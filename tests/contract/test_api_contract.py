@@ -361,6 +361,10 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "/api/v1/enterprise-wizard" in html.text
     assert "data-gis-filter=\"riesgo\"" in html.text
     assert "data-portfolio-filter=\"contract\"" in html.text
+    assert "data-rbac-scope=\"provisioning\"" in html.text
+    assert "accessStatus" in html.text
+    assert "/api/v1/auth/me" in html.text
+    assert "/api/v1/auth/permissions/matrix" in html.text
     assert "Ver detalle accionable" in html.text
     assert "WEB SIG Enterprise" in html.text
     assert "Solo lectura" in html.text
@@ -1066,3 +1070,57 @@ def test_enterprise_auth_session_contract(tmp_path, monkeypatch) -> None:
 
     assert unauthorized.status_code == 401
     assert health.status_code == 200
+
+
+def test_rbac_blocks_unauthorized_api_action_and_audits(tmp_path, monkeypatch) -> None:
+    database_url = sqlite_url(tmp_path)
+    seed_client = TestClient(create_app(database_url=database_url))
+    seed_client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+    seed_client.post(
+        "/api/v1/users",
+        json={"user_id": "USR-AUD", "email": "audit@example.com", "display_name": "Auditor"},
+    )
+    seed_client.post(
+        "/api/v1/companies/CRTG/memberships",
+        json={
+            "membership_id": "MEM-AUD",
+            "company_id": "CRTG",
+            "user_id": "USR-AUD",
+            "role": "auditor",
+        },
+    )
+    seed_client.post(
+        "/api/v1/users/USR-AUD/auth-identities",
+        json={
+            "identity_id": "IDP-AUD",
+            "user_id": "USR-AUD",
+            "provider": "oidc",
+            "subject": "aad|audit",
+            "email": "audit@example.com",
+        },
+    )
+
+    monkeypatch.setenv("CONTROL_TOWER_AUTH_REQUIRED", "true")
+    monkeypatch.setenv("CONTROL_TOWER_AUTH_SECRET", "test-auth-secret-32-characters")
+    client = TestClient(create_app(database_url=database_url))
+    login = client.post("/api/v1/auth/login", json={"provider": "oidc", "subject": "aad|audit"})
+    token = login.json()["access_token"]
+    read = client.get("/api/v1/companies/CRTG/dashboard/executive", headers={"Authorization": f"Bearer {token}"})
+    denied = client.post(
+        "/api/v1/companies/CRTG/websig-factory/execute",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "company": {"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+            "project": {"project_id": "PSZ-2026", "company_id": "CRTG", "name": "Proyecto Suiza"},
+            "approved_by": "auditor",
+        },
+    )
+    events = client.get("/api/v1/audit/events?limit=20", headers={"Authorization": f"Bearer {token}"})
+
+    assert read.status_code in {200, 404}
+    assert denied.status_code == 403
+    assert denied.json()["detail"] == "Permission denied"
+    assert "auth.permission.denied" in {event["action"] for event in events.json()}
