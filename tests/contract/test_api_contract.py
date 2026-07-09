@@ -416,7 +416,8 @@ def test_executive_dashboard_contract(tmp_path) -> None:
     assert "data-theme=\"dark\"" in html.text
 
 
-def test_corporate_reporting_print_contract(tmp_path) -> None:
+def test_corporate_reporting_print_contract(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("CONTROL_TOWER_REPORT_OUTPUT_DIR", str(tmp_path / "reports"))
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
     client.post(
         "/api/v1/companies",
@@ -443,6 +444,9 @@ def test_corporate_reporting_print_contract(tmp_path) -> None:
     preview = client.post("/api/v1/reports/preview", json={"company_id": "CRTG", "requested_by": "cto"})
     issued = client.post("/api/v1/reports/issue", json={"company_id": "CRTG", "requested_by": "cto"})
     html = client.post("/api/v1/reports/issue/html", json={"company_id": "CRTG", "requested_by": "cto"})
+    pdf = client.post("/api/v1/reports/issue/pdf", json={"company_id": "CRTG", "requested_by": "cto"})
+    pdf_download = client.post("/api/v1/reports/issue/pdf/download", json={"company_id": "CRTG", "requested_by": "cto"})
+    nas_assets = client.get("/api/v1/companies/CRTG/nas/assets")
     events = client.get("/api/v1/audit/events?limit=20")
 
     assert templates.status_code == 200
@@ -458,6 +462,14 @@ def test_corporate_reporting_print_contract(tmp_path) -> None:
     assert html.status_code == 200
     assert "text/html" in html.headers["content-type"]
     assert "Reporte Executive Portfolio" in html.text
+    assert pdf.status_code == 200
+    assert pdf.json()["manifest"]["output_format"] == "pdf"
+    assert pdf.json()["manifest"]["nas_logical_uri"].endswith(".pdf")
+    assert pdf.json()["pdf_size_bytes"] > 1000
+    assert pdf_download.status_code == 200
+    assert "application/pdf" in pdf_download.headers["content-type"]
+    assert pdf_download.content.startswith(b"%PDF")
+    assert any(asset["logical_uri"].endswith(".pdf") for asset in nas_assets.json())
     assert "corporate_report.issued" in {event["action"] for event in events.json()}
 
 

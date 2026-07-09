@@ -14,7 +14,7 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from control_tower import __version__
@@ -366,7 +366,12 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         operational_flow,
         gis_intelligence,
     )
-    reporting = CorporateReportingService(dashboard, audit_repository)
+    reporting = CorporateReportingService(
+        dashboard,
+        audit_repository,
+        nas,
+        output_dir=os.getenv("CONTROL_TOWER_REPORT_OUTPUT_DIR", "output/pdf"),
+    )
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -1109,6 +1114,31 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
         return HTMLResponse(report.html)
+
+    @app.post("/api/v1/reports/issue/pdf", response_model=CorporatePrintReport)
+    def issue_report_pdf(payload: ReportRequest) -> CorporatePrintReport:
+        """Issue a corporate PDF report and register its NAS reference."""
+
+        try:
+            return reporting.export_pdf(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post("/api/v1/reports/issue/pdf/download", response_class=FileResponse)
+    def download_report_pdf(payload: ReportRequest) -> FileResponse:
+        """Issue a corporate PDF report and return the generated PDF file."""
+
+        try:
+            report = reporting.export_pdf(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        if report.pdf_path is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="PDF file was not generated")
+        return FileResponse(
+            report.pdf_path,
+            media_type="application/pdf",
+            filename=f"{report.manifest.report_id}.pdf",
+        )
 
     @app.get("/api/v1/companies", response_model=list[Company])
     def list_companies() -> list[Company]:

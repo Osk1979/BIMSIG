@@ -1409,6 +1409,29 @@
           "manifest": {
             "$ref": "#/components/schemas/ReportManifest"
           },
+          "pdf_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Path"
+          },
+          "pdf_size_bytes": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf Size Bytes"
+          },
           "print_css": {
             "default": "",
             "title": "Print Css",
@@ -9883,6 +9906,77 @@
           }
         },
         "summary": "Issue Report Html"
+      }
+    },
+    "/api/v1/reports/issue/pdf": {
+      "post": {
+        "description": "Issue a corporate PDF report and register its NAS reference.",
+        "operationId": "issue_report_pdf_api_v1_reports_issue_pdf_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporatePrintReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Issue Report Pdf"
+      }
+    },
+    "/api/v1/reports/issue/pdf/download": {
+      "post": {
+        "description": "Issue a corporate PDF report and return the generated PDF file.",
+        "operationId": "download_report_pdf_api_v1_reports_issue_pdf_download_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Report Pdf"
       }
     },
     "/api/v1/reports/preview": {

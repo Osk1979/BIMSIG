@@ -2,6 +2,7 @@ from datetime import date
 
 from control_tower.application.dashboard_service import DashboardService
 from control_tower.application.enterprise_service import CompanyService, LicensingService, UserService
+from control_tower.application.nas_service import NasInformationCenterService
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import ProvisioningService
 from control_tower.application.reporting_service import CorporateReportingService
@@ -12,6 +13,7 @@ from tests.unit.fakes import (
     FakeAuditEventRepository,
     FakeCompanyLicenseRepository,
     FakeCompanyRepository,
+    FakeInformationAssetRepository,
     FakeLicensePlanRepository,
     FakeMembershipRepository,
     FakePortfolioProjectRepository,
@@ -64,3 +66,47 @@ def test_reporting_service_issues_print_manifest_and_audit_event() -> None:
     assert "Proyecto Suiza" in report.html
     assert "Miraflores" in report.html
     assert "corporate_report.issued" in {event.action for event in audit.events}
+
+
+def test_reporting_service_exports_pdf_and_registers_nas_asset(tmp_path) -> None:
+    from pypdf import PdfReader
+
+    audit = FakeAuditEventRepository()
+    company_repository = FakeCompanyRepository()
+    portfolio_repository = FakePortfolioProjectRepository()
+    information_repository = FakeInformationAssetRepository()
+    companies = CompanyService(company_repository, audit)
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies, audit)
+    licensing = LicensingService(FakeLicensePlanRepository(), FakeCompanyLicenseRepository(), companies, audit)
+    portfolio = PortfolioService(portfolio_repository, audit)
+    provisioning = ProvisioningService(portfolio, FakeProvisioningRequestRepository(), audit)
+    dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
+    nas = NasInformationCenterService(information_repository, companies, portfolio, audit)
+    reporting = CorporateReportingService(dashboard, audit, nas, output_dir=str(tmp_path))
+
+    companies.register(Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"))
+    portfolio.register(
+        PortfolioProject(
+            project_id="PSZ-2026",
+            company_id="CRTG",
+            name="Proyecto Suiza",
+            country="PE",
+            region="Lima",
+            province="Lima",
+            district="Miraflores",
+        )
+    )
+
+    report = reporting.export_pdf(ReportRequest(company_id="CRTG", requested_by="cto"))
+    pdf_path = tmp_path / f"{report.manifest.report_id}.pdf"
+    reader = PdfReader(str(pdf_path))
+    text = "\n".join(page.extract_text() or "" for page in reader.pages)
+
+    assert report.manifest.output_format == "pdf"
+    assert report.pdf_path == str(pdf_path)
+    assert report.pdf_size_bytes and report.pdf_size_bytes > 1000
+    assert len(report.manifest.checksum_sha256) == 64
+    assert "BIMSIG Enterprise" in text
+    assert "Proyecto Suiza" in text
+    assert information_repository.assets[f"NAS-{report.manifest.report_id}"].logical_uri.endswith(".pdf")
+    assert "nas.asset_registered" in {event.action for event in audit.events}

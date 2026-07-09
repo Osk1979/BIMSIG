@@ -211,3 +211,8 @@ GeoServer, NAS filesystem, and Google Drive. The Tower now exposes connector
 health, validation, dry-run, and approved execute endpoints under
 `/api/v1/infrastructure/connectors`, with audit events and RBAC mapping to
 provisioning permissions.
+
+HARDENING-004 adds productive corporate PDF reporting. The Reporting & Print
+Engine can issue PDF reports with cover page, index, KPIs, portfolio, GIS
+summary, audit, metadata, binary checksum, download endpoint, and NAS metadata
+registration for the emitted report artifact.

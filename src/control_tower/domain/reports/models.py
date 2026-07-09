@@ -79,3 +79,5 @@ class CorporatePrintReport(BaseModel):
     manifest: ReportManifest
     html: str = Field(min_length=20)
     print_css: str = Field(default="")
+    pdf_path: str | None = None
+    pdf_size_bytes: int | None = Field(default=None, ge=0)
