@@ -892,15 +892,23 @@ def render_dashboard_html() -> str:
     .wizard-section-tab.active { border-color: var(--accent); background: var(--accent-soft); }
     .wizard-section-tab .label { font-weight: 780; display: block; }
     .wizard-section-tab .meta { color: var(--muted); font-size: 11px; margin-top: 4px; display: block; }
-    .wizard-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .wizard-workspace {
+      display: grid;
+      grid-template-columns: minmax(180px, .32fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .wizard-steps { display: grid; grid-template-columns: 1fr; gap: 8px; }
     .wizard-step {
-      min-height: 76px;
+      min-height: 54px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      padding: 10px;
+      padding: 9px 10px;
       background: var(--panel-strong);
       display: grid;
-      align-content: space-between;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
       text-align: left;
       margin: 0;
       width: 100%;
@@ -911,12 +919,12 @@ def render_dashboard_html() -> str:
     .wizard-step.blocked { opacity: .72; border-style: dashed; }
     .wizard-step .number { color: var(--accent); font-weight: 780; font-size: 12px; }
     .wizard-step .name { font-weight: 720; }
-    .wizard-step .state { color: var(--muted); font-size: 11px; }
+    .wizard-step .state { color: var(--muted); font-size: 11px; grid-column: 2; }
     .wizard-product-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, .62fr);
+      grid-template-columns: 1fr;
       gap: 12px;
-      margin-top: 12px;
+      margin-top: 0;
     }
     .wizard-detail, .wizard-validation, .wizard-summary, .wizard-audit {
       border: 1px solid var(--line);
@@ -938,6 +946,13 @@ def render_dashboard_html() -> str:
     .wizard-readout .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
     .wizard-readout .value { margin-top: 6px; font-weight: 760; overflow-wrap: anywhere; }
     .wizard-validation-list { display: grid; gap: 8px; }
+    .wizard-validation { display: none; }
+    .wizard-compact-status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
     .wizard-validation-item {
       display: grid;
       grid-template-columns: minmax(110px, .34fr) minmax(0, 1fr);
@@ -1086,7 +1101,7 @@ def render_dashboard_html() -> str:
       .home-command, .home-ops-grid { grid-template-columns: 1fr; }
       .executive-command { grid-template-columns: 1fr; }
       .executive-status-grid, .executive-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .wizard-command, .wizard-product-grid { grid-template-columns: 1fr; }
+      .wizard-command, .wizard-product-grid, .wizard-workspace { grid-template-columns: 1fr; }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
@@ -1115,6 +1130,7 @@ def render_dashboard_html() -> str:
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
       .wizard-section-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .wizard-compact-status { grid-template-columns: 1fr; }
       .wizard-actions, .wizard-detail-grid, .wizard-trace-grid, .wizard-validation-item { grid-template-columns: 1fr; }
       .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
@@ -1323,14 +1339,18 @@ def render_dashboard_html() -> str:
               </div>
             </div>
             <div class="wizard-section-tabs" id="wizardSectionTabs" aria-label="Secciones del Wizard"></div>
-            <div class="wizard-steps" id="wizardSteps"></div>
-            <div class="wizard-product-grid wizard-section-panel" id="wizardWorkPanel">
-              <div class="wizard-detail" id="wizardStepDetail"></div>
-              <div class="wizard-validation" id="wizardValidationPanel"></div>
-            </div>
-            <div class="wizard-product-grid wizard-section-panel" id="wizardTracePanel">
-              <div class="wizard-summary" id="wizardActivationSummary"></div>
-              <div class="wizard-audit" id="wizardAuditTrail"></div>
+            <div class="wizard-workspace">
+              <div class="wizard-steps" id="wizardSteps"></div>
+              <div>
+                <div class="wizard-product-grid wizard-section-panel" id="wizardWorkPanel">
+                  <div class="wizard-detail" id="wizardStepDetail"></div>
+                  <div class="wizard-validation" id="wizardValidationPanel"></div>
+                </div>
+                <div class="wizard-product-grid wizard-section-panel" id="wizardTracePanel">
+                  <div class="wizard-summary" id="wizardActivationSummary"></div>
+                  <div class="wizard-audit" id="wizardAuditTrail"></div>
+                </div>
+              </div>
             </div>
           </section>
           <section class="section" id="corporateReporting">
@@ -2819,24 +2839,20 @@ def render_dashboard_html() -> str:
     }
 
     function wizardStepDetailMarkup(step, session, canExecute) {
-      const dataRows = Object.entries(step.data || {}).slice(0, 6);
+      const dataRows = Object.entries(step.data || {}).slice(0, 4);
       const errors = step.errors.length ? step.errors : ["Datos minimos completos para este paso."];
       return `
         <h3>${step.name}</h3>
         <div class="muted">${step.purpose}</div>
         <div class="wizard-status-pill ${canExecute ? step.status : "blocked"}">${canExecute ? stepStatusText(step) : "bloqueado por permisos"}</div>
-        <div class="wizard-detail-grid" style="margin-top: 12px;">
+        <div class="wizard-compact-status">
           <div class="wizard-readout">
             <div class="label">Sesion</div>
             <div class="value">${session?.wizard_id || "pendiente de iniciar"}</div>
           </div>
           <div class="wizard-readout">
-            <div class="label">Fuente</div>
-            <div class="value">${step.source}</div>
-          </div>
-          <div class="wizard-readout">
-            <div class="label">Campos requeridos</div>
-            <div class="value">${step.required.length}</div>
+            <div class="label">Faltantes</div>
+            <div class="value">${step.errors.length}</div>
           </div>
           <div class="wizard-readout">
             <div class="label">Estado</div>
@@ -2846,7 +2862,7 @@ def render_dashboard_html() -> str:
         <div class="wizard-validation-list" style="margin-top: 12px;">
           ${errors.map(error => `
             <div class="wizard-validation-item">
-              <strong>${step.errors.length ? "Falta" : "Listo"}</strong>
+              <strong>${step.errors.length ? "Resolver" : "Listo"}</strong>
               <span>${error}</span>
             </div>
           `).join("")}
@@ -2910,7 +2926,7 @@ def render_dashboard_html() -> str:
     function wizardAuditMarkup(session) {
       const events = recentEvents()
         .filter(event => ["Wizard", "Workflow", "Lifecycle", "Provisioning", "GIS", "NAS", "Audit"].includes(event.kind))
-        .slice(0, 6);
+        .slice(0, 3);
       return `
         <h3>Auditoria del flujo</h3>
         <div class="muted">${session ? `Sesion ${session.wizard_id}` : "La auditoria se activara al iniciar la sesion."}</div>
