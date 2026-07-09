@@ -222,3 +222,20 @@ The Tower can register and validate WMS, WFS, WMTS, and Vector Tiles services
 published by WEB SIG, expose a read-only layer panel with availability and
 legend metadata, and drive the Corporate GIS Dashboard without editing geometry
 or capturing field data.
+
+HARDENING-006 adds production observability: structured logs, correlation ID,
+API metrics, deep health, connector status, Prometheus text export, and an
+OpenTelemetry-ready JSON payload.
+
+HARDENING-007 adds Enterprise-scale data readiness through controlled massive
+seed data, paginated project exploration, filters, search, query indexes,
+multi-company isolation checks, and performance timing in the API responses.
+
+HARDENING-008 adds Playwright-based visual E2E coverage for dashboard,
+portfolio, GIS, wizard, reporting, responsive viewports, anti-overlap checks,
+and dark/light mode. CI installs Chromium and uploads screenshots as artifacts.
+
+HARDENING-009 prepares production deploy with Docker, PostGIS, NAS volumes,
+controlled startup migrations, optional reverse proxy, health checks, backup
+operations, environment template, and the runbook at
+`docs/operations/production-deploy-runbook.md`.

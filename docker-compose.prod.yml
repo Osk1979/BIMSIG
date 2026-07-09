@@ -1,0 +1,74 @@
+name: bimsig-corporate-control-tower
+
+services:
+  control-tower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${CONTROL_TOWER_IMAGE:-corporate-control-tower-rev12:prod}
+    restart: unless-stopped
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      CONTROL_TOWER_DATABASE_URL: ${CONTROL_TOWER_DATABASE_URL:-postgresql+psycopg://controltower:${POSTGRES_PASSWORD:-change-me}@postgis:5432/${POSTGRES_DB:-controltower}}
+      CONTROL_TOWER_NAS_ROOT: ${CONTROL_TOWER_NAS_ROOT:-/mnt/nas}
+      CONTROL_TOWER_REPORT_OUTPUT_DIR: ${CONTROL_TOWER_REPORT_OUTPUT_DIR:-/app/output/pdf}
+      CONTROL_TOWER_RUN_MIGRATIONS: ${CONTROL_TOWER_RUN_MIGRATIONS:-true}
+      CONTROL_TOWER_WAIT_FOR_DB: ${CONTROL_TOWER_WAIT_FOR_DB:-true}
+      CONTROL_TOWER_DB_WAIT_SECONDS: ${CONTROL_TOWER_DB_WAIT_SECONDS:-90}
+    depends_on:
+      postgis:
+        condition: service_healthy
+    ports:
+      - "${CONTROL_TOWER_BIND:-127.0.0.1}:${CONTROL_TOWER_PORT:-8000}:8000"
+    volumes:
+      - ${CONTROL_TOWER_NAS_HOST_PATH:-./runtime/nas}:${CONTROL_TOWER_NAS_ROOT:-/mnt/nas}
+      - control_tower_output:/app/output
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/operational/readiness', timeout=3).read()",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  postgis:
+    image: ${POSTGIS_IMAGE:-postgis/postgis:16-3.4}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-controltower}
+      POSTGRES_USER: ${POSTGRES_USER:-controltower}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-controltower} -d ${POSTGRES_DB:-controltower}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  reverse-proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    profiles:
+      - reverse-proxy
+    depends_on:
+      control-tower:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ${CONTROL_TOWER_TLS_CERTS_PATH:-./deploy/nginx/certs}:/etc/nginx/certs:ro
+
+volumes:
+  control_tower_output:
+  postgis_data:

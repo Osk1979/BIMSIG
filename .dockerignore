@@ -3,6 +3,10 @@
 .pytest_cache
 .ruff_cache
 __pycache__
+e2e-artifacts
+output
+runtime
+tmp
 *.pyc
 *.pyo
 *.pyd
