@@ -14,7 +14,7 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from control_tower import __version__
@@ -38,6 +38,13 @@ from control_tower.application.infrastructure_connectors import (
     InfrastructureConnectorService,
 )
 from control_tower.application.nas_service import NasInformationCenterService
+from control_tower.application.observability_service import (
+    ObservabilityDashboard,
+    ObservabilityHealth,
+    ObservabilityMetrics,
+    ObservabilityOtelExport,
+    ObservabilityService,
+)
 from control_tower.application.operational_flow_service import OperationalFlowService
 from control_tower.application.portfolio_service import CorporatePortfolioDomainService, PortfolioService
 from control_tower.application.provisioning_service import (
@@ -404,6 +411,12 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
     )
     auth_required = os.getenv("CONTROL_TOWER_AUTH_REQUIRED", "false").lower() == "true"
     rbac_policy = RbacPolicy()
+    slow_request_ms = float(os.getenv("CONTROL_TOWER_SLOW_REQUEST_MS", "1000"))
+    observability = ObservabilityService(
+        service="corporate-control-tower",
+        revision="REV12",
+        slow_request_ms=slow_request_ms,
+    )
 
     def bearer_token(request: Request) -> str | None:
         authorization = request.headers.get("Authorization", "")
@@ -420,6 +433,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "/api/v1/auth/sso/resolve",
             "/api/v1/operational",
             "/health",
+            "/metrics",
             "/dashboard",
             "/docs",
             "/openapi.json",
@@ -440,6 +454,9 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         """Add request traceability, auth context, security headers, and HTTP access logs."""
 
         request_id = request.headers.get("X-Request-ID", uuid4().hex)
+        correlation_id = request.headers.get("X-Correlation-ID", request_id)
+        request.state.request_id = request_id
+        request.state.correlation_id = correlation_id
         started = time.perf_counter()
         token = bearer_token(request)
         if token is not None:
@@ -486,22 +503,38 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
                 )
         response = await call_next(request)
         duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        route = request.scope.get("route")
+        metric_path = getattr(route, "path", request.url.path)
+        observability.record_request(request.method, metric_path, response.status_code, duration_ms)
         response.headers["X-Request-ID"] = request_id
+        response.headers["X-Correlation-ID"] = correlation_id
         response.headers["X-Response-Time-Ms"] = str(duration_ms)
         principal = getattr(request.state, "principal", None)
+        actor = principal.user_id if principal is not None else "anonymous"
         if principal is not None:
             response.headers["X-Authenticated-User"] = principal.user_id
         for header, value in SECURITY_HEADERS.items():
             response.headers.setdefault(header, value)
+        if response.status_code >= 500 or duration_ms >= slow_request_ms:
+            audit_repository.save(
+                AuditEvent(
+                    actor=actor,
+                    action="observability.request_alert",
+                    entity_type="api_request",
+                    entity_id=request_id,
+                    detail=f"{request.method} {metric_path} {response.status_code} in {duration_ms} ms",
+                )
+            )
         logger.info(
-            "http_request",
-            extra={
-                "request_id": request_id,
-                "method": request.method,
-                "path": request.url.path,
-                "status_code": response.status_code,
-                "duration_ms": duration_ms,
-            },
+            observability.structured_log(
+                request_id=request_id,
+                correlation_id=correlation_id,
+                method=request.method,
+                path=metric_path,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+                actor=actor,
+            )
         )
         return response
 
@@ -638,6 +671,57 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "version": __version__,
             "revision": "REV12",
         }
+
+    def observability_database_status() -> str:
+        try:
+            check_database(engine)
+        except Exception:
+            logger.exception("observability_database_check_failed")
+            return "error"
+        return "ok"
+
+    @app.get("/api/v1/observability/metrics", response_model=ObservabilityMetrics)
+    def observability_metrics() -> ObservabilityMetrics:
+        """Return in-process API metrics for production operations."""
+
+        return observability.metrics()
+
+    @app.get("/metrics", response_class=PlainTextResponse)
+    def prometheus_metrics() -> PlainTextResponse:
+        """Return Prometheus text metrics without requiring an external service."""
+
+        return PlainTextResponse(observability.prometheus(), media_type="text/plain; version=0.0.4")
+
+    @app.get("/api/v1/observability/connectors", response_model=list[InfrastructureConnectorResult])
+    def observability_connectors() -> list[InfrastructureConnectorResult]:
+        """Return connector status for the observability dashboard."""
+
+        return infrastructure_connectors.health()
+
+    @app.get("/api/v1/observability/health/deep", response_model=ObservabilityHealth)
+    def observability_deep_health() -> ObservabilityHealth:
+        """Return deep health for database and governed infrastructure connectors."""
+
+        return observability.health(
+            observability_database_status(),
+            infrastructure_connectors.health(),
+        )
+
+    @app.get("/api/v1/observability/dashboard", response_model=ObservabilityDashboard)
+    def observability_dashboard(request: Request) -> ObservabilityDashboard:
+        """Return the operational observability dashboard payload."""
+
+        return observability.dashboard(
+            observability_database_status(),
+            infrastructure_connectors.health(),
+            correlation_id=getattr(request.state, "correlation_id", None),
+        )
+
+    @app.get("/api/v1/observability/otel", response_model=ObservabilityOtelExport)
+    def observability_otel_export() -> ObservabilityOtelExport:
+        """Return an OpenTelemetry-ready export payload for future collectors."""
+
+        return observability.otel_export(infrastructure_connectors.health())
 
     @app.get("/api/v1/companies/{company_id}/operations/flow", response_model=CompanyOperationalFlow)
     def company_operational_flow(company_id: str) -> CompanyOperationalFlow:

@@ -102,6 +102,8 @@ def infer_permission(path: str, method: str) -> tuple[PermissionScope, Permissio
         return PermissionScope.PROVISIONING, PermissionAction.READ
     if "/reports/" in path:
         return PermissionScope.DASHBOARD, PermissionAction.READ
+    if "/observability" in path or path == "/metrics":
+        return PermissionScope.PLATFORM, PermissionAction.READ
     if "/dashboard" in path or "/gis-intelligence" in path:
         return PermissionScope.DASHBOARD, action
     if "/projects" in path:

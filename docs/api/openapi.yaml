@@ -1,6 +1,50 @@
 {
   "components": {
     "schemas": {
+      "ApiRouteMetric": {
+        "description": "Aggregated API metric for one method, route, and status code.",
+        "properties": {
+          "avg_duration_ms": {
+            "title": "Avg Duration Ms",
+            "type": "number"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "max_duration_ms": {
+            "title": "Max Duration Ms",
+            "type": "number"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "status_code": {
+            "title": "Status Code",
+            "type": "integer"
+          },
+          "total_duration_ms": {
+            "title": "Total Duration Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "method",
+          "path",
+          "status_code",
+          "count",
+          "total_duration_ms",
+          "avg_duration_ms",
+          "max_duration_ms"
+        ],
+        "title": "ApiRouteMetric",
+        "type": "object"
+      },
       "AssetMetadataPayload": {
         "description": "API payload to merge information asset metadata.",
         "properties": {
@@ -3191,6 +3235,219 @@
         ],
         "title": "MembershipStatus",
         "type": "string"
+      },
+      "ObservabilityAlert": {
+        "description": "Basic operational alert emitted without external services.",
+        "properties": {
+          "alert_id": {
+            "title": "Alert Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alert_id",
+          "severity",
+          "source",
+          "title",
+          "detail"
+        ],
+        "title": "ObservabilityAlert",
+        "type": "object"
+      },
+      "ObservabilityDashboard": {
+        "description": "Operational dashboard payload for production monitoring.",
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/ObservabilityAlert"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "correlation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correlation Id"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/ObservabilityHealth"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ObservabilityMetrics"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "revision",
+          "metrics",
+          "health",
+          "alerts"
+        ],
+        "title": "ObservabilityDashboard",
+        "type": "object"
+      },
+      "ObservabilityHealth": {
+        "description": "Deep health state for platform and governed infrastructure.",
+        "properties": {
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/InfrastructureConnectorResult"
+            },
+            "title": "Connectors",
+            "type": "array"
+          },
+          "database": {
+            "title": "Database",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "revision",
+          "database",
+          "connectors"
+        ],
+        "title": "ObservabilityHealth",
+        "type": "object"
+      },
+      "ObservabilityMetrics": {
+        "description": "Current API metrics snapshot.",
+        "properties": {
+          "error_requests": {
+            "title": "Error Requests",
+            "type": "integer"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "routes": {
+            "items": {
+              "$ref": "#/components/schemas/ApiRouteMetric"
+            },
+            "title": "Routes",
+            "type": "array"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "total_requests": {
+            "title": "Total Requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service",
+          "revision",
+          "total_requests",
+          "error_requests",
+          "routes"
+        ],
+        "title": "ObservabilityMetrics",
+        "type": "object"
+      },
+      "ObservabilityOtelExport": {
+        "description": "OpenTelemetry-ready payload without requiring an external collector.",
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/ObservabilityAlert"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/ObservabilityMetrics"
+          },
+          "resource": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Resource",
+            "type": "object"
+          }
+        },
+        "required": [
+          "resource",
+          "metrics",
+          "alerts"
+        ],
+        "title": "ObservabilityOtelExport",
+        "type": "object"
       },
       "OperatingCapability": {
         "description": "Operational capability status derived from existing domains.",
@@ -10000,6 +10257,105 @@
         "summary": "Register Information Version"
       }
     },
+    "/api/v1/observability/connectors": {
+      "get": {
+        "description": "Return connector status for the observability dashboard.",
+        "operationId": "observability_connectors_api_v1_observability_connectors_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InfrastructureConnectorResult"
+                  },
+                  "title": "Response Observability Connectors Api V1 Observability Connectors Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Observability Connectors"
+      }
+    },
+    "/api/v1/observability/dashboard": {
+      "get": {
+        "description": "Return the operational observability dashboard payload.",
+        "operationId": "observability_dashboard_api_v1_observability_dashboard_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservabilityDashboard"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Observability Dashboard"
+      }
+    },
+    "/api/v1/observability/health/deep": {
+      "get": {
+        "description": "Return deep health for database and governed infrastructure connectors.",
+        "operationId": "observability_deep_health_api_v1_observability_health_deep_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservabilityHealth"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Observability Deep Health"
+      }
+    },
+    "/api/v1/observability/metrics": {
+      "get": {
+        "description": "Return in-process API metrics for production operations.",
+        "operationId": "observability_metrics_api_v1_observability_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservabilityMetrics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Observability Metrics"
+      }
+    },
+    "/api/v1/observability/otel": {
+      "get": {
+        "description": "Return an OpenTelemetry-ready export payload for future collectors.",
+        "operationId": "observability_otel_export_api_v1_observability_otel_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObservabilityOtelExport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Observability Otel Export"
+      }
+    },
     "/api/v1/operational/health": {
       "get": {
         "description": "Return operational health including database connectivity.",
@@ -10991,6 +11347,25 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/metrics": {
+      "get": {
+        "description": "Return Prometheus text metrics without requiring an external service.",
+        "operationId": "prometheus_metrics_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Prometheus Metrics"
       }
     }
   }
