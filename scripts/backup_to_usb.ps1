@@ -92,9 +92,11 @@ function Test-ExcludedPath {
         $normalized -match "^\.pytest_cache/" -or
         $normalized -match "^\.ruff_cache/" -or
         $normalized -match "^backups/" -or
+        $normalized -match "^output/" -or
         $normalized -match "^dist/" -or
         $normalized -match "^build/" -or
         $normalized -match "\.egg-info/" -or
+        $normalized -match "\.db$" -or
         $normalized -match "\.zip$"
     )
 }
