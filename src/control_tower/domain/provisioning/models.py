@@ -69,7 +69,7 @@ class ProvisioningResourceType(StrEnum):
 class WebSigFactoryBlueprint(BaseModel):
     """Governed WEB SIG Factory blueprint used to provision a project instance."""
 
-    template_id: str = Field(default="WEB-SIG-ENTERPRISE-REV13", min_length=3)
+    template_id: str = Field(default="WEB_SIG_ENTERPRISE_REPOSITORY_REV02_FACTORY_TEMPLATE_WEB-SIG-001", min_length=3)
     websig_slug: str | None = Field(default=None, min_length=3)
     websig_url: str | None = Field(default=None, min_length=6)
     nas_root_uri: str | None = Field(default=None, min_length=6)

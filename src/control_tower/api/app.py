@@ -291,6 +291,8 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         geoserver_url=os.getenv("CONTROL_TOWER_GEOSERVER_URL"),
         geoserver_user=os.getenv("CONTROL_TOWER_GEOSERVER_USER"),
         geoserver_password=os.getenv("CONTROL_TOWER_GEOSERVER_PASSWORD"),
+        websig_factory_template_path=os.getenv("CONTROL_TOWER_WEBSIG_FACTORY_TEMPLATE_PATH"),
+        websig_factory_output_root=os.getenv("CONTROL_TOWER_WEBSIG_FACTORY_OUTPUT_ROOT"),
     )
     provisioning_engine = ProjectProvisioningEngine(
         companies,

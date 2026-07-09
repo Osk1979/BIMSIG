@@ -4799,7 +4799,7 @@
             "title": "Postgis Schema Name"
           },
           "template_id": {
-            "default": "WEB-SIG-ENTERPRISE-REV13",
+            "default": "WEB_SIG_ENTERPRISE_REPOSITORY_REV02_FACTORY_TEMPLATE_WEB-SIG-001",
             "minLength": 3,
             "title": "Template Id",
             "type": "string"

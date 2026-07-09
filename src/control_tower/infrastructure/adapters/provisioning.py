@@ -11,7 +11,9 @@ ADR references:
 from __future__ import annotations
 
 import base64
+import json
 import re
+import shutil
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -58,6 +60,94 @@ class ReferenceProvisioningAdapter:
                 dashboard_id=context.dashboard_id,
             ),
         )
+
+
+class WebSigFactoryTemplateProvisioningAdapter:
+    """Provision a WEB SIG instance from the approved Factory Template."""
+
+    resource_type = ProvisioningResourceType.WEB_SIG
+
+    def __init__(
+        self,
+        template_path: str | None = None,
+        output_root: str | None = None,
+    ) -> None:
+        self._template_path = Path(template_path).resolve() if template_path else None
+        self._output_root = Path(output_root).resolve() if output_root else None
+
+    def plan(self, context: ProvisioningAdapterContext) -> ProvisioningStep:
+        """Return the WEB SIG template provisioning plan without filesystem side effects."""
+
+        return self._step(context, ProvisioningStepStatus.PLANNED)
+
+    def execute(self, context: ProvisioningAdapterContext) -> ProvisioningStep:
+        """Create a project WEB SIG instance and write the provisioning contract."""
+
+        if self._template_path is not None or self._output_root is not None:
+            if self._template_path is None or self._output_root is None:
+                raise ValueError("WEB SIG Factory template_path and output_root must be configured together")
+            if not self._template_path.is_dir():
+                raise ValueError(f"WEB SIG Factory template path does not exist: {self._template_path}")
+            target = self._target(context)
+            if target.exists():
+                self._ensure_target_is_inside_output_root(target)
+                shutil.rmtree(target)
+            shutil.copytree(self._template_path, target, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+            (target / "websig.config.json").write_text(
+                json.dumps(self._config(context), indent=2, ensure_ascii=True),
+                encoding="utf-8",
+            )
+        return self._step(context, ProvisioningStepStatus.SUCCEEDED)
+
+    def _step(self, context: ProvisioningAdapterContext, status: ProvisioningStepStatus) -> ProvisioningStep:
+        reference = str(self._target(context)) if self._output_root is not None else f"websig://{context.company_id}/{context.websig_slug}"
+        return ProvisioningStep(
+            step_id="websig-template",
+            resource_type=self.resource_type,
+            name="Provisionar WEB SIG Factory Template",
+            status=status,
+            reference=reference,
+        )
+
+    def _target(self, context: ProvisioningAdapterContext) -> Path:
+        if self._output_root is None:
+            return Path(f"{context.company_id}_{context.websig_slug}")
+        return self._output_root / context.company_id / context.websig_slug
+
+    def _ensure_target_is_inside_output_root(self, target: Path) -> None:
+        if self._output_root is None:
+            raise ValueError("WEB SIG Factory output root is not configured")
+        output_root = self._output_root.resolve()
+        resolved_target = target.resolve()
+        if resolved_target == output_root or output_root not in resolved_target.parents:
+            raise ValueError(f"Refusing to replace WEB SIG instance outside output root: {resolved_target}")
+
+    @staticmethod
+    def _config(context: ProvisioningAdapterContext) -> dict:
+        return {
+            "company_id": context.company_id,
+            "program_id": None,
+            "project_id": context.project_id,
+            "websig_id": f"WEB-{context.company_id}-{context.project_id}",
+            "websig_slug": context.websig_slug,
+            "websig_url": context.websig_url,
+            "postgis_schema": context.postgis_schema_name,
+            "geoserver_workspace": context.geoserver_workspace,
+            "nas_root_uri": context.nas_root_uri,
+            "dashboard_id": context.dashboard_id,
+            "enabled_modules": context.enabled_modules,
+            "gis_services": {
+                "wms_url": None,
+                "wfs_url": None,
+                "wmts_url": None,
+                "vector_tiles_url": None,
+            },
+            "tower_boundary": {
+                "control_tower_role": "governance_provisioning_monitoring",
+                "websig_role": "project_operation",
+                "geometry_editing_by_tower": False,
+            },
+        }
 
 
 class PostGISProvisioningAdapter:
@@ -253,15 +343,15 @@ def default_project_stack_adapters(
     geoserver_url: str | None = None,
     geoserver_user: str | None = None,
     geoserver_password: str | None = None,
+    websig_factory_template_path: str | None = None,
+    websig_factory_output_root: str | None = None,
 ) -> list:
     """Build the default adapter set for Project Provisioning Engine."""
 
     return [
-        ReferenceProvisioningAdapter(
-            ProvisioningResourceType.WEB_SIG,
-            "websig",
-            "Create WEB SIG",
-            "websig://{company_id}/{websig_slug}",
+        WebSigFactoryTemplateProvisioningAdapter(
+            websig_factory_template_path,
+            websig_factory_output_root,
         ),
         PostGISProvisioningAdapter(postgis_database_url),
         NasProvisioningAdapter(nas_root),

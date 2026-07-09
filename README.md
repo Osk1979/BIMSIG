@@ -159,3 +159,22 @@ CTO-107 introduces the Corporate Reporting & Print Engine. It exposes report
 templates, preview, issued report manifests, print-ready HTML output, checksum
 traceability, NAS logical references, and audit events for formal corporate
 report issuance.
+
+## WEB SIG Factory Template Adapter
+
+The Project Provisioning Engine can provision WEB SIG instances from the
+approved factory template
+`WEB_SIG_ENTERPRISE_REPOSITORY_REV02_FACTORY_TEMPLATE_WEB-SIG-001`.
+
+Configure physical template execution with:
+
+```bash
+CONTROL_TOWER_WEBSIG_FACTORY_TEMPLATE_PATH=D:\Implementacion_BIMSIG\WEBSIG\WEB_SIG_ENTERPRISE_REPOSITORY_REV02_FACTORY_TEMPLATE_WEB-SIG-001
+CONTROL_TOWER_WEBSIG_FACTORY_OUTPUT_ROOT=D:\Implementacion_BIMSIG\WEBSIG\instances
+```
+
+When configured, controlled WEB SIG Factory execution copies the template into a
+company/project instance and writes `websig.config.json` with company, project,
+WEB SIG, PostGIS, GeoServer, NAS, dashboard, module, GIS service slot, and Tower
+boundary metadata. When not configured, the Tower records governed references
+without filesystem side effects.

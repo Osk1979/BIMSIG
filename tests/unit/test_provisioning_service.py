@@ -1,4 +1,5 @@
 import pytest
+import json
 
 from control_tower.application.portfolio_service import PortfolioService
 from control_tower.application.provisioning_service import (
@@ -18,6 +19,7 @@ from control_tower.domain.provisioning import (
 from control_tower.infrastructure.adapters.provisioning import (
     DocumentStructureProvisioningAdapter,
     NasProvisioningAdapter,
+    WebSigFactoryTemplateProvisioningAdapter,
     default_project_stack_adapters,
 )
 from tests.unit.fakes import (
@@ -206,3 +208,42 @@ def test_websig_factory_execute_updates_project_references() -> None:
     assert project.websig_url == "websig://CRTG/crtg-psz-2026"
     assert project.nas_root_uri == "nas://CRTG/PSZ-2026/websig/root"
     assert project.gis_binding_id == "GBD-CRTG-PSZ-2026"
+
+
+def test_websig_factory_template_adapter_creates_instance_config(tmp_path) -> None:
+    template = tmp_path / "WEB_SIG_ENTERPRISE_REPOSITORY_REV02_FACTORY_TEMPLATE_WEB-SIG-001"
+    output = tmp_path / "instances"
+    template.mkdir()
+    (template / "index.html").write_text("<html>WEB SIG Factory Template</html>", encoding="utf-8")
+
+    companies = CompanyService(FakeCompanyRepository())
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies)
+    portfolio = PortfolioService(FakePortfolioProjectRepository())
+    engine = ProjectProvisioningEngine(
+        companies,
+        users,
+        portfolio,
+        FakeProvisioningRequestRepository(),
+        adapters=[WebSigFactoryTemplateProvisioningAdapter(str(template), str(output))],
+    )
+
+    request = engine.execute_websig_factory(
+        ProjectProvisioningSpec(
+            company=Company(company_id="CRTG", legal_name="CRTG S.A.C.", display_name="CRTG"),
+            project=PortfolioProject(project_id="PSZ-2026", company_id="CRTG", name="Proyecto Suiza"),
+            approved_by="portfolio-manager",
+        )
+    )
+
+    target = output / "CRTG" / "crtg-psz-2026"
+    config = json.loads((target / "websig.config.json").read_text(encoding="utf-8"))
+
+    assert request.operation == ProvisioningOperation.WEB_SIG_FACTORY
+    assert target.is_dir()
+    assert (target / "index.html").is_file()
+    assert config["company_id"] == "CRTG"
+    assert config["project_id"] == "PSZ-2026"
+    assert config["websig_id"] == "WEB-CRTG-PSZ-2026"
+    assert config["postgis_schema"] == "CRTG_PSZ_2026"
+    assert config["geoserver_workspace"] == "CRTG_PSZ_2026"
+    assert config["tower_boundary"]["geometry_editing_by_tower"] is False
