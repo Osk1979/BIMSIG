@@ -1261,11 +1261,11 @@ def render_dashboard_html() -> str:
         <a href="#corporateDashboard" data-rbac-scope="company" data-rbac-action="read">Empresas</a>
         <a href="#panels" data-rbac-scope="platform" data-rbac-action="admin">Usuarios</a>
         <a href="#panels" data-rbac-scope="company" data-rbac-action="read">Licencias</a>
-        <a href="#operatingModelSection" data-rbac-scope="platform" data-rbac-action="admin">Configuracion</a>
+        <a href="#operatingModelSection" data-rbac-scope="platform" data-rbac-action="admin">Gobierno</a>
         <a href="#corporateNotifications" data-rbac-scope="provisioning" data-rbac-action="read">Auditoria</a>
-        <a href="#operationalFlowSection" data-rbac-scope="company" data-rbac-action="write">Administracion</a>
+        <a href="#operationalFlowSection" data-rbac-scope="company" data-rbac-action="write">Flujo</a>
       </nav>
-      <p class="muted">Dashboard Ejecutivo Corporativo de BIMSIG Enterprise REV13.</p>
+      <p class="muted">Dashboard Ejecutivo Corporativo / Corporate Control Tower REV13 RC1: experiencia Enterprise funcional para direccion, gobierno y provisionamiento.</p>
     </aside>
     <main>
       <div class="topbar">
@@ -1276,7 +1276,7 @@ def render_dashboard_html() -> str:
         <div class="toolbar">
           <button data-panel="operations" class="active" data-rbac-scope="dashboard" data-rbac-action="read">Inicio</button>
           <button data-panel="governance" data-rbac-scope="provisioning" data-rbac-action="read">Auditoria</button>
-          <button data-panel="enterprise" data-rbac-scope="platform" data-rbac-action="admin">Administracion</button>
+          <button data-panel="enterprise" data-rbac-scope="platform" data-rbac-action="admin">Gobierno</button>
         </div>
       </div>
       <section class="experience-header" id="corporateHome">
