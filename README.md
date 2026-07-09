@@ -239,3 +239,7 @@ HARDENING-009 prepares production deploy with Docker, PostGIS, NAS volumes,
 controlled startup migrations, optional reverse proxy, health checks, backup
 operations, environment template, and the runbook at
 `docs/operations/production-deploy-runbook.md`.
+
+CTO-104A turns Corporate Home into an Operations Center with a morning executive
+brief, priority alerts, quick access to the main corporate flows, recent audit
+activity, and recommended next actions built from existing Tower data.

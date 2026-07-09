@@ -148,6 +148,85 @@ def render_dashboard_html() -> str:
     }
     .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .home-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
+    .home-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr);
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: stretch;
+    }
+    .home-panel {
+      background: linear-gradient(180deg, var(--glass), transparent), var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-width: 0;
+    }
+    .home-panel h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .home-panel .lead {
+      color: var(--muted);
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+    .brief-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .brief-tile, .home-action, .home-event, .home-alert {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      padding: 12px;
+      min-width: 0;
+    }
+    .brief-tile .label, .home-action .label, .home-event .label, .home-alert .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .brief-tile .value {
+      font-size: 22px;
+      font-weight: 780;
+      margin-top: 7px;
+    }
+    .home-action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .home-action {
+      display: block;
+      color: var(--text);
+      text-decoration: none;
+      min-height: 92px;
+    }
+    .home-action:hover { border-color: var(--accent); color: var(--accent); }
+    .home-action .value, .home-alert .value, .home-event .value {
+      font-weight: 760;
+      margin-top: 7px;
+      overflow-wrap: anywhere;
+    }
+    .home-action .hint, .home-alert .hint, .home-event .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 7px;
+      line-height: 1.35;
+    }
+    .home-alert.warning { border-color: var(--warn); }
+    .home-alert.critical { border-color: var(--critical); }
+    .home-list {
+      display: grid;
+      gap: 8px;
+    }
+    .home-ops-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
     .metric { min-height: 88px; background: var(--panel-strong); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
     .metric .label { color: var(--muted); font-size: 12px; }
     .metric .value { font-size: 24px; font-weight: 760; margin-top: 8px; }
@@ -751,6 +830,7 @@ def render_dashboard_html() -> str:
       aside { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .home-command, .home-ops-grid { grid-template-columns: 1fr; }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
@@ -763,6 +843,7 @@ def render_dashboard_html() -> str:
     @media (max-width: 700px) {
       main { padding: 14px; }
       .summary, .metric-grid, .cockpit, .governance-grid { grid-template-columns: 1fr; }
+      .brief-grid, .home-action-grid, .home-grid { grid-template-columns: 1fr; }
       .topbar { align-items: stretch; flex-direction: column; }
       .toolbar { justify-content: space-between; }
       .toolbar button { flex: 1; min-width: 0; }
@@ -825,9 +906,34 @@ def render_dashboard_html() -> str:
       </div>
       <section class="experience-header" id="corporateHome">
         <h2>Corporate Home</h2>
-        <div class="muted">Centro de Gobierno Corporativo para portafolio, GIS, NAS, provisionamiento, alertas y acciones pendientes.</div>
+        <div class="muted">Centro de Operaciones Corporativo para la revision diaria del Director: estado, alertas, actividad y decisiones inmediatas.</div>
+      </section>
+      <section class="home-command" id="corporateMorningBrief">
+        <div class="home-panel">
+          <h3>Resumen ejecutivo de la manana</h3>
+          <div class="lead" id="homeExecutiveSummary">Cargando situacion corporativa...</div>
+          <div class="brief-grid" id="homeBriefTiles"></div>
+        </div>
+        <div class="home-panel">
+          <h3>Accesos rapidos</h3>
+          <div class="home-action-grid" id="homeQuickActions"></div>
+        </div>
       </section>
       <section class="grid home-grid" id="corporateHomeCards"></section>
+      <section class="home-ops-grid">
+        <div class="home-panel">
+          <h3>Alertas prioritarias</h3>
+          <div class="home-list" id="homeCriticalAlerts"></div>
+        </div>
+        <div class="home-panel">
+          <h3>Actividad reciente</h3>
+          <div class="home-list" id="homeRecentActivity"></div>
+        </div>
+      </section>
+      <section class="home-panel" id="homeRecommendationsPanel">
+        <h3>Proximas acciones recomendadas</h3>
+        <div class="home-list" id="homeRecommendedActions"></div>
+      </section>
       <section class="experience-header" id="corporateDashboard">
         <h2>Corporate Dashboard / Control Ejecutivo</h2>
         <div class="muted">Estado ejecutivo del portafolio, empresas, programas, proyectos, riesgos y desempeno corporativo.</div>
@@ -1131,6 +1237,33 @@ def render_dashboard_html() -> str:
       const nasReady = governed.filter(item => item.nas !== "pendiente").length;
       const websigReady = governed.filter(item => item.websig !== "pendiente").length;
       const blocked = flow.filter(item => item.pending_controls.length > 0).length;
+      const gisReady = data.gis_intelligence?.projects_with_active_layers ?? 0;
+      const alerts = homeAlerts({ active, blocked, gisReady, nasReady, websigReady });
+      document.querySelector("#homeExecutiveSummary").textContent = executiveSummary({
+        active,
+        total: portfolio.total_projects ?? 0,
+        alerts: data.alerts[0]?.value ?? 0,
+        blocked,
+        gisReady
+      });
+      document.querySelector("#homeBriefTiles").innerHTML = [
+        ["Portafolio", `${active}/${portfolio.total_projects ?? 0}`, "proyectos activos"],
+        ["Alertas", data.alerts[0]?.value ?? 0, "requieren lectura ejecutiva"],
+        ["Readiness", `${averageReadiness(flow)}%`, "flujo operacional"]
+      ].map(([label, value, hint]) => `
+        <article class="brief-tile">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="muted">${hint}</div>
+        </article>
+      `).join("");
+      document.querySelector("#homeQuickActions").innerHTML = quickActions().map(action => `
+        <a class="home-action" href="${action.href}" data-rbac-scope="${action.scope}" data-rbac-action="${action.permission}">
+          <div class="label">${action.label}</div>
+          <div class="value">${action.value}</div>
+          <div class="hint">${action.hint}</div>
+        </a>
+      `).join("");
       const cards = [
         ["Estado general del portafolio", active ? "activo" : "intake", "Portfolio"],
         ["Empresas", 1, "Enterprise"],
@@ -1152,6 +1285,155 @@ def render_dashboard_html() -> str:
           <div class="muted">${context}</div>
         </article>
       `).join("");
+      document.querySelector("#homeCriticalAlerts").innerHTML = alerts.map(alert => `
+        <article class="home-alert ${alert.status}">
+          <div class="label">${alert.kind}</div>
+          <div class="value">${alert.title}</div>
+          <div class="hint">${alert.message}</div>
+        </article>
+      `).join("");
+      document.querySelector("#homeRecentActivity").innerHTML = recentEvents().slice(0, 5).map(event => `
+        <article class="home-event">
+          <div class="label">${event.kind}</div>
+          <div class="value">${event.message}</div>
+          <div class="hint">${event.time}</div>
+        </article>
+      `).join("");
+      document.querySelector("#homeRecommendedActions").innerHTML = recommendedActions({ governed, flow, alerts }).map(action => `
+        <a class="home-action" href="${action.href}" data-rbac-scope="${action.scope}" data-rbac-action="${action.permission}">
+          <div class="label">${action.label}</div>
+          <div class="value">${action.value}</div>
+          <div class="hint">${action.hint}</div>
+        </a>
+      `).join("");
+    }
+
+    function executiveSummary({ active, total, alerts, blocked, gisReady }) {
+      if (!total) {
+        return "No hay proyectos gobernados. La prioridad del dia es iniciar el Wizard corporativo y registrar el primer flujo de portafolio.";
+      }
+      if (!active) {
+        return `La cartera tiene ${total} proyecto${total === 1 ? "" : "s"} gobernado${total === 1 ? "" : "s"}, pero ninguno activo. La prioridad del dia es revisar lifecycle, Wizard y controles de activacion.`;
+      }
+      if (blocked > 0 || Number(alerts) > 0) {
+        return `La cartera tiene ${active} de ${total} proyectos activos, ${alerts} alertas y ${blocked} controles pendientes. Conviene revisar riesgos, auditoria y flujo operacional antes de aprobar nuevas acciones.`;
+      }
+      return `La cartera tiene ${active} de ${total} proyectos activos y ${gisReady} proyectos con GIS corporativo. La operacion esta lista para revision ejecutiva y seguimiento de KPIs.`;
+    }
+
+    function quickActions() {
+      return [
+        { label: "Portafolio", value: "Explorar organizacion", hint: "Empresa / Programa / Proyecto / WEB SIG / Estado", href: "#portfolioExplorer", scope: "project", permission: "read" },
+        { label: "Mapa Corporativo", value: "Abrir visor GIS", hint: "Radar, mapa GIS y ubicacion administrativa Peru", href: "#corporateGisDashboard", scope: "dashboard", permission: "read" },
+        { label: "Wizard", value: "Crear o reanudar", hint: "Provisionamiento corporativo guiado", href: "#enterpriseWizard", scope: "provisioning", permission: "execute" },
+        { label: "Reportes", value: "Preparar impresion", hint: "Preview, plantillas y checksum corporativo", href: "#corporateReporting", scope: "dashboard", permission: "read" }
+      ];
+    }
+
+    function homeAlerts({ active, blocked, gisReady, nasReady, websigReady }) {
+      const alerts = [];
+      if (!active) {
+        alerts.push({
+          kind: "Portafolio",
+          title: "Sin proyectos activos",
+          message: "Revise el Wizard y active el flujo corporativo antes de operar el portafolio.",
+          status: "warning"
+        });
+      }
+      if (blocked > 0) {
+        alerts.push({
+          kind: "Workflow",
+          title: `${blocked} controles pendientes`,
+          message: "Existen transiciones o controles que requieren decision de gobierno.",
+          status: "critical"
+        });
+      }
+      if (!gisReady) {
+        alerts.push({
+          kind: "GIS",
+          title: "Sin capas corporativas activas",
+          message: "El visor queda preparado, pero necesita publicaciones WEB SIG para analisis espacial.",
+          status: "warning"
+        });
+      }
+      if (!nasReady || !websigReady) {
+        alerts.push({
+          kind: "Provisioning",
+          title: "Integraciones por completar",
+          message: `NAS vinculados: ${nasReady}. WEB SIG gobernadas: ${websigReady}.`,
+          status: "warning"
+        });
+      }
+      if (!alerts.length) {
+        alerts.push({
+          kind: "Operacion",
+          title: "Sin alertas criticas",
+          message: "La lectura ejecutiva puede concentrarse en KPIs, comparativos y nuevas aprobaciones.",
+          status: "stable"
+        });
+      }
+      return alerts.slice(0, 4);
+    }
+
+    function recommendedActions({ governed, flow, alerts }) {
+      const actions = [];
+      if (alerts.some(alert => alert.kind === "Workflow")) {
+        actions.push({
+          label: "Gobierno",
+          value: "Revisar controles pendientes",
+          hint: "Priorizar bloqueos antes de crear nuevos proyectos.",
+          href: "#operationalFlowSection",
+          scope: "company",
+          permission: "write"
+        });
+      }
+      if (!governed.some(item => item.gis !== "pendiente")) {
+        actions.push({
+          label: "GIS",
+          value: "Completar publicacion corporativa",
+          hint: "Validar que WEB SIG publique capas para el visor ejecutivo.",
+          href: "#corporateGisDashboard",
+          scope: "dashboard",
+          permission: "read"
+        });
+      }
+      if (!governed.some(item => item.nas !== "pendiente")) {
+        actions.push({
+          label: "NAS",
+          value: "Verificar centro documental",
+          hint: "Confirmar metadatos y referencias NAS del portafolio.",
+          href: "#portfolioExplorer",
+          scope: "project",
+          permission: "read"
+        });
+      }
+      if (wizardSessions.length) {
+        actions.push({
+          label: "Wizard",
+          value: "Reanudar sesion corporativa",
+          hint: `${wizardSessions.length} sesion${wizardSessions.length === 1 ? "" : "es"} disponibles.`,
+          href: "#enterpriseWizard",
+          scope: "provisioning",
+          permission: "execute"
+        });
+      }
+      if (!actions.length) {
+        actions.push({
+          label: "Direccion",
+          value: "Emitir reporte ejecutivo",
+          hint: "La situacion esta preparada para impresion y comite.",
+          href: "#corporateReporting",
+          scope: "dashboard",
+          permission: "read"
+        });
+      }
+      return actions.slice(0, 4);
+    }
+
+    function averageReadiness(flow) {
+      if (!flow.length) return 0;
+      const total = flow.reduce((sum, item) => sum + Number(item.readiness_score || 0), 0);
+      return Math.round(total / flow.length);
     }
 
     function renderCockpit() {
