@@ -227,6 +227,84 @@ def render_dashboard_html() -> str:
       gap: 14px;
       margin-bottom: 14px;
     }
+    .executive-command {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, .78fr);
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: stretch;
+    }
+    .executive-situation {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--accent-soft), transparent 58%), var(--panel);
+      padding: 16px;
+      min-width: 0;
+    }
+    .executive-situation h3 { margin: 0 0 8px; font-size: 18px; }
+    .executive-situation .lead { color: var(--muted); line-height: 1.45; }
+    .executive-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .executive-action, .executive-status-card, .comparison-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      color: var(--text);
+      text-decoration: none;
+      padding: 12px;
+      min-width: 0;
+    }
+    .executive-action:hover, .executive-status-card:hover { border-color: var(--accent); color: var(--accent); }
+    .executive-action .label, .executive-status-card .label, .comparison-card .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .executive-action .value, .executive-status-card .value, .comparison-card .value {
+      font-size: 20px;
+      font-weight: 780;
+      margin-top: 7px;
+      overflow-wrap: anywhere;
+    }
+    .executive-action .hint, .executive-status-card .hint, .comparison-card .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 7px;
+    }
+    .executive-status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .executive-status-card { position: relative; min-height: 112px; display: block; }
+    .executive-status-card::before {
+      content: "";
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--accent);
+    }
+    .executive-status-card.warning::before { background: var(--warn); box-shadow: 0 0 14px var(--warn); }
+    .executive-status-card.critical::before { background: var(--critical); box-shadow: 0 0 14px var(--critical); }
+    .executive-status-card.no-access {
+      opacity: .72;
+      border-style: dashed;
+    }
+    .executive-comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .comparison-card { min-height: 104px; }
     .metric { min-height: 88px; background: var(--panel-strong); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
     .metric .label { color: var(--muted); font-size: 12px; }
     .metric .value { font-size: 24px; font-weight: 760; margin-top: 8px; }
@@ -831,6 +909,8 @@ def render_dashboard_html() -> str:
       .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .home-command, .home-ops-grid { grid-template-columns: 1fr; }
+      .executive-command { grid-template-columns: 1fr; }
+      .executive-status-grid, .executive-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .radar-shell { grid-template-columns: 1fr; }
@@ -844,6 +924,7 @@ def render_dashboard_html() -> str:
       main { padding: 14px; }
       .summary, .metric-grid, .cockpit, .governance-grid { grid-template-columns: 1fr; }
       .brief-grid, .home-action-grid, .home-grid { grid-template-columns: 1fr; }
+      .executive-quick-grid, .executive-status-grid, .executive-comparison-grid { grid-template-columns: 1fr; }
       .topbar { align-items: stretch; flex-direction: column; }
       .toolbar { justify-content: space-between; }
       .toolbar button { flex: 1; min-width: 0; }
@@ -938,6 +1019,15 @@ def render_dashboard_html() -> str:
         <h2>Corporate Dashboard / Control Ejecutivo</h2>
         <div class="muted">Estado ejecutivo del portafolio, empresas, programas, proyectos, riesgos y desempeno corporativo.</div>
       </section>
+      <section class="executive-command" id="executiveCommandCenter">
+        <div class="executive-situation">
+          <h3>Situacion corporativa en 60 segundos</h3>
+          <div class="lead" id="executiveSituationSummary">Cargando lectura ejecutiva...</div>
+        </div>
+        <div class="executive-quick-grid" id="executiveQuickActions"></div>
+      </section>
+      <section class="executive-comparison-grid" id="executiveComparisonCards"></section>
+      <section class="executive-status-grid" id="executiveStatusMatrix"></section>
       <section class="cockpit" id="cockpit"></section>
       <section class="grid summary" id="summary"></section>
       <section class="grid content">
@@ -1144,7 +1234,16 @@ def render_dashboard_html() -> str:
       }
       document.querySelectorAll("[data-rbac-scope]").forEach(element => {
         const allowed = hasPermission(element.dataset.rbacScope, element.dataset.rbacAction || "read");
-        if (element.tagName === "A") {
+        if (element.classList.contains("executive-status-card")) {
+          element.classList.toggle("no-access", !allowed);
+          element.setAttribute("aria-disabled", String(!allowed));
+          if (!allowed) {
+            const hint = element.querySelector(".hint");
+            if (hint && !hint.textContent.includes("Sin acceso")) {
+              hint.textContent = `Sin acceso con el rol actual. ${hint.textContent}`;
+            }
+          }
+        } else if (element.tagName === "A") {
           element.dataset.rbacHidden = String(!allowed);
         } else {
           element.dataset.rbacDisabled = String(!allowed);
@@ -1211,6 +1310,7 @@ def render_dashboard_html() -> str:
     function render() {
       document.querySelector("#heading").textContent = `Resumen ejecutivo ${data.company_id}`;
       renderCorporateHome();
+      renderExecutiveDashboard();
       renderSummary();
       renderCockpit();
       renderMap();
@@ -1434,6 +1534,155 @@ def render_dashboard_html() -> str:
       if (!flow.length) return 0;
       const total = flow.reduce((sum, item) => sum + Number(item.readiness_score || 0), 0);
       return Math.round(total / flow.length);
+    }
+
+    function renderExecutiveDashboard() {
+      const statusItems = executiveStatusItems();
+      const critical = statusItems.filter(item => item.status === "critical").length;
+      const warning = statusItems.filter(item => item.status === "warning").length;
+      const stable = statusItems.filter(item => item.status === "stable").length;
+      document.querySelector("#executiveSituationSummary").textContent = executiveDashboardSummary({
+        total: statusItems.length,
+        stable,
+        warning,
+        critical
+      });
+      document.querySelector("#executiveQuickActions").innerHTML = [
+        { label: "Decision inmediata", value: critical ? "Atender criticos" : "Revisar comite", hint: `${critical} criticos / ${warning} en observacion`, href: critical ? "#corporateNotifications" : "#executiveQuestions", scope: "dashboard", permission: "read" },
+        { label: "Flujo corporativo", value: "Abrir acciones", hint: "Workflow, Wizard y provisionamiento", href: "#operationalFlowSection", scope: "company", permission: "write" },
+        { label: "Mapa ejecutivo", value: "Ver GIS", hint: "Capas, ubicacion y radar", href: "#corporateGisDashboard", scope: "dashboard", permission: "read" },
+        { label: "Reporte", value: "Preparar PDF", hint: "Resumen para comite", href: "#corporateReporting", scope: "dashboard", permission: "read" }
+      ].map(action => `
+        <a class="executive-action" href="${action.href}" data-rbac-scope="${action.scope}" data-rbac-action="${action.permission}">
+          <div class="label">${action.label}</div>
+          <div class="value">${action.value}</div>
+          <div class="hint">${action.hint}</div>
+        </a>
+      `).join("");
+      document.querySelector("#executiveComparisonCards").innerHTML = executiveComparisonCards().map(card => `
+        <article class="comparison-card">
+          <div class="label">${card.label}</div>
+          <div class="value">${card.value}</div>
+          <div class="hint">${card.hint}</div>
+        </article>
+      `).join("");
+      document.querySelector("#executiveStatusMatrix").innerHTML = statusItems.map(item => `
+        <a
+          class="executive-status-card ${item.status}"
+          href="${item.href}"
+          data-rbac-scope="${item.scope}"
+          data-rbac-action="${item.permission}"
+        >
+          <div class="label">${item.label}</div>
+          <div class="value">${item.value}</div>
+          <div class="hint">${item.hint}</div>
+        </a>
+      `).join("");
+    }
+
+    function executiveDashboardSummary({ total, stable, warning, critical }) {
+      if (critical) {
+        return `Lectura ejecutiva: ${critical} bloques criticos, ${warning} en observacion y ${stable} estables sobre ${total}. Priorizar alertas, auditoria y workflow antes de nuevas aprobaciones.`;
+      }
+      if (warning) {
+        return `Lectura ejecutiva: ${stable} bloques estables y ${warning} en observacion sobre ${total}. El Director puede revisar portafolio, GIS y reportes en una sola pasada.`;
+      }
+      return `Lectura ejecutiva: los ${total} bloques principales estan estables. La Torre esta lista para comite, seguimiento ejecutivo y emision de reporte.`;
+    }
+
+    function executiveComparisonCards() {
+      const comparisons = data.comparisons || [];
+      const highestRisk = [...comparisons].sort((left, right) => right.risk_score - left.risk_score)[0];
+      const lowerProgress = [...comparisons].sort((left, right) => left.production_score - right.production_score)[0];
+      const governed = data.portfolio_governance || [];
+      const websigReady = governed.filter(item => item.websig !== "pendiente").length;
+      const nasReady = governed.filter(item => item.nas !== "pendiente").length;
+      return [
+        {
+          label: "Mayor riesgo",
+          value: highestRisk ? highestRisk.name : "sin riesgo",
+          hint: highestRisk ? `Score ${highestRisk.risk_score}` : "Sin comparativos disponibles"
+        },
+        {
+          label: "Menor avance",
+          value: lowerProgress ? lowerProgress.name : "sin avance",
+          hint: lowerProgress ? `Produccion ${lowerProgress.production_score}%` : "Sin comparativos disponibles"
+        },
+        {
+          label: "Cobertura WEB SIG",
+          value: `${websigReady}/${governed.length}`,
+          hint: "Relacion Torre / WEB SIG Enterprise"
+        },
+        {
+          label: "Centro documental",
+          value: `${nasReady}/${governed.length}`,
+          hint: "Proyectos con referencia NAS"
+        }
+      ];
+    }
+
+    function executiveStatusItems() {
+      const portfolio = data.portfolio;
+      const governed = data.portfolio_governance || [];
+      const flow = data.operational_flow || [];
+      const gis = data.gis_intelligence || {};
+      const totalProjects = portfolio.total_projects ?? 0;
+      const activeProjects = portfolio.active_projects ?? 0;
+      const programs = uniqueCount(governed.map(item => item.program).filter(Boolean));
+      const nasReady = governed.filter(item => item.nas !== "pendiente").length;
+      const websigReady = governed.filter(item => item.websig !== "pendiente").length;
+      const gisReady = gis.projects_with_active_layers ?? governed.filter(item => item.gis !== "pendiente").length;
+      const blocked = flow.filter(item => item.pending_controls.length > 0).length;
+      const avgReadiness = averageReadiness(flow);
+      const userCount = (data.users || []).length;
+      const licenseCount = (data.licenses || []).length;
+      const reportCount = reportTemplates.length + (reportPreview ? 1 : 0);
+      const auditCount = recentEvents().length;
+      return [
+        executiveStatus("Estado del portafolio", activeProjects ? "activo" : "intake", activeProjects ? "stable" : "warning", `${activeProjects}/${totalProjects} proyectos activos`, "#portfolioExplorer", "project", "read"),
+        executiveStatus("Empresas", "1", "stable", `Empresa ${data.company_id}`, "#corporateDashboard", "company", "read"),
+        executiveStatus("Programas", programs, programs ? "stable" : "warning", "Programas corporativos registrados", "#portfolioExplorer", "project", "read"),
+        executiveStatus("Proyectos", totalProjects, totalProjects ? "stable" : "critical", "Proyectos gobernados por la Torre", "#portfolioExplorer", "project", "read"),
+        executiveStatus("Riesgos", data.risks[0]?.value ?? 0, riskStatus(data.risks[0]?.value), "Riesgo consolidado de portafolio", "#corporateNotifications", "provisioning", "read"),
+        executiveStatus("Produccion", data.production[0]?.value ?? "0%", percentStatus(data.production[0]?.value, 70, 45), "Produccion promedio corporativa", "#panels", "dashboard", "read"),
+        executiveStatus("Calidad", data.quality[0]?.value ?? "0%", percentStatus(data.quality[0]?.value, 85, 65), "Calidad documental y retrabajo", "#panels", "dashboard", "read"),
+        executiveStatus("Ambiental", data.environmental[0]?.value ?? "0%", percentStatus(data.environmental[0]?.value, 85, 65), "Cumplimiento y alertas ambientales", "#panels", "dashboard", "read"),
+        executiveStatus("SSOMA", data.ssoma[0]?.value ?? "0%", percentStatus(data.ssoma[0]?.value, 85, 65), "Indice SSOMA corporativo", "#panels", "dashboard", "read"),
+        executiveStatus("Cronograma", data.schedule[0]?.value ?? "0", scheduleStatus(data.schedule[0]?.value), "SPI e hitos proximos", "#panels", "dashboard", "read"),
+        executiveStatus("GIS", gisReady, gisReady ? "stable" : "warning", "Capas corporativas activas", "#corporateGisDashboard", "dashboard", "read"),
+        executiveStatus("NAS", nasReady, nasReady ? "stable" : "warning", "Referencias documentales gobernadas", "#portfolioExplorer", "project", "read"),
+        executiveStatus("WEB SIG", websigReady, websigReady ? "stable" : "warning", "WEB SIG gobernadas sin operar proyecto", "#corporateGisDashboard", "dashboard", "read"),
+        executiveStatus("Usuarios", userCount, userCount ? "stable" : "warning", "Usuarios corporativos asignados", "#panels", "platform", "admin"),
+        executiveStatus("Licencias", licenseCount, licenseCount ? "stable" : "warning", "Licencias disponibles / asignadas", "#panels", "company", "read"),
+        executiveStatus("Reportes", reportCount, reportCount ? "stable" : "warning", "Plantillas y preview trazable", "#corporateReporting", "dashboard", "read"),
+        executiveStatus("Auditoria", auditCount, auditCount ? "stable" : "warning", `${blocked} controles pendientes / readiness ${avgReadiness}%`, "#corporateNotifications", "provisioning", "read")
+      ];
+    }
+
+    function executiveStatus(label, value, status, hint, href, scope, permission) {
+      return { label, value, status, hint, href, scope, permission };
+    }
+
+    function percentStatus(value, stableThreshold, warningThreshold) {
+      const percent = normalizePercent(value);
+      if (percent >= stableThreshold) return "stable";
+      if (percent >= warningThreshold) return "warning";
+      return "critical";
+    }
+
+    function riskStatus(value) {
+      const numeric = Number(String(value ?? "0").replace("%", ""));
+      if (Number.isNaN(numeric) || numeric === 0) return "stable";
+      if (numeric <= 2) return "warning";
+      return "critical";
+    }
+
+    function scheduleStatus(value) {
+      const numeric = Number(String(value ?? "0").replace("%", ""));
+      if (Number.isNaN(numeric)) return "warning";
+      if (numeric >= 0.95) return "stable";
+      if (numeric >= 0.85) return "warning";
+      return "critical";
     }
 
     function renderCockpit() {
@@ -2194,19 +2443,33 @@ def render_dashboard_html() -> str:
         <section class="section">
           <h2>${titles[key]}</h2>
           <div class="metric-grid">
-            ${(data[key] || []).map(metric => `
+            ${(data[key] || []).length ? (data[key] || []).map(metric => `
               <article class="metric ${metric.status}">
                 <div class="label">${metric.label}</div>
                 <div class="value">${metric.value}</div>
                 <div class="muted">${metric.trend}</div>
               </article>
-            `).join("")}
+            `).join("") : `
+              <article class="metric watch">
+                <div class="label">Sin datos</div>
+                <div class="value">pendiente</div>
+                <div class="muted">Bloque preparado para recibir datos corporativos consolidados.</div>
+              </article>
+            `}
           </div>
         </section>
       `).join("");
     }
 
     function renderComparisons() {
+      if (!data.comparisons.length) {
+        document.querySelector("#comparisons").innerHTML = `
+          <tr>
+            <td colspan="5">Sin comparativos disponibles. Registre mas proyectos gobernados para activar esta lectura ejecutiva.</td>
+          </tr>
+        `;
+        return;
+      }
       document.querySelector("#comparisons").innerHTML = data.comparisons.map(project => `
         <tr>
           <td>${project.name}</td>
