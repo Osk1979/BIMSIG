@@ -927,6 +927,20 @@ def render_dashboard_html() -> str:
     }
     .wizard-validation-item:last-child { border-bottom: 0; }
     .wizard-validation-item strong { color: var(--accent); }
+    .wizard-audit .notification {
+      grid-template-columns: minmax(84px, .24fr) minmax(0, 1fr);
+      align-items: start;
+    }
+    .wizard-audit .notification .message {
+      overflow-wrap: anywhere;
+      word-break: normal;
+      min-width: 0;
+    }
+    .wizard-audit .notification .time {
+      grid-column: 2;
+      text-align: left;
+      white-space: normal;
+    }
     .wizard-status-pill {
       display: inline-flex;
       align-items: center;
