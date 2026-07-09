@@ -872,6 +872,26 @@ def render_dashboard_html() -> str:
     }
     .wizard-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
     .wizard-actions button { margin: 0; min-width: 0; padding: 9px; font-size: 12px; }
+    .wizard-section-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+    .wizard-section-tab {
+      margin: 0;
+      min-width: 0;
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      color: var(--text);
+      text-align: left;
+      padding: 10px;
+    }
+    .wizard-section-tab.active { border-color: var(--accent); background: var(--accent-soft); }
+    .wizard-section-tab .label { font-weight: 780; display: block; }
+    .wizard-section-tab .meta { color: var(--muted); font-size: 11px; margin-top: 4px; display: block; }
     .wizard-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
     .wizard-step {
       min-height: 76px;
@@ -905,6 +925,7 @@ def render_dashboard_html() -> str:
       background: var(--panel-strong);
       min-width: 0;
     }
+    .wizard-section-panel[hidden] { display: none; }
     .wizard-detail h3, .wizard-validation h3, .wizard-summary h3, .wizard-audit h3 { margin: 0 0 8px; }
     .wizard-detail-grid, .wizard-trace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .wizard-readout {
@@ -1093,6 +1114,7 @@ def render_dashboard_html() -> str:
       .flow-card { grid-template-columns: 1fr; }
       .operating-grid { grid-template-columns: 1fr; }
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
+      .wizard-section-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .wizard-actions, .wizard-detail-grid, .wizard-trace-grid, .wizard-validation-item { grid-template-columns: 1fr; }
       .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
@@ -1300,12 +1322,13 @@ def render_dashboard_html() -> str:
                 <div class="muted">Sincroniza la sesion persistida, el paso actual y los pendientes antes de activar.</div>
               </div>
             </div>
+            <div class="wizard-section-tabs" id="wizardSectionTabs" aria-label="Secciones del Wizard"></div>
             <div class="wizard-steps" id="wizardSteps"></div>
-            <div class="wizard-product-grid">
+            <div class="wizard-product-grid wizard-section-panel" id="wizardWorkPanel">
               <div class="wizard-detail" id="wizardStepDetail"></div>
               <div class="wizard-validation" id="wizardValidationPanel"></div>
             </div>
-            <div class="wizard-product-grid">
+            <div class="wizard-product-grid wizard-section-panel" id="wizardTracePanel">
               <div class="wizard-summary" id="wizardActivationSummary"></div>
               <div class="wizard-audit" id="wizardAuditTrail"></div>
             </div>
@@ -1384,6 +1407,7 @@ def render_dashboard_html() -> str:
     let activeGisView = "nacional";
     let activePeruRegion = "all";
     let activeWizardStep = "company";
+    let activeWizardSection = "base";
     let selectedProjectId = null;
     let currentPrincipal = null;
     let permissionMatrix = [];
@@ -2462,7 +2486,16 @@ def render_dashboard_html() -> str:
       const steps = wizardProductSteps(activeSession);
       const validCount = steps.filter(step => step.status === "valid").length;
       const progress = Math.round((validCount / steps.length) * 100);
-      const current = steps.find(step => step.key === activeWizardStep) || steps.find(step => step.status !== "valid") || steps[0];
+      const sections = wizardSections();
+      const currentSection = sections.find(section => section.key === activeWizardSection) || sections[0];
+      activeWizardSection = currentSection.key;
+      const visibleSteps = currentSection.stepKeys.length
+        ? steps.filter(step => currentSection.stepKeys.includes(step.key))
+        : steps;
+      const current = visibleSteps.find(step => step.key === activeWizardStep)
+        || visibleSteps.find(step => step.status !== "valid")
+        || visibleSteps[0]
+        || steps[0];
       activeWizardStep = current.key;
       const canExecute = hasPermission("provisioning", "execute");
       document.querySelector("#wizardProgressLabel").textContent = activeSession
@@ -2470,9 +2503,10 @@ def render_dashboard_html() -> str:
         : `${progress}% preparado / sin sesion activa / listo para iniciar`;
       document.querySelector("#wizardProgressBar").style.width = `${progress}%`;
       document.querySelector("#wizardResumePanel").innerHTML = wizardResumeMarkup(activeSession, current, canExecute);
-      document.querySelector("#wizardSteps").innerHTML = steps.map((step, index) => `
+      document.querySelector("#wizardSectionTabs").innerHTML = sections.map(section => wizardSectionTabMarkup(section, steps)).join("");
+      document.querySelector("#wizardSteps").innerHTML = visibleSteps.map((step, index) => `
         <button class="wizard-step ${step.status} ${step.key === current.key ? "active" : ""}" data-wizard-step="${step.key}" data-rbac-scope="provisioning" data-rbac-action="execute">
-          <div class="number">Paso ${index + 1}</div>
+          <div class="number">Paso ${steps.findIndex(item => item.key === step.key) + 1}</div>
           <div class="name">${step.name}</div>
           <div class="state">${stepStatusText(step)}</div>
         </button>
@@ -2481,6 +2515,19 @@ def render_dashboard_html() -> str:
       document.querySelector("#wizardValidationPanel").innerHTML = wizardValidationMarkup(steps);
       document.querySelector("#wizardActivationSummary").innerHTML = wizardActivationSummaryMarkup(activeSession, steps);
       document.querySelector("#wizardAuditTrail").innerHTML = wizardAuditMarkup(activeSession);
+      document.querySelector("#wizardWorkPanel").hidden = activeWizardSection === "trace";
+      document.querySelector("#wizardTracePanel").hidden = activeWizardSection !== "trace";
+      document.querySelectorAll("[data-wizard-section]").forEach(button => {
+        button.addEventListener("click", () => {
+          activeWizardSection = button.dataset.wizardSection;
+          const nextSection = wizardSections().find(section => section.key === activeWizardSection);
+          if (nextSection?.stepKeys.length && !nextSection.stepKeys.includes(activeWizardStep)) {
+            activeWizardStep = nextSection.stepKeys[0];
+          }
+          renderWizard();
+          applyRbacUi();
+        });
+      });
       document.querySelectorAll("[data-wizard-step]").forEach(button => {
         button.addEventListener("click", () => {
           activeWizardStep = button.dataset.wizardStep;
@@ -2489,6 +2536,50 @@ def render_dashboard_html() -> str:
         });
       });
       wireWizardActions(activeSession, current, canExecute);
+    }
+
+    function wizardSections() {
+      return [
+        {
+          key: "base",
+          label: "Datos base",
+          hint: "Empresa, programa, proyecto y ubicacion",
+          stepKeys: ["company", "program", "project", "location"]
+        },
+        {
+          key: "platform",
+          label: "Plataforma",
+          hint: "Especialidades, WEB SIG, GIS y NAS",
+          stepKeys: ["specialties", "web_sig", "gis", "nas"]
+        },
+        {
+          key: "activation",
+          label: "Activacion",
+          hint: "Usuarios y aprobacion final",
+          stepKeys: ["users", "activation"]
+        },
+        {
+          key: "trace",
+          label: "Trazabilidad",
+          hint: "Resumen, auditoria y referencias",
+          stepKeys: []
+        }
+      ];
+    }
+
+    function wizardSectionTabMarkup(section, steps) {
+      const sectionSteps = section.stepKeys.length
+        ? steps.filter(step => section.stepKeys.includes(step.key))
+        : steps;
+      const valid = sectionSteps.filter(step => step.status === "valid").length;
+      const total = sectionSteps.length;
+      return `
+        <button class="wizard-section-tab ${activeWizardSection === section.key ? "active" : ""}" data-wizard-section="${section.key}">
+          <span class="label">${section.label}</span>
+          <span class="meta">${section.hint}</span>
+          <span class="meta">${valid}/${total} listo</span>
+        </button>
+      `;
     }
 
     function wizardProductSteps(session) {

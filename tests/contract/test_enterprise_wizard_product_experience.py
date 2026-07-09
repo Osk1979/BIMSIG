@@ -12,6 +12,9 @@ def test_enterprise_wizard_product_experience_contract(tmp_path) -> None:
     page = html.text
     for marker in [
         "wizardCommandCenter",
+        "wizardSectionTabs",
+        "wizardWorkPanel",
+        "wizardTracePanel",
         "wizardProgressBar",
         "wizardResumePanel",
         "wizardStepDetail",
@@ -22,6 +25,9 @@ def test_enterprise_wizard_product_experience_contract(tmp_path) -> None:
         "Reanudacion",
         "Resumen antes de activar",
         "Validacion independiente",
+        "Datos base",
+        "Plataforma",
+        "Trazabilidad",
         "api/v1/enterprise-wizard",
     ]:
         assert marker in page
