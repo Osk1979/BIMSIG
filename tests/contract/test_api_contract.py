@@ -29,6 +29,41 @@ def test_operational_health_contract() -> None:
     assert response.json()["database"] == "ok"
 
 
+def test_enterprise_scale_data_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    seed = client.post(
+        "/api/v1/enterprise-scale/seed",
+        json={
+            "company_count": 2,
+            "programs_per_company": 2,
+            "projects_per_program": 5,
+            "prefix": "ECT",
+        },
+    )
+    page = client.get(
+        "/api/v1/enterprise-scale/projects",
+        params={"company_id": "ECT-C001", "page": 1, "page_size": 3, "project_status": "active"},
+    )
+    search = client.get("/api/v1/enterprise-scale/search", params={"query": "ECT-C002-PRG-001"})
+    summary = client.get("/api/v1/enterprise-scale/summary")
+    isolation = client.get("/api/v1/enterprise-scale/isolation")
+
+    assert seed.status_code == 201
+    assert seed.json()["projects"] == 20
+    assert page.status_code == 200
+    assert page.json()["total"] == 2
+    assert len(page.json()["items"]) == 2
+    assert {item["company_id"] for item in page.json()["items"]} == {"ECT-C001"}
+    assert search.status_code == 200
+    assert search.json()["programs"][0]["company_id"] == "ECT-C002"
+    assert summary.status_code == 200
+    assert summary.json()["companies"] == 2
+    assert summary.json()["projects"] == 20
+    assert isolation.status_code == 200
+    assert isolation.json()["status"] == "ok"
+
+
 def test_infrastructure_connectors_contract(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("CONTROL_TOWER_NAS_ROOT", str(tmp_path / "nas-root"))
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))

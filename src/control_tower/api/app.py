@@ -28,6 +28,15 @@ from control_tower.application.enterprise_service import (
     LicensingService,
     UserService,
 )
+from control_tower.application.enterprise_scale_service import (
+    EnterpriseScaleIsolationReport,
+    EnterpriseScaleProjectPage,
+    EnterpriseScaleSearchResult,
+    EnterpriseScaleSeedRequest,
+    EnterpriseScaleSeedResult,
+    EnterpriseScaleService,
+    EnterpriseScaleSummary,
+)
 from control_tower.application.enterprise_wizard_service import EnterpriseWizardService
 from control_tower.application.gis_service import CorporateGisService
 from control_tower.application.infrastructure_connectors import (
@@ -118,6 +127,7 @@ from control_tower.domain.portfolio import (
     CorporatePortfolioProjectView,
     CorporateProgram,
     PortfolioLifecycleTransition,
+    ProjectLifecycleStage,
 )
 from control_tower.domain.provisioning import ProvisioningRequest
 from control_tower.domain.reports import CorporatePrintReport, ReportRequest, ReportTemplate
@@ -375,6 +385,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         operational_flow,
         gis_intelligence,
     )
+    enterprise_scale = EnterpriseScaleService(companies, portfolio, corporate_portfolio)
     reporting = CorporateReportingService(
         dashboard,
         audit_repository,
@@ -722,6 +733,60 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         """Return an OpenTelemetry-ready export payload for future collectors."""
 
         return observability.otel_export(infrastructure_connectors.health())
+
+    @app.post(
+        "/api/v1/enterprise-scale/seed",
+        response_model=EnterpriseScaleSeedResult,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def seed_enterprise_scale_dataset(payload: EnterpriseScaleSeedRequest) -> EnterpriseScaleSeedResult:
+        """Create a deterministic Enterprise demo dataset for scale validation."""
+
+        return enterprise_scale.seed(payload)
+
+    @app.get("/api/v1/enterprise-scale/projects", response_model=EnterpriseScaleProjectPage)
+    def enterprise_scale_projects(
+        page: int = 1,
+        page_size: int = 50,
+        company_id: str | None = None,
+        program_id: str | None = None,
+        customer_id: str | None = None,
+        project_status: ProjectStatus | None = None,
+        lifecycle_stage: ProjectLifecycleStage | None = None,
+        region: str | None = None,
+        query: str | None = None,
+    ) -> EnterpriseScaleProjectPage:
+        """Return paginated, filtered projects for Enterprise-scale portfolios."""
+
+        return enterprise_scale.project_page(
+            page=page,
+            page_size=page_size,
+            company_id=company_id,
+            program_id=program_id,
+            customer_id=customer_id,
+            status=project_status,
+            lifecycle_stage=lifecycle_stage,
+            region=region,
+            query=query,
+        )
+
+    @app.get("/api/v1/enterprise-scale/search", response_model=EnterpriseScaleSearchResult)
+    def enterprise_scale_search(query: str, limit: int = 25) -> EnterpriseScaleSearchResult:
+        """Search companies, programs, and projects across the governed portfolio."""
+
+        return enterprise_scale.search(query, limit=limit)
+
+    @app.get("/api/v1/enterprise-scale/summary", response_model=EnterpriseScaleSummary)
+    def enterprise_scale_summary() -> EnterpriseScaleSummary:
+        """Return Enterprise-scale aggregate metrics."""
+
+        return enterprise_scale.summary()
+
+    @app.get("/api/v1/enterprise-scale/isolation", response_model=EnterpriseScaleIsolationReport)
+    def enterprise_scale_isolation() -> EnterpriseScaleIsolationReport:
+        """Validate multi-company project, program, and customer isolation."""
+
+        return enterprise_scale.validate_isolation()
 
     @app.get("/api/v1/companies/{company_id}/operations/flow", response_model=CompanyOperationalFlow)
     def company_operational_flow(company_id: str) -> CompanyOperationalFlow:

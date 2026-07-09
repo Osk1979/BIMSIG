@@ -12,7 +12,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, create_engine, func, select, text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text, create_engine, func, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -566,6 +566,12 @@ class PortfolioProjectRecord(Base):
     """Persistent portfolio project row."""
 
     __tablename__ = "portfolio_projects"
+    __table_args__ = (
+        Index("ix_portfolio_projects_company_status", "company_id", "status"),
+        Index("ix_portfolio_projects_company_program", "company_id", "program_id"),
+        Index("ix_portfolio_projects_company_region", "company_id", "region"),
+        Index("ix_portfolio_projects_company_lifecycle", "company_id", "lifecycle_stage"),
+    )
 
     project_id: Mapped[str] = mapped_column(String(80), primary_key=True)
     company_id: Mapped[str] = mapped_column(String(80), ForeignKey("companies.company_id"), nullable=False, index=True)

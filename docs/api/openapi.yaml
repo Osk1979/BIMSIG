@@ -2071,6 +2071,242 @@
         "title": "DashboardMetric",
         "type": "object"
       },
+      "EnterpriseScaleIsolationReport": {
+        "description": "Multi-company isolation validation report.",
+        "properties": {
+          "checked_projects": {
+            "title": "Checked Projects",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "violations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Violations",
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "checked_projects",
+          "violations",
+          "duration_ms"
+        ],
+        "title": "EnterpriseScaleIsolationReport",
+        "type": "object"
+      },
+      "EnterpriseScaleProjectPage": {
+        "description": "Paginated project page for large portfolio exploration.",
+        "properties": {
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioProject"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "page_size",
+          "pages",
+          "duration_ms",
+          "items"
+        ],
+        "title": "EnterpriseScaleProjectPage",
+        "type": "object"
+      },
+      "EnterpriseScaleSearchResult": {
+        "description": "Search result across companies, programs, and projects.",
+        "properties": {
+          "companies": {
+            "items": {
+              "$ref": "#/components/schemas/Company"
+            },
+            "title": "Companies",
+            "type": "array"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "programs": {
+            "items": {
+              "$ref": "#/components/schemas/CorporateProgram"
+            },
+            "title": "Programs",
+            "type": "array"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/PortfolioProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query",
+          "companies",
+          "programs",
+          "projects",
+          "duration_ms"
+        ],
+        "title": "EnterpriseScaleSearchResult",
+        "type": "object"
+      },
+      "EnterpriseScaleSeedRequest": {
+        "description": "Controlled request to create a deterministic Enterprise demo dataset.",
+        "properties": {
+          "company_count": {
+            "default": 5,
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Company Count",
+            "type": "integer"
+          },
+          "prefix": {
+            "default": "ENT",
+            "maxLength": 16,
+            "minLength": 2,
+            "title": "Prefix",
+            "type": "string"
+          },
+          "programs_per_company": {
+            "default": 3,
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Programs Per Company",
+            "type": "integer"
+          },
+          "projects_per_program": {
+            "default": 20,
+            "maximum": 500.0,
+            "minimum": 1.0,
+            "title": "Projects Per Program",
+            "type": "integer"
+          }
+        },
+        "title": "EnterpriseScaleSeedRequest",
+        "type": "object"
+      },
+      "EnterpriseScaleSeedResult": {
+        "description": "Result of an Enterprise-scale seed operation.",
+        "properties": {
+          "companies": {
+            "title": "Companies",
+            "type": "integer"
+          },
+          "customers": {
+            "title": "Customers",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "programs": {
+            "title": "Programs",
+            "type": "integer"
+          },
+          "projects": {
+            "title": "Projects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "companies",
+          "customers",
+          "programs",
+          "projects",
+          "duration_ms"
+        ],
+        "title": "EnterpriseScaleSeedResult",
+        "type": "object"
+      },
+      "EnterpriseScaleSummary": {
+        "description": "Aggregate metrics for Enterprise-scale data readiness.",
+        "properties": {
+          "companies": {
+            "title": "Companies",
+            "type": "integer"
+          },
+          "customers": {
+            "title": "Customers",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "number"
+          },
+          "programs": {
+            "title": "Programs",
+            "type": "integer"
+          },
+          "projects": {
+            "title": "Projects",
+            "type": "integer"
+          },
+          "projects_by_region": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Projects By Region",
+            "type": "object"
+          },
+          "projects_by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Projects By Status",
+            "type": "object"
+          }
+        },
+        "required": [
+          "companies",
+          "customers",
+          "programs",
+          "projects",
+          "projects_by_status",
+          "projects_by_region",
+          "duration_ms"
+        ],
+        "title": "EnterpriseScaleSummary",
+        "type": "object"
+      },
       "EnterpriseWizardActivation": {
         "description": "API payload to activate a ready wizard.",
         "properties": {
@@ -9448,6 +9684,296 @@
           }
         },
         "summary": "List Corporate Workflow Transitions"
+      }
+    },
+    "/api/v1/enterprise-scale/isolation": {
+      "get": {
+        "description": "Validate multi-company project, program, and customer isolation.",
+        "operationId": "enterprise_scale_isolation_api_v1_enterprise_scale_isolation_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseScaleIsolationReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Enterprise Scale Isolation"
+      }
+    },
+    "/api/v1/enterprise-scale/projects": {
+      "get": {
+        "description": "Return paginated, filtered projects for Enterprise-scale portfolios.",
+        "operationId": "enterprise_scale_projects_api_v1_enterprise_scale_projects_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "program_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Program Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "customer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Customer Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lifecycle_stage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectLifecycleStage"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lifecycle Stage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseScaleProjectPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enterprise Scale Projects"
+      }
+    },
+    "/api/v1/enterprise-scale/search": {
+      "get": {
+        "description": "Search companies, programs, and projects across the governed portfolio.",
+        "operationId": "enterprise_scale_search_api_v1_enterprise_scale_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseScaleSearchResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enterprise Scale Search"
+      }
+    },
+    "/api/v1/enterprise-scale/seed": {
+      "post": {
+        "description": "Create a deterministic Enterprise demo dataset for scale validation.",
+        "operationId": "seed_enterprise_scale_dataset_api_v1_enterprise_scale_seed_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnterpriseScaleSeedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseScaleSeedResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Seed Enterprise Scale Dataset"
+      }
+    },
+    "/api/v1/enterprise-scale/summary": {
+      "get": {
+        "description": "Return Enterprise-scale aggregate metrics.",
+        "operationId": "enterprise_scale_summary_api_v1_enterprise_scale_summary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnterpriseScaleSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Enterprise Scale Summary"
       }
     },
     "/api/v1/enterprise-wizard": {
