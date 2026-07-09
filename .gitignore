@@ -11,5 +11,6 @@ dist/
 build/
 *.egg-info/
 backups/
+e2e-artifacts/
 *.zip
 *.db

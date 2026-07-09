@@ -801,6 +801,7 @@ def render_dashboard_html() -> str:
         <a href="#portfolioExplorer" data-rbac-scope="project" data-rbac-action="read">Portafolio</a>
         <a href="#corporateGisDashboard" data-rbac-scope="dashboard" data-rbac-action="read">Mapa Corporativo</a>
         <a href="#enterpriseWizard" data-rbac-scope="provisioning" data-rbac-action="execute">Provisionamiento</a>
+        <a href="#corporateReporting" data-rbac-scope="dashboard" data-rbac-action="read">Reportes</a>
         <a href="#corporateDashboard" data-rbac-scope="company" data-rbac-action="read">Empresas</a>
         <a href="#panels" data-rbac-scope="platform" data-rbac-action="admin">Usuarios</a>
         <a href="#panels" data-rbac-scope="company" data-rbac-action="read">Licencias</a>
@@ -913,6 +914,11 @@ def render_dashboard_html() -> str:
             <div class="section-kicker">Flujo visual del Enterprise Wizard con avance parcial, validacion y progreso por etapa.</div>
             <div class="wizard-steps" id="wizardSteps"></div>
           </section>
+          <section class="section" id="corporateReporting">
+            <h2>Corporate Reporting</h2>
+            <div class="section-kicker">Vista previa de reportes corporativos imprimibles con trazabilidad y checksum.</div>
+            <div class="metric-grid" id="reportingPreview"></div>
+          </section>
           <section class="section" id="operationalFlowSection">
             <h2>Flujo Operacional</h2>
             <div class="flow-grid" id="operationalFlow"></div>
@@ -975,6 +981,8 @@ def render_dashboard_html() -> str:
     let portfolioProjects = [];
     let wizardSessions = [];
     let auditEvents = [];
+    let reportPreview = null;
+    let reportTemplates = [];
     let activePortfolioFilter = "all";
     let activeGisFilter = "estado";
     let activePeruRegion = "all";
@@ -1057,19 +1065,36 @@ def render_dashboard_html() -> str:
       portfolioProjects = [];
       wizardSessions = [];
       auditEvents = [];
+      reportPreview = null;
+      reportTemplates = [];
       try {
-        const [gisResponse, panelResponse, projectsResponse, wizardResponse, auditResponse] = await Promise.all([
+        const [gisResponse, panelResponse, projectsResponse, wizardResponse, auditResponse, templatesResponse, reportResponse] = await Promise.all([
           apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`),
           apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/layer-panel`),
           apiFetch(`/api/v1/companies/${encodedCompany}/projects`),
           apiFetch("/api/v1/enterprise-wizard"),
-          apiFetch("/api/v1/audit/events?limit=12")
+          apiFetch("/api/v1/audit/events?limit=12"),
+          apiFetch("/api/v1/reports/templates"),
+          apiFetch("/api/v1/reports/preview", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              company_id: companyId,
+              template: "executive_portfolio",
+              scope: "company",
+              requested_by: "corporate-dashboard",
+              output_format: "html_print",
+              register_nas_reference: false
+            })
+          })
         ]);
         gisMap = gisResponse.ok ? await gisResponse.json() : null;
         gisLayerPanel = panelResponse.ok ? await panelResponse.json() : null;
         portfolioProjects = projectsResponse.ok ? await projectsResponse.json() : [];
         wizardSessions = wizardResponse.ok ? await wizardResponse.json() : [];
         auditEvents = auditResponse.ok ? await auditResponse.json() : [];
+        reportTemplates = templatesResponse.ok ? await templatesResponse.json() : [];
+        reportPreview = reportResponse.ok ? await reportResponse.json() : null;
       } catch {
         gisMap = null;
         gisLayerPanel = null;
@@ -1090,6 +1115,7 @@ def render_dashboard_html() -> str:
       renderGisIntelligence();
       renderExecutiveQuestions();
       renderNotifications();
+      renderReporting();
       renderPanels();
       renderComparisons();
       applyRbacUi();
@@ -1743,6 +1769,48 @@ def render_dashboard_html() -> str:
           <div class="time">${event.time}</div>
         </article>
       `).join("");
+    }
+
+    function renderReporting() {
+      const target = document.querySelector("#reportingPreview");
+      if (!reportPreview) {
+        target.innerHTML = `
+          <article class="metric">
+            <div class="label">Preview</div>
+            <div class="value">pendiente</div>
+            <div class="muted">Contrato de reportes no disponible.</div>
+          </article>
+          <article class="metric">
+            <div class="label">Plantillas</div>
+            <div class="value">${reportTemplates.length}</div>
+            <div class="muted">Catalogo corporativo.</div>
+          </article>
+        `;
+        return;
+      }
+      const manifest = reportPreview.manifest;
+      target.innerHTML = `
+        <article class="metric">
+          <div class="label">Reporte</div>
+          <div class="value">${manifest.template}</div>
+          <div class="muted">${manifest.title}</div>
+        </article>
+        <article class="metric">
+          <div class="label">Fuentes</div>
+          <div class="value">${manifest.data_sources.length}</div>
+          <div class="muted">${manifest.scope} / ${manifest.status}</div>
+        </article>
+        <article class="metric">
+          <div class="label">Checksum</div>
+          <div class="value">${manifest.checksum_sha256.slice(0, 8)}</div>
+          <div class="muted">trazabilidad de impresion</div>
+        </article>
+        <article class="metric">
+          <div class="label">Plantillas</div>
+          <div class="value">${reportTemplates.length}</div>
+          <div class="muted">PDF / HTML preparado</div>
+        </article>
+      `;
     }
 
     function recentEvents() {
