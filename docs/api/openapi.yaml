@@ -2270,6 +2270,234 @@
         "title": "DashboardMetric",
         "type": "object"
       },
+      "DeploymentTarget": {
+        "description": "One selectable backend target for the Corporate Control Tower API.",
+        "properties": {
+          "active": {
+            "default": false,
+            "title": "Active",
+            "type": "boolean"
+          },
+          "backend_url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backend Url"
+          },
+          "description": {
+            "minLength": 10,
+            "title": "Description",
+            "type": "string"
+          },
+          "health_endpoints": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Health Endpoints",
+            "type": "array"
+          },
+          "label": {
+            "minLength": 3,
+            "title": "Label",
+            "type": "string"
+          },
+          "last_validated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Validated At"
+          },
+          "public": {
+            "default": false,
+            "title": "Public",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeploymentTargetStatus",
+            "default": "not_configured"
+          },
+          "target_id": {
+            "minLength": 3,
+            "title": "Target Id",
+            "type": "string"
+          },
+          "target_type": {
+            "$ref": "#/components/schemas/DeploymentTargetType"
+          }
+        },
+        "required": [
+          "target_id",
+          "label",
+          "target_type",
+          "description"
+        ],
+        "title": "DeploymentTarget",
+        "type": "object"
+      },
+      "DeploymentTargetActivation": {
+        "description": "Request to activate one known deployment target.",
+        "properties": {
+          "activated_by": {
+            "default": "system",
+            "minLength": 1,
+            "title": "Activated By",
+            "type": "string"
+          },
+          "reason": {
+            "default": "Deployment target selected",
+            "minLength": 3,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "title": "DeploymentTargetActivation",
+        "type": "object"
+      },
+      "DeploymentTargetCatalog": {
+        "description": "Deployment target catalog exposed to operators and UI surfaces.",
+        "properties": {
+          "active_target_id": {
+            "title": "Active Target Id",
+            "type": "string"
+          },
+          "revision": {
+            "default": "REV12",
+            "title": "Revision",
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentTarget"
+            },
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "active_target_id",
+          "targets"
+        ],
+        "title": "DeploymentTargetCatalog",
+        "type": "object"
+      },
+      "DeploymentTargetCheck": {
+        "description": "One endpoint validation check.",
+        "properties": {
+          "detail": {
+            "minLength": 1,
+            "title": "Detail",
+            "type": "string"
+          },
+          "endpoint": {
+            "minLength": 1,
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeploymentTargetStatus"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "maximum": 599.0,
+                "minimum": 100.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          }
+        },
+        "required": [
+          "endpoint",
+          "status",
+          "detail"
+        ],
+        "title": "DeploymentTargetCheck",
+        "type": "object"
+      },
+      "DeploymentTargetStatus": {
+        "description": "Governed status for one deployment target.",
+        "enum": [
+          "validated",
+          "degraded",
+          "not_configured",
+          "unreachable"
+        ],
+        "title": "DeploymentTargetStatus",
+        "type": "string"
+      },
+      "DeploymentTargetType": {
+        "description": "Supported backend runtime target families.",
+        "enum": [
+          "local_docker",
+          "vps",
+          "cloud_container",
+          "temporary_tunnel",
+          "pending"
+        ],
+        "title": "DeploymentTargetType",
+        "type": "string"
+      },
+      "DeploymentTargetValidation": {
+        "description": "Validation result for one deployment target.",
+        "properties": {
+          "backend_url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backend Url"
+          },
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/DeploymentTargetCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeploymentTargetStatus"
+          },
+          "target_id": {
+            "minLength": 3,
+            "title": "Target Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_id",
+          "status",
+          "checked_at",
+          "checks"
+        ],
+        "title": "DeploymentTargetValidation",
+        "type": "object"
+      },
       "EnterpriseScaleIsolationReport": {
         "description": "Multi-company isolation validation report.",
         "properties": {
@@ -10207,6 +10435,134 @@
           }
         },
         "summary": "Connection Center Topology"
+      }
+    },
+    "/api/v1/deployment-targets": {
+      "get": {
+        "description": "Return selectable backend deployment targets.",
+        "operationId": "deployment_target_catalog_api_v1_deployment_targets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentTargetCatalog"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Deployment Target Catalog"
+      }
+    },
+    "/api/v1/deployment-targets/active": {
+      "get": {
+        "description": "Return active backend deployment target.",
+        "operationId": "active_deployment_target_api_v1_deployment_targets_active_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentTarget"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Active Deployment Target"
+      }
+    },
+    "/api/v1/deployment-targets/{target_id}/activate": {
+      "post": {
+        "description": "Activate one known backend target.",
+        "operationId": "activate_deployment_target_api_v1_deployment_targets__target_id__activate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "title": "Target Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeploymentTargetActivation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentTarget"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Activate Deployment Target"
+      }
+    },
+    "/api/v1/deployment-targets/{target_id}/validate": {
+      "post": {
+        "description": "Validate target health endpoints.",
+        "operationId": "validate_deployment_target_api_v1_deployment_targets__target_id__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "target_id",
+            "required": true,
+            "schema": {
+              "title": "Target Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentTargetValidation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Deployment Target"
       }
     },
     "/api/v1/enterprise-scale/isolation": {

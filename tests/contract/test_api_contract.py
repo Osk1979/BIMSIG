@@ -97,6 +97,36 @@ def test_connection_center_contract(tmp_path) -> None:
     assert readiness.json()["topology"]["revision"] == "REV12"
 
 
+def test_deployment_target_manager_contract(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("CONTROL_TOWER_LOCAL_API_URL", "http://127.0.0.1:8000")
+    monkeypatch.setenv("CONTROL_TOWER_PUBLIC_API_URL", "https://api.example.com")
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    catalog = client.get("/api/v1/deployment-targets")
+    active = client.get("/api/v1/deployment-targets/active")
+    activated = client.post(
+        "/api/v1/deployment-targets/production-public-api/activate",
+        json={"activated_by": "cto", "reason": "Public API target selected"},
+    )
+    validation = client.post("/api/v1/deployment-targets/cloud-container/validate")
+
+    assert catalog.status_code == 200
+    assert catalog.json()["active_target_id"] == "local-docker"
+    assert {item["target_id"] for item in catalog.json()["targets"]} >= {
+        "local-docker",
+        "production-public-api",
+        "cloud-container",
+        "temporary-tunnel",
+    }
+    assert active.status_code == 200
+    assert active.json()["target_id"] == "local-docker"
+    assert activated.status_code == 200
+    assert activated.json()["target_id"] == "production-public-api"
+    assert activated.json()["active"] is True
+    assert validation.status_code == 200
+    assert validation.json()["status"] == "not_configured"
+
+
 def test_enterprise_scale_data_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
 

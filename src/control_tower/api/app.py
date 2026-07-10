@@ -24,6 +24,7 @@ from control_tower.application.connection_center_service import ConnectionCenter
 from control_tower.application.corporate_gis_intelligence_service import CorporateGisIntelligenceService
 from control_tower.application.corporate_workflow_service import CorporateWorkflowEngine
 from control_tower.application.dashboard_service import DashboardService
+from control_tower.application.deployment_target_service import DeploymentTargetService
 from control_tower.application.enterprise_service import (
     CompanyService,
     CorporateUserSecurityService,
@@ -88,6 +89,12 @@ from control_tower.domain.connection_center import (
     ConnectionCenterTopology,
 )
 from control_tower.domain.dashboard import CorporateDashboard
+from control_tower.domain.deployment_targets import (
+    DeploymentTarget,
+    DeploymentTargetActivation,
+    DeploymentTargetCatalog,
+    DeploymentTargetValidation,
+)
 from control_tower.domain.enterprise import (
     AuthIdentity,
     AuthSession,
@@ -466,6 +473,17 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         ),
         default_company_id=os.getenv("BIMSIG_DEFAULT_COMPANY_ID", "CRTG"),
     )
+    deployment_targets = DeploymentTargetService(
+        local_backend_url=os.getenv("CONTROL_TOWER_LOCAL_API_URL", "http://127.0.0.1:8000"),
+        public_backend_url=os.getenv("CONTROL_TOWER_PUBLIC_API_URL"),
+        cloud_backend_url=os.getenv("CONTROL_TOWER_CLOUD_API_URL"),
+        tunnel_backend_url=os.getenv("CONTROL_TOWER_TUNNEL_API_URL"),
+        active_target_id=os.getenv("CONTROL_TOWER_ACTIVE_TARGET", "local-docker"),
+        cors_origin=os.getenv(
+            "BIMSIG_PORTAL_ORIGIN",
+            "https://bimsig-enterprise.oscarsalas1979.chatgpt.site",
+        ),
+    )
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -517,6 +535,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "/api/v1/auth/permissions/matrix",
             "/api/v1/auth/sso/resolve",
             "/api/v1/connection-center",
+            "/api/v1/deployment-targets",
             "/api/v1/operational",
             "/api/v1/portal-gateway",
             "/health",
@@ -714,6 +733,46 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         """Return company-scoped Connection Center readiness."""
 
         return connection_center.readiness(company_id)
+
+    @app.get("/api/v1/deployment-targets", response_model=DeploymentTargetCatalog)
+    def deployment_target_catalog() -> DeploymentTargetCatalog:
+        """Return selectable backend deployment targets."""
+
+        return deployment_targets.catalog()
+
+    @app.get("/api/v1/deployment-targets/active", response_model=DeploymentTarget)
+    def active_deployment_target() -> DeploymentTarget:
+        """Return active backend deployment target."""
+
+        return deployment_targets.active()
+
+    @app.post(
+        "/api/v1/deployment-targets/{target_id}/activate",
+        response_model=DeploymentTarget,
+    )
+    def activate_deployment_target(
+        target_id: str,
+        payload: DeploymentTargetActivation,
+    ) -> DeploymentTarget:
+        """Activate one known backend target."""
+
+        _ = payload
+        try:
+            return deployment_targets.activate(target_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.post(
+        "/api/v1/deployment-targets/{target_id}/validate",
+        response_model=DeploymentTargetValidation,
+    )
+    def validate_deployment_target(target_id: str) -> DeploymentTargetValidation:
+        """Validate target health endpoints."""
+
+        try:
+            return deployment_targets.validate(target_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.get(
         "/api/v1/infrastructure/connectors/health",
