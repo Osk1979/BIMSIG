@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from control_tower import __version__
 from control_tower.application.auth_service import EnterpriseAuthService
+from control_tower.application.connection_center_service import ConnectionCenterService
 from control_tower.application.corporate_gis_intelligence_service import CorporateGisIntelligenceService
 from control_tower.application.corporate_workflow_service import CorporateWorkflowEngine
 from control_tower.application.dashboard_service import DashboardService
@@ -80,6 +81,11 @@ from control_tower.domain.corporate_workflow import (
     CorporateWorkflowInstance,
     CorporateWorkflowRollback,
     CorporateWorkflowTransition,
+)
+from control_tower.domain.connection_center import (
+    ConnectionCenterHealth,
+    ConnectionCenterReadiness,
+    ConnectionCenterTopology,
 )
 from control_tower.domain.dashboard import CorporateDashboard
 from control_tower.domain.enterprise import (
@@ -443,6 +449,23 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         ),
         default_company_id=os.getenv("BIMSIG_DEFAULT_COMPANY_ID", "CRTG"),
     )
+    connection_center = ConnectionCenterService(
+        portal_gateway,
+        infrastructure_connectors,
+        portal_origin=os.getenv(
+            "BIMSIG_PORTAL_ORIGIN",
+            "https://bimsig-enterprise.oscarsalas1979.chatgpt.site",
+        ),
+        tower_base_url=os.getenv(
+            "BIMSIG_TOWER_URL",
+            "https://bim-digital-hub.oscarsalas1979.chatgpt.site",
+        ),
+        websig_base_url=os.getenv(
+            "BIMSIG_WEBSIG_URL",
+            "https://websig-enterprise.oscarsalas1979.chatgpt.site",
+        ),
+        default_company_id=os.getenv("BIMSIG_DEFAULT_COMPANY_ID", "CRTG"),
+    )
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -493,6 +516,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "/api/v1/auth/me",
             "/api/v1/auth/permissions/matrix",
             "/api/v1/auth/sso/resolve",
+            "/api/v1/connection-center",
             "/api/v1/operational",
             "/api/v1/portal-gateway",
             "/health",
@@ -669,6 +693,27 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             return portal_gateway.snapshot(company_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    @app.get("/api/v1/connection-center/topology", response_model=ConnectionCenterTopology)
+    def connection_center_topology(company_id: str | None = None) -> ConnectionCenterTopology:
+        """Return the governed Portal, Tower, WEB SIG, and connector topology."""
+
+        return connection_center.topology(company_id)
+
+    @app.get("/api/v1/connection-center/health", response_model=ConnectionCenterHealth)
+    def connection_center_health() -> ConnectionCenterHealth:
+        """Return normalized health for the enterprise connection fabric."""
+
+        return connection_center.health()
+
+    @app.get(
+        "/api/v1/connection-center/companies/{company_id}/readiness",
+        response_model=ConnectionCenterReadiness,
+    )
+    def connection_center_readiness(company_id: str) -> ConnectionCenterReadiness:
+        """Return company-scoped Connection Center readiness."""
+
+        return connection_center.readiness(company_id)
 
     @app.get(
         "/api/v1/infrastructure/connectors/health",

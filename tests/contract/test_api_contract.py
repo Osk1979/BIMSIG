@@ -62,6 +62,41 @@ def test_portal_gateway_contract(tmp_path) -> None:
     assert snapshot.json()["report_templates"][0]["template"] == "executive_portfolio"
 
 
+def test_connection_center_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+
+    topology = client.get("/api/v1/connection-center/topology", params={"company_id": "CRTG"})
+    health = client.get("/api/v1/connection-center/health")
+    readiness = client.get("/api/v1/connection-center/companies/CRTG/readiness")
+
+    assert topology.status_code == 200
+    assert {node["node_id"] for node in topology.json()["nodes"]} >= {
+        "portal",
+        "control-tower",
+        "websig",
+        "reporting",
+        "infrastructure",
+    }
+    assert {
+        edge["contract"] for edge in topology.json()["edges"]
+    } >= {
+        "/api/v1/portal-gateway/companies/CRTG/snapshot",
+        "/api/v1/reports/template-catalog",
+        "/api/v1/infrastructure/connectors/health",
+    }
+    assert health.status_code == 200
+    assert health.json()["status"] in {"ready", "degraded"}
+    assert {item["connector"] for item in health.json()["connectors"]} == {
+        "postgis",
+        "geoserver",
+        "nas",
+        "google_drive",
+    }
+    assert readiness.status_code == 200
+    assert readiness.json()["company_id"] == "CRTG"
+    assert readiness.json()["topology"]["revision"] == "REV12"
+
+
 def test_enterprise_scale_data_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
 

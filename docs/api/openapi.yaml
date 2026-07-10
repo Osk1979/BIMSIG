@@ -660,6 +660,205 @@
         "title": "CompanyStatus",
         "type": "string"
       },
+      "ConnectionCenterHealth": {
+        "description": "Connection Center health and connector readiness.",
+        "properties": {
+          "connectors": {
+            "items": {
+              "$ref": "#/components/schemas/InfrastructureConnectorResult"
+            },
+            "title": "Connectors",
+            "type": "array"
+          },
+          "infrastructure": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "portal_gateway": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "revision": {
+            "default": "REV12",
+            "title": "Revision",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          }
+        },
+        "required": [
+          "status",
+          "portal_gateway",
+          "infrastructure",
+          "connectors"
+        ],
+        "title": "ConnectionCenterHealth",
+        "type": "object"
+      },
+      "ConnectionCenterReadiness": {
+        "description": "Company-scoped readiness for Portal, Tower, WEB SIG, and infrastructure.",
+        "properties": {
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "health": {
+            "$ref": "#/components/schemas/ConnectionCenterHealth"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
+          "topology": {
+            "$ref": "#/components/schemas/ConnectionCenterTopology"
+          }
+        },
+        "required": [
+          "company_id",
+          "status",
+          "topology",
+          "health"
+        ],
+        "title": "ConnectionCenterReadiness",
+        "type": "object"
+      },
+      "ConnectionCenterTopology": {
+        "description": "Enterprise integration map consumed by operational UIs.",
+        "properties": {
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/ConnectionEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/PortalGatewayLink"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/ConnectionNode"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "revision": {
+            "default": "REV12",
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodes",
+          "edges",
+          "links"
+        ],
+        "title": "ConnectionCenterTopology",
+        "type": "object"
+      },
+      "ConnectionEdge": {
+        "description": "Directed connection between two governed nodes.",
+        "properties": {
+          "contract": {
+            "minLength": 3,
+            "title": "Contract",
+            "type": "string"
+          },
+          "source": {
+            "minLength": 3,
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConnectionStatus",
+            "default": "ready"
+          },
+          "target": {
+            "minLength": 3,
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "target",
+          "contract"
+        ],
+        "title": "ConnectionEdge",
+        "type": "object"
+      },
+      "ConnectionKind": {
+        "description": "Known connection families governed by the Tower.",
+        "enum": [
+          "portal",
+          "control_tower",
+          "web_sig",
+          "reporting",
+          "infrastructure"
+        ],
+        "title": "ConnectionKind",
+        "type": "string"
+      },
+      "ConnectionNode": {
+        "description": "One node in the enterprise connection topology.",
+        "properties": {
+          "description": {
+            "minLength": 10,
+            "title": "Description",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "label": {
+            "minLength": 3,
+            "title": "Label",
+            "type": "string"
+          },
+          "node_id": {
+            "minLength": 3,
+            "title": "Node Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ConnectionStatus",
+            "default": "ready"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "node_id",
+          "label",
+          "kind",
+          "description"
+        ],
+        "title": "ConnectionNode",
+        "type": "object"
+      },
+      "ConnectionStatus": {
+        "description": "Normalized status for one enterprise connection.",
+        "enum": [
+          "ready",
+          "degraded",
+          "blocked"
+        ],
+        "title": "ConnectionStatus",
+        "type": "string"
+      },
       "CorporateCustomer": {
         "description": "Client governed by the Corporate Control Tower portfolio domain.",
         "properties": {
@@ -9902,6 +10101,112 @@
           }
         },
         "summary": "List Corporate Workflow Transitions"
+      }
+    },
+    "/api/v1/connection-center/companies/{company_id}/readiness": {
+      "get": {
+        "description": "Return company-scoped Connection Center readiness.",
+        "operationId": "connection_center_readiness_api_v1_connection_center_companies__company_id__readiness_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionCenterReadiness"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Connection Center Readiness"
+      }
+    },
+    "/api/v1/connection-center/health": {
+      "get": {
+        "description": "Return normalized health for the enterprise connection fabric.",
+        "operationId": "connection_center_health_api_v1_connection_center_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionCenterHealth"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Connection Center Health"
+      }
+    },
+    "/api/v1/connection-center/topology": {
+      "get": {
+        "description": "Return the governed Portal, Tower, WEB SIG, and connector topology.",
+        "operationId": "connection_center_topology_api_v1_connection_center_topology_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "company_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionCenterTopology"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Connection Center Topology"
       }
     },
     "/api/v1/enterprise-scale/isolation": {
