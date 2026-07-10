@@ -21,6 +21,10 @@ def test_corporate_product_experience_rc1_contract(tmp_path) -> None:
         "gisMapSurface",
         "enterpriseWizard",
         "wizardCommandCenter",
+        "connectionCenter",
+        "Deployment Targets",
+        "deploymentTargetCards",
+        "/api/v1/deployment-targets",
         "corporateReporting",
         "reportingPreview",
         "corporateNotifications",
@@ -35,6 +39,7 @@ def test_corporate_product_experience_rc1_contract(tmp_path) -> None:
         'href="#portfolioExplorer"',
         'href="#corporateGisDashboard"',
         'href="#enterpriseWizard"',
+        'href="#connectionCenter"',
         'href="#corporateReporting"',
         'href="#corporateNotifications"',
     ]:

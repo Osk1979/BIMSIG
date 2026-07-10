@@ -10,6 +10,7 @@ __pycache__/
 !.env.production.example
 .tmp_pytest/
 .tmp_pytest_run/
+.tmp_pytest*/
 dist/
 build/
 *.egg-info/

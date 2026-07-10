@@ -1181,6 +1181,72 @@ def render_dashboard_html() -> str:
     }
     .readout .label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
     .readout .value { font-size: 22px; font-weight: 780; margin-top: 6px; }
+    .deployment-command {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(320px, .64fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .deployment-target-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .deployment-target-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      padding: 12px;
+      min-width: 0;
+    }
+    .deployment-target-card.active {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, var(--accent-soft), transparent), var(--panel-strong);
+    }
+    .deployment-target-card .target-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+    .deployment-target-card h3 {
+      font-size: 14px;
+      margin: 0;
+    }
+    .deployment-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 3px 7px;
+      white-space: nowrap;
+    }
+    .deployment-pill.validated { border-color: var(--accent); color: var(--accent); }
+    .deployment-pill.degraded, .deployment-pill.not_configured { border-color: var(--warn); color: var(--warn); }
+    .deployment-pill.unreachable { border-color: var(--critical); color: var(--critical); }
+    .deployment-url {
+      color: var(--accent);
+      font-size: 12px;
+      margin-top: 8px;
+      overflow-wrap: anywhere;
+    }
+    .deployment-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .deployment-actions button { margin: 0; padding: 9px 10px; }
+    .deployment-health-list { display: grid; gap: 8px; margin-top: 10px; }
+    .deployment-health-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      padding: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: left; }
     th { color: var(--muted); font-weight: 650; }
@@ -1198,6 +1264,7 @@ def render_dashboard_html() -> str:
       .executive-command { grid-template-columns: 1fr; }
       .executive-status-grid, .executive-comparison-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .wizard-command, .wizard-product-grid, .wizard-workspace { grid-template-columns: 1fr; }
+      .deployment-command { grid-template-columns: 1fr; }
       .portfolio-navigator, .portfolio-search { grid-template-columns: 1fr; }
       .content { grid-template-columns: 1fr; }
       .cockpit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1229,6 +1296,7 @@ def render_dashboard_html() -> str:
       .filter-row, .map-mode-grid, .wizard-steps, .question-grid { grid-template-columns: 1fr; }
       .wizard-section-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .wizard-actions, .wizard-detail-grid, .wizard-trace-grid, .wizard-validation-item { grid-template-columns: 1fr; }
+      .deployment-target-grid, .deployment-actions { grid-template-columns: 1fr; }
       .spatial-summary-grid, .spatial-comparison-grid { grid-template-columns: 1fr; }
       .bridge-grid { grid-template-columns: 1fr; }
       .service-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1257,6 +1325,7 @@ def render_dashboard_html() -> str:
         <a href="#portfolioExplorer" data-rbac-scope="project" data-rbac-action="read">Portafolio</a>
         <a href="#corporateGisDashboard" data-rbac-scope="dashboard" data-rbac-action="read">Mapa Corporativo</a>
         <a href="#enterpriseWizard" data-rbac-scope="provisioning" data-rbac-action="execute">Provisionamiento</a>
+        <a href="#connectionCenter" data-rbac-scope="platform" data-rbac-action="admin">Connection Center</a>
         <a href="#corporateReporting" data-rbac-scope="dashboard" data-rbac-action="read">Reportes</a>
         <a href="#corporateDashboard" data-rbac-scope="company" data-rbac-action="read">Empresas</a>
         <a href="#panels" data-rbac-scope="platform" data-rbac-action="admin">Usuarios</a>
@@ -1460,6 +1529,32 @@ def render_dashboard_html() -> str:
             <div class="section-kicker">Vista previa de reportes corporativos imprimibles con trazabilidad y checksum.</div>
             <div class="metric-grid" id="reportingPreview"></div>
           </section>
+          <section class="section" id="connectionCenter" data-deployment-targets-ui="ready">
+            <h2>Connection Center</h2>
+            <div class="section-kicker">Deployment Targets para cambiar, validar y gobernar el contenedor backend activo de la Torre.</div>
+            <div class="deployment-command">
+              <div>
+                <div class="metric-grid" id="deploymentTargetSummary">
+                  <article class="metric watch">
+                    <div class="label">Deployment Targets</div>
+                    <div class="value">cargando</div>
+                    <div class="muted">Consultando /api/v1/deployment-targets</div>
+                  </article>
+                  <article class="metric watch">
+                    <div class="label">Target activo</div>
+                    <div class="value">pendiente</div>
+                    <div class="muted">Consultando /api/v1/deployment-targets/active</div>
+                  </article>
+                </div>
+                <div class="deployment-target-grid" id="deploymentTargetCards" aria-live="polite"></div>
+              </div>
+              <aside class="home-panel">
+                <h3>Validacion del backend real</h3>
+                <div class="lead" id="deploymentTargetStatus">Cargando catalogo de destinos publicables...</div>
+                <div class="deployment-health-list" id="deploymentTargetHealth"></div>
+              </aside>
+            </div>
+          </section>
           <section class="section" id="operationalFlowSection">
             <h2>Flujo Operacional</h2>
             <div class="flow-grid" id="operationalFlow"></div>
@@ -1524,6 +1619,9 @@ def render_dashboard_html() -> str:
     let auditEvents = [];
     let reportPreview = null;
     let reportTemplates = [];
+    let deploymentTargetCatalog = null;
+    let activeDeploymentTarget = null;
+    let deploymentValidation = null;
     let activePortfolioFilter = "all";
     let portfolioSearchTerm = "";
     let selectedPortfolioProjectId = localStorage.getItem("selectedPortfolioProjectId") || null;
@@ -1622,8 +1720,21 @@ def render_dashboard_html() -> str:
       auditEvents = [];
       reportPreview = null;
       reportTemplates = [];
+      deploymentTargetCatalog = null;
+      activeDeploymentTarget = null;
+      deploymentValidation = null;
       try {
-        const [gisResponse, panelResponse, projectsResponse, wizardResponse, auditResponse, templatesResponse, reportResponse] = await Promise.all([
+        const [
+          gisResponse,
+          panelResponse,
+          projectsResponse,
+          wizardResponse,
+          auditResponse,
+          templatesResponse,
+          reportResponse,
+          deploymentCatalogResponse,
+          activeDeploymentResponse
+        ] = await Promise.all([
           apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/maps/corporate`),
           apiFetch(`/api/v1/companies/${encodedCompany}/gis-intelligence/layer-panel`),
           apiFetch(`/api/v1/companies/${encodedCompany}/projects`),
@@ -1641,7 +1752,9 @@ def render_dashboard_html() -> str:
               output_format: "html_print",
               register_nas_reference: false
             })
-          })
+          }),
+          apiFetch("/api/v1/deployment-targets"),
+          apiFetch("/api/v1/deployment-targets/active")
         ]);
         gisMap = gisResponse.ok ? await gisResponse.json() : null;
         gisLayerPanel = panelResponse.ok ? await panelResponse.json() : null;
@@ -1650,6 +1763,8 @@ def render_dashboard_html() -> str:
         auditEvents = auditResponse.ok ? await auditResponse.json() : [];
         reportTemplates = templatesResponse.ok ? await templatesResponse.json() : [];
         reportPreview = reportResponse.ok ? await reportResponse.json() : null;
+        deploymentTargetCatalog = deploymentCatalogResponse.ok ? await deploymentCatalogResponse.json() : null;
+        activeDeploymentTarget = activeDeploymentResponse.ok ? await activeDeploymentResponse.json() : null;
       } catch {
         gisMap = null;
         gisLayerPanel = null;
@@ -1672,6 +1787,7 @@ def render_dashboard_html() -> str:
       renderExecutiveQuestions();
       renderNotifications();
       renderReporting();
+      renderDeploymentTargets();
       renderPanels();
       renderComparisons();
       applyRbacUi();
@@ -3393,6 +3509,118 @@ def render_dashboard_html() -> str:
           <div class="muted">PDF / HTML preparado</div>
         </article>
       `;
+    }
+
+    function renderDeploymentTargets() {
+      const summary = document.querySelector("#deploymentTargetSummary");
+      const cards = document.querySelector("#deploymentTargetCards");
+      const status = document.querySelector("#deploymentTargetStatus");
+      const health = document.querySelector("#deploymentTargetHealth");
+      if (!summary || !cards || !status || !health) return;
+      if (!deploymentTargetCatalog) {
+        summary.innerHTML = `
+          <article class="metric warning">
+            <div class="label">Deployment Targets</div>
+            <div class="value">offline</div>
+            <div class="muted">No se pudo leer /api/v1/deployment-targets.</div>
+          </article>
+          <article class="metric watch">
+            <div class="label">Fallback</div>
+            <div class="value">Local</div>
+            <div class="muted">La Torre conserva la experiencia sin cambio de destino.</div>
+          </article>
+        `;
+        cards.innerHTML = `<article class="deployment-target-card"><h3>Local Docker</h3><div class="muted">Fallback visual mientras el backend responde.</div></article>`;
+        status.textContent = "Connection Center disponible en modo lectura local.";
+        health.innerHTML = `<div class="deployment-health-item">Endpoints esperados: /health, /api/v1/portal-gateway/health, /api/v1/connection-center/health.</div>`;
+        return;
+      }
+      const targets = deploymentTargetCatalog.targets || [];
+      const active = activeDeploymentTarget || targets.find(target => target.active) || targets[0] || {};
+      const publicTargets = targets.filter(target => target.public).length;
+      summary.innerHTML = `
+        <article class="metric ${active.status || "watch"}">
+          <div class="label">Target activo</div>
+          <div class="value">${active.label || deploymentTargetCatalog.active_target_id}</div>
+          <div class="muted">${active.backend_url || "backend_url pendiente"}</div>
+        </article>
+        <article class="metric">
+          <div class="label">Catalogo REV12</div>
+          <div class="value">${targets.length}</div>
+          <div class="muted">${publicTargets} destinos publicos / ${deploymentTargetCatalog.revision}</div>
+        </article>
+      `;
+      cards.innerHTML = targets.map(target => deploymentTargetCard(target)).join("");
+      status.textContent = deploymentValidation
+        ? `Ultima validacion: ${deploymentValidation.target_id} / ${deploymentValidation.status}`
+        : "Selecciona Validar antes de activar un destino publico.";
+      const checks = deploymentValidation?.checks || active.health_endpoints?.map(endpoint => ({
+        endpoint,
+        status: active.status,
+        detail: active.backend_url ? "Pendiente de validacion desde UI." : "Target sin backend_url configurado."
+      })) || [];
+      health.innerHTML = checks.map(check => `
+        <div class="deployment-health-item">
+          <strong>${check.endpoint}</strong>
+          <div>${check.status} / ${check.detail}</div>
+        </div>
+      `).join("");
+      wireDeploymentTargetActions();
+    }
+
+    function deploymentTargetCard(target) {
+      const active = target.active ? " active" : "";
+      const publicLabel = target.public ? "publico" : "local";
+      const configured = target.backend_url || "Configurar URL en entorno";
+      return `
+        <article class="deployment-target-card${active}" data-deployment-target-id="${target.target_id}">
+          <div class="target-head">
+            <h3>${target.label}</h3>
+            <span class="deployment-pill ${target.status}">${target.status}</span>
+          </div>
+          <div class="muted">${target.description}</div>
+          <div class="deployment-url">${configured}</div>
+          <div class="muted">${target.target_type} / ${publicLabel}</div>
+          <div class="deployment-actions">
+            <button data-deployment-action="validate" data-target-id="${target.target_id}" data-rbac-scope="platform" data-rbac-action="admin">Validar</button>
+            <button class="primary" data-deployment-action="activate" data-target-id="${target.target_id}" data-rbac-scope="platform" data-rbac-action="admin">Activar</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function wireDeploymentTargetActions() {
+      document.querySelectorAll("[data-deployment-action]").forEach(button => {
+        button.onclick = async () => {
+          const targetId = button.dataset.targetId;
+          button.disabled = true;
+          button.textContent = button.dataset.deploymentAction === "validate" ? "Validando..." : "Activando...";
+          try {
+            if (button.dataset.deploymentAction === "validate") {
+              const response = await apiFetch(`/api/v1/deployment-targets/${encodeURIComponent(targetId)}/validate`, { method: "POST" });
+              deploymentValidation = response.ok ? await response.json() : null;
+            } else {
+              const response = await apiFetch(`/api/v1/deployment-targets/${encodeURIComponent(targetId)}/activate`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                  activated_by: currentPrincipal?.user_id || "tower-ui",
+                  reason: "Deployment target selected from Connection Center UI"
+                })
+              });
+              activeDeploymentTarget = response.ok ? await response.json() : activeDeploymentTarget;
+              if (deploymentTargetCatalog && activeDeploymentTarget) {
+                deploymentTargetCatalog.active_target_id = activeDeploymentTarget.target_id;
+                deploymentTargetCatalog.targets = deploymentTargetCatalog.targets.map(target =>
+                  Object.assign({}, target, { active: target.target_id === activeDeploymentTarget.target_id })
+                );
+              }
+            }
+          } finally {
+            renderDeploymentTargets();
+          }
+        };
+      });
     }
 
     function recentEvents() {
