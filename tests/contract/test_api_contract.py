@@ -29,6 +29,39 @@ def test_operational_health_contract() -> None:
     assert response.json()["database"] == "ok"
 
 
+def test_portal_gateway_contract(tmp_path) -> None:
+    client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
+    client.post(
+        "/api/v1/companies",
+        json={"company_id": "CRTG", "legal_name": "CRTG S.A.C.", "display_name": "CRTG"},
+    )
+
+    config = client.get(
+        "/api/v1/portal-gateway/config",
+        headers={"Origin": "https://bimsig-enterprise.oscarsalas1979.chatgpt.site"},
+    )
+    health = client.get("/api/v1/portal-gateway/health")
+    snapshot = client.get("/api/v1/portal-gateway/companies/CRTG/snapshot")
+
+    assert config.status_code == 200
+    assert config.headers["access-control-allow-origin"] == (
+        "https://bimsig-enterprise.oscarsalas1979.chatgpt.site"
+    )
+    assert config.json()["default_company_id"] == "CRTG"
+    assert {link["link_id"] for link in config.json()["links"]} >= {
+        "tower-dashboard",
+        "tower-executive-api",
+        "tower-report-catalog",
+        "websig-enterprise",
+    }
+    assert health.status_code == 200
+    assert health.json()["service"] == "portal-gateway"
+    assert snapshot.status_code == 200
+    assert snapshot.json()["company_id"] == "CRTG"
+    assert snapshot.json()["dashboard"]["company_id"] == "CRTG"
+    assert snapshot.json()["report_templates"][0]["template"] == "executive_portfolio"
+
+
 def test_enterprise_scale_data_contract(tmp_path) -> None:
     client = TestClient(create_app(database_url=sqlite_url(tmp_path)))
 

@@ -3997,6 +3997,176 @@
         "title": "PermissionScope",
         "type": "string"
       },
+      "PortalGatewayConfig": {
+        "description": "Runtime configuration consumed by the BIM-SIG enterprise portal.",
+        "properties": {
+          "default_company_id": {
+            "minLength": 3,
+            "title": "Default Company Id",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/PortalGatewayLink"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "portal_origin": {
+            "minLength": 6,
+            "title": "Portal Origin",
+            "type": "string"
+          },
+          "tower_base_url": {
+            "minLength": 6,
+            "title": "Tower Base Url",
+            "type": "string"
+          },
+          "websig_base_url": {
+            "minLength": 6,
+            "title": "Websig Base Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "portal_origin",
+          "tower_base_url",
+          "websig_base_url",
+          "default_company_id",
+          "links"
+        ],
+        "title": "PortalGatewayConfig",
+        "type": "object"
+      },
+      "PortalGatewayHealth": {
+        "description": "Readiness contract between the portal and the Corporate Control Tower.",
+        "properties": {
+          "dashboard": {
+            "default": "available",
+            "title": "Dashboard",
+            "type": "string"
+          },
+          "reports": {
+            "default": "available",
+            "title": "Reports",
+            "type": "string"
+          },
+          "revision": {
+            "default": "REV12",
+            "title": "Revision",
+            "type": "string"
+          },
+          "service": {
+            "default": "portal-gateway",
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "tower": {
+            "default": "available",
+            "title": "Tower",
+            "type": "string"
+          }
+        },
+        "title": "PortalGatewayHealth",
+        "type": "object"
+      },
+      "PortalGatewayLink": {
+        "description": "Navigable enterprise portal link governed by the Control Tower.",
+        "properties": {
+          "description": {
+            "minLength": 10,
+            "title": "Description",
+            "type": "string"
+          },
+          "href": {
+            "minLength": 6,
+            "title": "Href",
+            "type": "string"
+          },
+          "label": {
+            "minLength": 3,
+            "title": "Label",
+            "type": "string"
+          },
+          "link_id": {
+            "minLength": 3,
+            "title": "Link Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "available",
+            "title": "Status",
+            "type": "string"
+          },
+          "target": {
+            "default": "_blank",
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "link_id",
+          "label",
+          "href",
+          "description"
+        ],
+        "title": "PortalGatewayLink",
+        "type": "object"
+      },
+      "PortalGatewaySnapshot": {
+        "description": "Single payload for the portal landing experience and Tower handoff.",
+        "properties": {
+          "company_id": {
+            "minLength": 3,
+            "title": "Company Id",
+            "type": "string"
+          },
+          "dashboard": {
+            "$ref": "#/components/schemas/CorporateDashboard"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/PortalGatewayLink"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardMetric"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "report_templates": {
+            "items": {
+              "$ref": "#/components/schemas/ReportTemplateDescriptor"
+            },
+            "title": "Report Templates",
+            "type": "array"
+          },
+          "title": {
+            "minLength": 3,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "company_id",
+          "title",
+          "metrics",
+          "links",
+          "dashboard",
+          "report_templates"
+        ],
+        "title": "PortalGatewaySnapshot",
+        "type": "object"
+      },
       "PortfolioGovernanceItem": {
         "description": "Project-level portfolio governance summary for the executive dashboard.",
         "properties": {
@@ -10997,6 +11167,84 @@
           }
         },
         "summary": "Operational Version"
+      }
+    },
+    "/api/v1/portal-gateway/companies/{company_id}/snapshot": {
+      "get": {
+        "description": "Return the consolidated portal payload backed by Tower services.",
+        "operationId": "portal_gateway_snapshot_api_v1_portal_gateway_companies__company_id__snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "company_id",
+            "required": true,
+            "schema": {
+              "title": "Company Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalGatewaySnapshot"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Portal Gateway Snapshot"
+      }
+    },
+    "/api/v1/portal-gateway/config": {
+      "get": {
+        "description": "Return the public configuration used by the BIM-SIG enterprise portal.",
+        "operationId": "portal_gateway_config_api_v1_portal_gateway_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalGatewayConfig"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Portal Gateway Config"
+      }
+    },
+    "/api/v1/portal-gateway/health": {
+      "get": {
+        "description": "Return portal gateway readiness for browser and deployment checks.",
+        "operationId": "portal_gateway_health_api_v1_portal_gateway_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalGatewayHealth"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Portal Gateway Health"
       }
     },
     "/api/v1/portfolio/summary": {

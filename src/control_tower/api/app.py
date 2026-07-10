@@ -14,6 +14,7 @@ import time
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
@@ -56,6 +57,7 @@ from control_tower.application.observability_service import (
 )
 from control_tower.application.operational_flow_service import OperationalFlowService
 from control_tower.application.portfolio_service import CorporatePortfolioDomainService, PortfolioService
+from control_tower.application.portal_gateway_service import PortalGatewayService
 from control_tower.application.provisioning_service import (
     ProjectProvisioningEngine,
     ProjectProvisioningSpec,
@@ -129,6 +131,11 @@ from control_tower.domain.portfolio import (
     PortfolioLifecycleTransition,
     ProjectLifecycleStage,
 )
+from control_tower.domain.portal_gateway import (
+    PortalGatewayConfig,
+    PortalGatewayHealth,
+    PortalGatewaySnapshot,
+)
 from control_tower.domain.provisioning import ProvisioningRequest
 from control_tower.domain.reports import (
     CorporatePrintReport,
@@ -176,6 +183,21 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
 }
+
+PORTAL_CORS_DEFAULT_ORIGINS = (
+    "https://bimsig-enterprise.oscarsalas1979.chatgpt.site",
+    "https://bim-digital-hub.oscarsalas1979.chatgpt.site",
+    "https://websig-enterprise.oscarsalas1979.chatgpt.site",
+)
+
+
+def _csv_env(name: str, default: tuple[str, ...]) -> list[str]:
+    """Parse comma-separated environment values while preserving sane defaults."""
+
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return list(default)
+    return [item.strip().rstrip("/") for item in raw_value.split(",") if item.strip()]
 
 
 class ProvisionWebSigPayload(BaseModel):
@@ -275,6 +297,13 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         title="Corporate Control Tower REV12",
         version=__version__,
         description="Portfolio governance and WEB SIG provisioning API for BIMSIG Enterprise.",
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_csv_env("CONTROL_TOWER_CORS_ORIGINS", PORTAL_CORS_DEFAULT_ORIGINS),
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
     )
     resolved_database_url = database_url or os.getenv(
         "CONTROL_TOWER_DATABASE_URL",
@@ -397,6 +426,23 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         nas,
         output_dir=os.getenv("CONTROL_TOWER_REPORT_OUTPUT_DIR", "output/pdf"),
     )
+    portal_gateway = PortalGatewayService(
+        dashboard,
+        reporting,
+        portal_origin=os.getenv(
+            "BIMSIG_PORTAL_ORIGIN",
+            "https://bimsig-enterprise.oscarsalas1979.chatgpt.site",
+        ),
+        tower_base_url=os.getenv(
+            "BIMSIG_TOWER_URL",
+            "https://bim-digital-hub.oscarsalas1979.chatgpt.site",
+        ),
+        websig_base_url=os.getenv(
+            "BIMSIG_WEBSIG_URL",
+            "https://websig-enterprise.oscarsalas1979.chatgpt.site",
+        ),
+        default_company_id=os.getenv("BIMSIG_DEFAULT_COMPANY_ID", "CRTG"),
+    )
     user_security = CorporateUserSecurityService(
         user_repository,
         companies,
@@ -448,6 +494,7 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "/api/v1/auth/permissions/matrix",
             "/api/v1/auth/sso/resolve",
             "/api/v1/operational",
+            "/api/v1/portal-gateway",
             "/health",
             "/metrics",
             "/dashboard",
@@ -598,6 +645,30 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
             "database": "ready",
             "revision": "REV12",
         }
+
+    @app.get("/api/v1/portal-gateway/config", response_model=PortalGatewayConfig)
+    def portal_gateway_config() -> PortalGatewayConfig:
+        """Return the public configuration used by the BIM-SIG enterprise portal."""
+
+        return portal_gateway.config()
+
+    @app.get("/api/v1/portal-gateway/health", response_model=PortalGatewayHealth)
+    def portal_gateway_health() -> PortalGatewayHealth:
+        """Return portal gateway readiness for browser and deployment checks."""
+
+        return portal_gateway.health()
+
+    @app.get(
+        "/api/v1/portal-gateway/companies/{company_id}/snapshot",
+        response_model=PortalGatewaySnapshot,
+    )
+    def portal_gateway_snapshot(company_id: str) -> PortalGatewaySnapshot:
+        """Return the consolidated portal payload backed by Tower services."""
+
+        try:
+            return portal_gateway.snapshot(company_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.get(
         "/api/v1/infrastructure/connectors/health",
