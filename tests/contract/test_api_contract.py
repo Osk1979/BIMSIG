@@ -476,16 +476,27 @@ def test_corporate_reporting_print_contract(tmp_path, monkeypatch) -> None:
     )
 
     templates = client.get("/api/v1/reports/templates")
-    preview = client.post("/api/v1/reports/preview", json={"company_id": "CRTG", "requested_by": "cto"})
-    issued = client.post("/api/v1/reports/issue", json={"company_id": "CRTG", "requested_by": "cto"})
-    html = client.post("/api/v1/reports/issue/html", json={"company_id": "CRTG", "requested_by": "cto"})
-    pdf = client.post("/api/v1/reports/issue/pdf", json={"company_id": "CRTG", "requested_by": "cto"})
-    pdf_download = client.post("/api/v1/reports/issue/pdf/download", json={"company_id": "CRTG", "requested_by": "cto"})
+    template_catalog = client.get("/api/v1/reports/template-catalog")
+    report_request = {"company_id": "CRTG", "requested_by": "cto"}
+    preview = client.post("/api/v1/reports/preview", json=report_request)
+    issued = client.post("/api/v1/reports/issue", json=report_request)
+    issued_html = client.get(
+        f"/api/v1/reports/{issued.json()['manifest']['report_id']}/html"
+    )
+    html = client.post("/api/v1/reports/issue/html", json=report_request)
+    pdf = client.post("/api/v1/reports/issue/pdf", json=report_request)
+    pdf_download = client.post("/api/v1/reports/issue/pdf/download", json=report_request)
+    missing_html = client.get("/api/v1/reports/RPT-CRTG-MISSING/html")
     nas_assets = client.get("/api/v1/companies/CRTG/nas/assets")
     events = client.get("/api/v1/audit/events?limit=20")
 
     assert templates.status_code == 200
     assert "executive_portfolio" in templates.json()
+    assert template_catalog.status_code == 200
+    assert {
+        item["template"] for item in template_catalog.json()
+    } >= {"executive_portfolio", "company_status", "project_governance", "gis_corporate"}
+    assert all("html_print" in item["output_formats"] for item in template_catalog.json())
     assert preview.status_code == 200
     assert preview.json()["manifest"]["status"] == "preview"
     assert issued.status_code == 200
@@ -494,6 +505,9 @@ def test_corporate_reporting_print_contract(tmp_path, monkeypatch) -> None:
     assert len(issued.json()["manifest"]["checksum_sha256"]) == 64
     assert "Proyecto Suiza" in issued.json()["html"]
     assert "Miraflores" in issued.json()["html"]
+    assert issued_html.status_code == 200
+    assert "Proyecto Suiza" in issued_html.text
+    assert missing_html.status_code == 404
     assert html.status_code == 200
     assert "text/html" in html.headers["content-type"]
     assert "Reporte Executive Portfolio" in html.text

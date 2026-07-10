@@ -6,6 +6,7 @@ from .models import (
     ReportManifest,
     ReportRequest,
     ReportScope,
+    ReportTemplateDescriptor,
     ReportTemplate,
 )
 
@@ -16,4 +17,5 @@ __all__ = [
     "ReportRequest",
     "ReportScope",
     "ReportTemplate",
+    "ReportTemplateDescriptor",
 ]

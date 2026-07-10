@@ -39,6 +39,18 @@ class ReportFormat(StrEnum):
     PDF = "pdf"
 
 
+class ReportTemplateDescriptor(BaseModel):
+    """Governed metadata for one printable corporate report template."""
+
+    template: ReportTemplate
+    title: str = Field(min_length=3)
+    scope: ReportScope
+    description: str = Field(min_length=10)
+    data_sources: list[str] = Field(default_factory=list)
+    output_formats: list[ReportFormat] = Field(default_factory=list)
+    nas_category: str = Field(default="PMO")
+
+
 class ReportRequest(BaseModel):
     """Request to prepare or issue a corporate report."""
 

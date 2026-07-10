@@ -65,7 +65,34 @@ def test_reporting_service_issues_print_manifest_and_audit_event() -> None:
     assert len(report.manifest.checksum_sha256) == 64
     assert "Proyecto Suiza" in report.html
     assert "Miraflores" in report.html
+    assert reporting.printable_html(report.manifest.report_id) == report.html
     assert "corporate_report.issued" in {event.action for event in audit.events}
+
+
+def test_reporting_service_lists_governed_template_catalog() -> None:
+    audit = FakeAuditEventRepository()
+    companies = CompanyService(FakeCompanyRepository(), audit)
+    users = UserService(FakeUserRepository(), FakeMembershipRepository(), companies, audit)
+    licensing = LicensingService(FakeLicensePlanRepository(), FakeCompanyLicenseRepository(), companies, audit)
+    portfolio = PortfolioService(FakePortfolioProjectRepository(), audit)
+    provisioning = ProvisioningService(portfolio, FakeProvisioningRequestRepository(), audit)
+    dashboard = DashboardService(companies, users, licensing, portfolio, provisioning)
+    reporting = CorporateReportingService(dashboard, audit)
+
+    templates = reporting.list_templates()
+
+    assert {template.template.value for template in templates} >= {
+        "executive_portfolio",
+        "company_status",
+        "project_governance",
+        "gis_corporate",
+        "audit_summary",
+    }
+    assert all(template.data_sources for template in templates)
+    assert all(
+        "html_print" in {output.value for output in template.output_formats}
+        for template in templates
+    )
 
 
 def test_reporting_service_exports_pdf_and_registers_nas_asset(tmp_path) -> None:

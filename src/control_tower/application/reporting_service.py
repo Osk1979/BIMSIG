@@ -25,8 +25,15 @@ from control_tower.domain.nas import (
     InformationAssetType,
     InformationCategory,
 )
-from control_tower.domain.reports import ReportFormat
-from control_tower.domain.reports import CorporatePrintReport, ReportManifest, ReportRequest
+from control_tower.domain.reports import (
+    CorporatePrintReport,
+    ReportFormat,
+    ReportManifest,
+    ReportRequest,
+    ReportScope,
+    ReportTemplate,
+    ReportTemplateDescriptor,
+)
 
 from .nas_service import NasInformationCenterService
 
@@ -45,6 +52,75 @@ class CorporateReportingService:
         self._audit = audit_repository
         self._nas = nas_service
         self._output_dir = Path(output_dir or "output/pdf")
+        self._issued_html: dict[str, str] = {}
+
+    def list_templates(self) -> list[ReportTemplateDescriptor]:
+        """Return the governed catalog of printable corporate report templates."""
+
+        sources = [
+            "portfolio_domain",
+            "executive_dashboard",
+            "corporate_gis_intelligence",
+            "nas_information_center",
+            "audit_events",
+        ]
+        return [
+            ReportTemplateDescriptor(
+                template=ReportTemplate.EXECUTIVE_PORTFOLIO,
+                title="Executive Portfolio Report",
+                scope=ReportScope.PORTFOLIO,
+                description=(
+                    "Corporate portfolio, KPI, GIS, and governance report "
+                    "for executive review."
+                ),
+                data_sources=sources,
+                output_formats=[ReportFormat.HTML_PRINT, ReportFormat.PDF],
+            ),
+            ReportTemplateDescriptor(
+                template=ReportTemplate.COMPANY_STATUS,
+                title="Company Status Report",
+                scope=ReportScope.COMPANY,
+                description=(
+                    "Company-level operating status, portfolio health, and "
+                    "control tower readiness."
+                ),
+                data_sources=sources,
+                output_formats=[ReportFormat.HTML_PRINT, ReportFormat.PDF],
+            ),
+            ReportTemplateDescriptor(
+                template=ReportTemplate.PROJECT_GOVERNANCE,
+                title="Project Governance Report",
+                scope=ReportScope.PROJECT,
+                description=(
+                    "Project governance, WEB SIG readiness, lifecycle, and "
+                    "administrative location report."
+                ),
+                data_sources=sources,
+                output_formats=[ReportFormat.HTML_PRINT, ReportFormat.PDF],
+            ),
+            ReportTemplateDescriptor(
+                template=ReportTemplate.GIS_CORPORATE,
+                title="Corporate GIS Report",
+                scope=ReportScope.PORTFOLIO,
+                description=(
+                    "Read-only corporate GIS publication, layer readiness, "
+                    "and spatial risk report."
+                ),
+                data_sources=sources,
+                output_formats=[ReportFormat.HTML_PRINT, ReportFormat.PDF],
+            ),
+            ReportTemplateDescriptor(
+                template=ReportTemplate.AUDIT_SUMMARY,
+                title="Audit Summary Report",
+                scope=ReportScope.COMPANY,
+                description=(
+                    "Recent corporate audit activity and traceability report "
+                    "for governance review."
+                ),
+                data_sources=sources,
+                output_formats=[ReportFormat.HTML_PRINT, ReportFormat.PDF],
+            ),
+        ]
 
     def preview(self, request: ReportRequest) -> CorporatePrintReport:
         """Prepare a print-ready report without recording emission."""
@@ -59,8 +135,17 @@ class CorporateReportingService:
         dashboard = self._dashboard.executive_dashboard(request.company_id)
         html = self._render_html(request, dashboard)
         report = self._build_report(request, html, status="issued")
+        self._issued_html[report.manifest.report_id] = report.html
         self._audit_event(request, report.manifest)
         return report
+
+    def printable_html(self, report_id: str) -> str:
+        """Return the print-ready HTML emitted during this process lifetime."""
+
+        try:
+            return self._issued_html[report_id]
+        except KeyError as exc:
+            raise ValueError(f"Report HTML not found: {report_id}") from exc
 
     def export_pdf(self, request: ReportRequest) -> CorporatePrintReport:
         """Issue a governed corporate PDF report and register its NAS metadata."""
@@ -103,6 +188,7 @@ class CorporateReportingService:
             pdf_path=str(pdf_path),
             pdf_size_bytes=len(pdf_bytes),
         )
+        self._issued_html[report.manifest.report_id] = report.html
         self._register_nas_report(pdf_request, report)
         self._audit_event(pdf_request, report.manifest)
         return report

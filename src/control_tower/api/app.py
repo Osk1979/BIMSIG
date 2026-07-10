@@ -130,7 +130,12 @@ from control_tower.domain.portfolio import (
     ProjectLifecycleStage,
 )
 from control_tower.domain.provisioning import ProvisioningRequest
-from control_tower.domain.reports import CorporatePrintReport, ReportRequest, ReportTemplate
+from control_tower.domain.reports import (
+    CorporatePrintReport,
+    ReportRequest,
+    ReportTemplate,
+    ReportTemplateDescriptor,
+)
 from control_tower.infrastructure.database import (
     SqlAlchemyAuditEventRepository,
     SqlAlchemyAuthIdentityRepository,
@@ -1314,6 +1319,15 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
 
         return list(ReportTemplate)
 
+    @app.get(
+        "/api/v1/reports/template-catalog",
+        response_model=list[ReportTemplateDescriptor],
+    )
+    def report_template_catalog() -> list[ReportTemplateDescriptor]:
+        """List report templates with governed scope, sources, and output formats."""
+
+        return reporting.list_templates()
+
     @app.post("/api/v1/reports/preview", response_model=CorporatePrintReport)
     def preview_report(payload: ReportRequest) -> CorporatePrintReport:
         """Prepare a print-ready corporate report without recording emission."""
@@ -1341,6 +1355,15 @@ def create_app(database_url: str | None = None, initialize_schema: bool = True) 
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
         return HTMLResponse(report.html)
+
+    @app.get("/api/v1/reports/{report_id}/html", response_class=HTMLResponse)
+    def printable_report_html(report_id: str) -> HTMLResponse:
+        """Return print-ready HTML for a report issued in this process."""
+
+        try:
+            return HTMLResponse(reporting.printable_html(report_id))
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     @app.post("/api/v1/reports/issue/pdf", response_model=CorporatePrintReport)
     def issue_report_pdf(payload: ReportRequest) -> CorporatePrintReport:
