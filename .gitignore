@@ -19,3 +19,6 @@ e2e-artifacts/
 output/
 *.zip
 *.db
+
+.npm-cache/
+tmp/
